@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+##
+##  sedrepl - a REPL for sed
+##
+##  Author:   Based on awkrepl by Kevin Ernst <ernstki -at- mail.uc.edu>
+##  License:  MIT
+##
+##  Requirements:
+##    - sed (GNU sed or BSD sed)
+##    - tmux ≥ 2
+##    - entr - http://eradman.com/entrproject/
+##    - bat (optional) - https://github.com/sharkdp/bat
+##
+# shellcheck disable=SC2155
+
+set -uo pipefail
+
+_sed_in_place() {
+    if [[ $(uname -s) == Linux ]]; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
+
+_sedrepl_pretty_print() {
+    local src=${1:?missing sed source file argument}
+    local cat='cat'
+
+    if [[ $(type -t bat) == file ]]; then
+        cat='bat -l sed -p --tabs=4'
+    fi
+
+    # try to syntax-check the sed script (GNU sed prints error to stderr; BSD
+    # sed just exits non-zero)
+    if ! sed -n -f "$src" /dev/null 2>/dev/null; then
+        # if syntax check failed, show raw source with error context
+        # re-run without suppressing stderr so the user sees the error
+        echo -e "\nERROR parsing sed script; input was:"
+        sed -n -f "$src" /dev/null 2>&1
+        echo "---"
+    fi
+
+    $cat "$src"
+} # _sedrepl_pretty_print
+
+# divide input file $1 into source ($2), data ($3), and args ($4) files
+_sedrepl_divide() {
+    local in=${1:?missing input file argument}
+    local src=${2:?missing source output file argument}
+    local data=${3:?missing data output file argument}
+    local args=${4:?missing args output file argument}
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa]'
+    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\(ument\)*[Ss]*:*[[:space:]]*'
+
+    # extract arguments
+    sed -n \
+      -e "s/$argshdr//w $args" \
+      "$in"
+
+    # split the input file at the '#DATA' header and write into two files
+    sed -n \
+      -e "1,/$datahdr/w $src" \
+      -e "/$datahdr/,\$w $data" \
+      "$in"
+
+    # remove '#DATA' header from the data file
+    _sed_in_place -e "/$datahdr/d" "$data"
+
+    # remove '#DATA' and '#ARGS' headers from source code
+    _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
+} # _sedrepl_divide
+
+# the tmux subshells need these
+export -f _sed_in_place
+export -f _sedrepl_divide
+export -f _sedrepl_pretty_print
+
+sedrepl() {
+    local replfile="$HOME/.repl.sed"
+    local pref=.sedrepl
+    local src=$(mktemp $pref-src-XXXXXX)
+    local data=$(mktemp $pref-data-XXXXXX)
+    local args=$(mktemp $pref-args-XXXXXX)
+    local runner=$(mktemp $pref-run-XXXXXX)
+    local formatter=$(mktemp $pref-fmt-XXXXXX)
+    local cleanup=$(mktemp $pref-cleanup-XXXXXX)
+
+    # make sure the file exists, since 'entr' needs it to exist
+    test -f "$replfile" || touch "$replfile"
+
+    (( ${TRACE:-} )) && set -x
+
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _sed_in_place _sedrepl_divide)
+        _sedrepl_divide $replfile $src $data $args
+        cmd=\"sed \$(cat $args) -f $src $data\"
+        echo \"$(tput setaf 0)# work dir: \$PWD$(tput sgr0)\"
+        echo \"$(tput setaf 0)# command:  \$cmd$(tput sgr0)\"
+        echo
+        if [[ \$(type -t bat) == file ]]; then
+            bat -l sed -p --tabs=4 \"$src\"
+        else
+            cat \"$src\"
+        fi
+        echo
+        \$cmd
+    " > "$runner"
+
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _sedrepl_pretty_print)
+        sleep 1
+        _sedrepl_pretty_print $src
+    " > "$formatter"
+
+    echo "\
+        rm -f '$src' '$data' '$args' '$runner' '$formatter' '$cleanup'
+    " > "$cleanup"
+
+    chmod a+x "$runner" "$formatter" "$cleanup"
+
+    # start a new session, or a new window if we're already in tmux
+    tmux new${TMUX:+w} -n 'sedrepl'                        \
+      "${EDITOR:-nano}" "$replfile" \;                      \
+      split-window    -c "$PWD"                             \
+        "echo '$replfile' | entr -c './$runner'" \;         \
+      split-window -h -c "$PWD"                             \
+        "echo '$src'      | entr -c './$formatter'" \;      \
+      select-pane -t 1 \;                                   \
+      select-pane -t 2 \;                                   \
+      select-pane -t 0 \;                                   \
+      set-hook 'pane-exited[0]' "run-shell './$cleanup'" \; \
+      set-hook 'pane-exited[1]' kill-window
+}
+
+# allow sourcing for tests without launching the REPL
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && sedrepl "$@"
