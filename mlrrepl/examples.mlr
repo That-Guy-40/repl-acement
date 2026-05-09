@@ -1,0 +1,17 @@
+# mlrrepl - try different DSL expressions above the #DATA marker
+#
+# Uncomment any example below to try it out, or write your own.
+#
+# $full_name = $first . " " . $last
+# $total = $quantity * $price
+# filter $age >= 18
+# unset $email
+# $rank = NR
+
+$total = $quantity * $price
+
+#DATA
+name,quantity,price
+apples,3,1.20
+bananas,5,0.50
+cherries,12,3.00

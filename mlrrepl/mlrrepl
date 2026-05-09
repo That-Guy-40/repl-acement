@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+##
+##  mlrrepl - a REPL for Miller (mlr)
+##
+##  Based on awkrepl by Kevin Ernst <ernstki -at- mail.uc.edu>
+##  License:  MIT
+##
+##  Requirements:
+##    - miller (mlr) ≥ 5 - https://miller.readthedocs.io/
+##    - tmux ≥ 2
+##    - entr - http://eradman.com/entrproject/
+##    - bat (optional) - https://github.com/sharkdp/bat
+##
+##  Miller DSL expressions are read from a file with 'mlr put -f', which
+##  completely sidesteps shell quoting of $-fields and string literals.
+##
+# shellcheck disable=SC2155
+
+set -uo pipefail
+
+_sed_in_place() {
+    if [[ $(uname -s) == Linux ]]; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
+
+_mlrrepl_pretty_print() {
+    local src=${1:?missing mlr source file argument}
+    local cat='cat'
+
+    if [[ $(type -t bat) == file ]]; then
+        cat='bat -l ruby -p --tabs=4'   # Ruby is close enough for mlr DSL highlighting
+    fi
+
+    [[ -s "$src" ]] && $cat "$src"
+} # _mlrrepl_pretty_print
+
+# divide input file $1 into source ($2), data ($3), and args ($4) files
+_mlrrepl_divide() {
+    local in=${1:?missing input file argument}
+    local src=${2:?missing source output file argument}
+    local data=${3:?missing data output file argument}
+    local args=${4:?missing args output file argument}
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa]'
+    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\(ument\)*[Ss]*:*[[:space:]]*'
+
+    # extract arguments
+    sed -n \
+      -e "s/$argshdr//w $args" \
+      "$in"
+
+    # split the input file at the '#DATA' header and write into two files
+    sed -n \
+      -e "1,/$datahdr/w $src" \
+      -e "/$datahdr/,\$w $data" \
+      "$in"
+
+    # remove '#DATA' header from the data file
+    _sed_in_place -e "/$datahdr/d" "$data"
+
+    # remove '#DATA' and '#ARGS' headers from source code
+    _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
+} # _mlrrepl_divide
+
+# the tmux subshells need these
+export -f _sed_in_place
+export -f _mlrrepl_divide
+export -f _mlrrepl_pretty_print
+
+mlrrepl() {
+    local replfile="$HOME/.repl.mlr"
+    local pref=.mlrrepl
+    local src=$(mktemp $pref-src-XXXXXX)
+    local data=$(mktemp $pref-data-XXXXXX)
+    local args=$(mktemp $pref-args-XXXXXX)
+    local runner=$(mktemp $pref-run-XXXXXX)
+    local formatter=$(mktemp $pref-fmt-XXXXXX)
+    local cleanup=$(mktemp $pref-cleanup-XXXXXX)
+
+    # make sure the file exists, since 'entr' needs it to exist
+    test -f "$replfile" || touch "$replfile"
+
+    (( ${TRACE:-} )) && set -x
+
+    # 'mlr put -f $src' reads the DSL from a file, avoiding all quoting issues
+    # with $field references and string literals in the expression.
+    # default args --csv; #ARGS can override (e.g. #ARGS --tsv or #ARGS --nidx)
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _sed_in_place _mlrrepl_divide)
+        _mlrrepl_divide $replfile $src $data $args
+        if [[ -s $src ]]; then
+            if [[ -s $data ]]; then
+                _default_fmt=\$(head -1 $data | grep -qF ',' && echo '--csv' || echo '--nidx')
+                _user_args=\$(cat $args)
+                _fmt=\${_user_args:-\$_default_fmt}
+                cmd=\"mlr \$_fmt put -f $src $data\"
+            else
+                echo 'mlrrepl: no #DATA section — add data below a #DATA marker'
+                exit 0
+            fi
+            echo \"$(tput setaf 0)# work dir: \$PWD$(tput sgr0)\"
+            echo \"$(tput setaf 0)# command:  \$cmd$(tput sgr0)\"
+            echo
+            if [[ \$(type -t bat) == file ]]; then
+                bat -l ruby -p --tabs=4 \"$src\"
+            else
+                cat \"$src\"
+            fi
+            echo
+            \$cmd
+        fi
+    " > "$runner"
+
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _mlrrepl_pretty_print)
+        sleep 1
+        _mlrrepl_pretty_print $src
+    " > "$formatter"
+
+    echo "\
+        rm -f '$src' '$data' '$args' '$runner' '$formatter' '$cleanup'
+    " > "$cleanup"
+
+    chmod a+x "$runner" "$formatter" "$cleanup"
+
+    # start a new session, or a new window if we're already in tmux
+    tmux new${TMUX:+w} -n 'mlrrepl'                            \
+      "${EDITOR:-nano}" "$replfile" \;                          \
+      split-window    -c "$PWD"                                 \
+        "echo '$replfile' | entr -c './$runner'" \;             \
+      split-window -h -c "$PWD"                                 \
+        "echo '$src'      | entr -c './$formatter'" \;          \
+      select-pane -t 1 \;                                       \
+      select-pane -t 2 \;                                       \
+      select-pane -t 0 \;                                       \
+      set-hook 'pane-exited[0]' "run-shell './$cleanup'" \;     \
+      set-hook 'pane-exited[1]' kill-window
+}
+
+# allow sourcing for tests without launching the REPL
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && mlrrepl "$@"

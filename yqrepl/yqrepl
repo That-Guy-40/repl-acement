@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+##
+##  yqrepl - a REPL for yq
+##
+##  Based on awkrepl by Kevin Ernst <ernstki -at- mail.uc.edu>
+##  License:  MIT
+##
+##  Requirements:
+##    - yq ≥ 4 (Mike Farah's Go implementation, https://github.com/mikefarah/yq)
+##    - tmux ≥ 2
+##    - entr - http://eradman.com/entrproject/
+##    - bat (optional) - https://github.com/sharkdp/bat
+##
+# shellcheck disable=SC2155
+
+set -uo pipefail
+
+_sed_in_place() {
+    if [[ $(uname -s) == Linux ]]; then
+        sed -i "$@"
+    else
+        sed -i '' "$@"
+    fi
+}
+
+_yqrepl_pretty_print() {
+    local src=${1:?missing yq source file argument}
+    local cat='cat'
+
+    if [[ $(type -t bat) == file ]]; then
+        cat='bat -l yaml -p --tabs=4'
+    fi
+
+    [[ -s "$src" ]] && $cat "$src"
+} # _yqrepl_pretty_print
+
+# divide input file $1 into source ($2), data ($3), and args ($4) files
+_yqrepl_divide() {
+    local in=${1:?missing input file argument}
+    local src=${2:?missing source output file argument}
+    local data=${3:?missing data output file argument}
+    local args=${4:?missing args output file argument}
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa]'
+    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\(ument\)*[Ss]*:*[[:space:]]*'
+
+    # extract arguments
+    sed -n \
+      -e "s/$argshdr//w $args" \
+      "$in"
+
+    # split the input file at the '#DATA' header and write into two files
+    sed -n \
+      -e "1,/$datahdr/w $src" \
+      -e "/$datahdr/,\$w $data" \
+      "$in"
+
+    # remove '#DATA' header from the data file
+    _sed_in_place -e "/$datahdr/d" "$data"
+
+    # remove '#DATA' and '#ARGS' headers from source code
+    _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
+} # _yqrepl_divide
+
+# the tmux subshells need these
+export -f _sed_in_place
+export -f _yqrepl_divide
+export -f _yqrepl_pretty_print
+
+yqrepl() {
+    local replfile="$HOME/.repl.yq"
+    local pref=.yqrepl
+    local src=$(mktemp $pref-src-XXXXXX)
+    local data=$(mktemp $pref-data-XXXXXX)
+    local args=$(mktemp $pref-args-XXXXXX)
+    local runner=$(mktemp $pref-run-XXXXXX)
+    local formatter=$(mktemp $pref-fmt-XXXXXX)
+    local cleanup=$(mktemp $pref-cleanup-XXXXXX)
+
+    # make sure the file exists, since 'entr' needs it to exist
+    test -f "$replfile" || touch "$replfile"
+
+    (( ${TRACE:-} )) && set -x
+
+    # yq has no -f flag; we read the expression into a variable and pass it
+    # as a double-quoted argument — bash does not re-expand $field refs inside
+    # the value, so yq path expressions like '.[] | .name' are passed safely.
+    # without #DATA, --null-input lets yq generate output from pure expressions.
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _sed_in_place _yqrepl_divide)
+        _yqrepl_divide $replfile $src $data $args
+        if [[ -s $src ]]; then
+            _expr=\$(cat $src)
+            if [[ -s $data ]]; then
+                cmd=\"yq eval \\\"\$_expr\\\" \$(cat $args) $data\"
+            else
+                cmd=\"yq eval --null-input \\\"\$_expr\\\" \$(cat $args)\"
+            fi
+            echo \"$(tput setaf 0)# work dir: \$PWD$(tput sgr0)\"
+            echo \"$(tput setaf 0)# command:  \$cmd$(tput sgr0)\"
+            echo
+            if [[ \$(type -t bat) == file ]]; then
+                bat -l yaml -p --tabs=4 \"$src\"
+            else
+                cat \"$src\"
+            fi
+            echo
+            eval \"\$cmd\"
+        fi
+    " > "$runner"
+
+    echo "#!/usr/bin/env bash
+        set -uo pipefail
+        $(declare -f _yqrepl_pretty_print)
+        sleep 1
+        _yqrepl_pretty_print $src
+    " > "$formatter"
+
+    echo "\
+        rm -f '$src' '$data' '$args' '$runner' '$formatter' '$cleanup'
+    " > "$cleanup"
+
+    chmod a+x "$runner" "$formatter" "$cleanup"
+
+    # start a new session, or a new window if we're already in tmux
+    tmux new${TMUX:+w} -n 'yqrepl'                             \
+      "${EDITOR:-nano}" "$replfile" \;                          \
+      split-window    -c "$PWD"                                 \
+        "echo '$replfile' | entr -c './$runner'" \;             \
+      split-window -h -c "$PWD"                                 \
+        "echo '$src'      | entr -c './$formatter'" \;          \
+      select-pane -t 1 \;                                       \
+      select-pane -t 2 \;                                       \
+      select-pane -t 0 \;                                       \
+      set-hook 'pane-exited[0]' "run-shell './$cleanup'" \;     \
+      set-hook 'pane-exited[1]' kill-window
+}
+
+# allow sourcing for tests without launching the REPL
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && yqrepl "$@"

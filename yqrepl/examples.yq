@@ -1,0 +1,22 @@
+# yqrepl - try different expressions above the #DATA marker
+#
+# Uncomment any example below to try it out, or write your own.
+#
+# .[] | .name
+# [.[] | select(.city == "Chicago")] | length
+# .services | keys
+# .. | select(type == "!!str")
+# .items[] | {"name": .name, "ready": .status.ready}
+
+.[] | .name
+
+#DATA
+- name: Alice
+  age: 30
+  city: New York
+- name: Bob
+  age: 17
+  city: Boston
+- name: Carol
+  age: 25
+  city: Chicago

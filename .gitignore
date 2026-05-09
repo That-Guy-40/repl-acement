@@ -4,3 +4,6 @@
 .awkrepl-*
 .sedrepl-*
 .jqrepl-*
+.yqrepl-*
+.mlrrepl-*
+.perlrepl-*
