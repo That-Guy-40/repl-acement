@@ -2,11 +2,12 @@
 #
 # Uncomment any example below to try it out, or write your own.
 #
-# $full_name = $first . " " . $last
+# $full_name = $first . " " . $last;
 # $total = $quantity * $price
 # filter $age >= 18
 # unset $email
 # $rank = NR
+# Note: separate multiple statements with semicolons in Miller 6
 
 $total = $quantity * $price
 

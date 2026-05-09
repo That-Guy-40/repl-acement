@@ -64,10 +64,24 @@ _mlrrepl_divide() {
     _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
 } # _mlrrepl_divide
 
+# sniff the first line of a data file; return '--csv' if it contains a comma,
+# '--jsonl' if it looks like a JSON object, '--nidx' otherwise
+_mlrrepl_detect_format() {
+    local data=${1:?missing data file argument}
+    local first
+    first=$(head -1 "$data")
+    case "$first" in
+        '{'*)  echo '--jsonl' ;;   # JSON object before comma check (JSONL contains commas)
+        *,*)   echo '--csv'   ;;
+        *)     echo '--nidx'  ;;
+    esac
+} # _mlrrepl_detect_format
+
 # the tmux subshells need these
 export -f _sed_in_place
 export -f _mlrrepl_divide
 export -f _mlrrepl_pretty_print
+export -f _mlrrepl_detect_format
 
 mlrrepl() {
     local replfile="$HOME/.repl.mlr"
@@ -89,13 +103,12 @@ mlrrepl() {
     # default args --csv; #ARGS can override (e.g. #ARGS --tsv or #ARGS --nidx)
     echo "#!/usr/bin/env bash
         set -uo pipefail
-        $(declare -f _sed_in_place _mlrrepl_divide)
+        $(declare -f _sed_in_place _mlrrepl_divide _mlrrepl_detect_format)
         _mlrrepl_divide $replfile $src $data $args
         if [[ -s $src ]]; then
             if [[ -s $data ]]; then
-                _default_fmt=\$(head -1 $data | grep -qF ',' && echo '--csv' || echo '--nidx')
                 _user_args=\$(cat $args)
-                _fmt=\${_user_args:-\$_default_fmt}
+                _fmt=\${_user_args:-\$(_mlrrepl_detect_format $data)}
                 cmd=\"mlr \$_fmt put -f $src $data\"
             else
                 echo 'mlrrepl: no #DATA section — add data below a #DATA marker'
