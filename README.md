@@ -52,7 +52,16 @@ cd perlrepl && make test
 ```
 
 
+Attribution
+-----------
+
+This collection is based on [awkrepl](https://github.com/ernstki/awkrepl) by
+**Kevin Ernst** — the original REPL concept, three-pane tmux layout,
+`#DATA`/`#ARGS` file convention, and entr-based event loop all originate
+there. Visit the original repo: <https://github.com/ernstki/awkrepl>
+
+
 License
 -------
 
-MIT. `awkrepl` and `sedrepl` based on work by Kevin Ernst.
+MIT.
