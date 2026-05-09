@@ -231,4 +231,5 @@ awkrepl() {
       # 1 and 2 again if I can get this working reliably
 }
 
-awkrepl "$@"
+# allow sourcing for tests without launching the REPL
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && awkrepl "$@"

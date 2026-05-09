@@ -36,6 +36,9 @@ build:  # build the Docker image
 run:  # run the Docker image
 	docker run -it -e EDITOR=$(EDITOR) --rm $(TAG)
 
+test:  # run smoke and integration tests
+	bash tests/smoke/run.sh && bash tests/integration/run.sh
+
 publish:  # push the image to Docker Hub
 	docker tag $(TAG) $(DOCKER_HUB_TAG)
 	docker push $(DOCKER_HUB_TAG)

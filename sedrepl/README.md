@@ -108,7 +108,11 @@ See also
 Author
 ------
 
-Based on [`awkrepl`](https://github.com/ernstki/awkrepl) by Kevin Ernst.
+Inspired by [awkrepl](https://github.com/ernstki/awkrepl) by Kevin Ernst —
+the original REPL concept, three-pane layout, `#DATA`/`#ARGS` convention,
+and entr-based event loop all originate there.
+
+- <https://github.com/ernstki/awkrepl>
 
 
 License
