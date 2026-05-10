@@ -30,7 +30,7 @@ _jqrepl_pretty_print() {
     _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     [[ -n "$_bat" ]] && cat="$_bat -l jq -p --tabs=4"
 
-    [[ -s "$src" ]] && $cat "$src"
+    [[ -s "$src" ]] && $cat "$src" 2>/dev/null
 } # _jqrepl_pretty_print
 
 # divide input file $1 into source ($2), data ($3), and args ($4) files
@@ -108,7 +108,7 @@ if [[ -s $q_src ]]; then
     echo
     _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     if [[ -n "\$_bat" ]]; then
-        "\$_bat" -l jq -p --tabs=4 $q_src
+        "\$_bat" -l jq -p --tabs=4 $q_src 2>/dev/null
     else
         cat $q_src
     fi

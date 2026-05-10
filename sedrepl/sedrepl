@@ -27,7 +27,9 @@ _sedrepl_pretty_print() {
     local cat='cat'
     local _bat
     _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
-    [[ -n "$_bat" ]] && cat="$_bat -l sed -p --tabs=4"
+    # bat has no 'sed' syntax; awk's pattern/action highlighting is the closest
+    # built-in match (handles '#' comments and regex literals).
+    [[ -n "$_bat" ]] && cat="$_bat -l awk -p --tabs=4"
 
     # run once: capture stderr; non-zero exit signals a syntax error.
     # avoids double-execution (side effects from 'e', 'w', 'R'/'W' commands).
@@ -37,7 +39,7 @@ _sedrepl_pretty_print() {
         printf '%s\n---\n' "$err_output"
     fi
 
-    $cat "$src"
+    $cat "$src" 2>/dev/null
 } # _sedrepl_pretty_print
 
 # divide input file $1 into source ($2), data ($3), and args ($4) files
@@ -108,7 +110,7 @@ echo "$(tput setaf 0)# command:  sed \${_sed_args[*]} -f $q_src $q_data$(tput sg
 echo
 _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
 if [[ -n "\$_bat" ]]; then
-    "\$_bat" -l sed -p --tabs=4 $q_src
+    "\$_bat" -l awk -p --tabs=4 $q_src 2>/dev/null
 else
     cat $q_src
 fi

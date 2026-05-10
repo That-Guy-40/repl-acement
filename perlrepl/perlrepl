@@ -33,7 +33,7 @@ _perlrepl_pretty_print() {
     _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     [[ -n "$_bat" ]] && cat="$_bat -l perl -p --tabs=4"
 
-    [[ -s "$src" ]] && $cat "$src"
+    [[ -s "$src" ]] && $cat "$src" 2>/dev/null
 } # _perlrepl_pretty_print
 
 # returns '-n' if the script looks like a bare per-line expression
@@ -138,7 +138,7 @@ if [[ -s $q_src ]]; then
     echo
     _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     if [[ -n "\$_bat" ]]; then
-        "\$_bat" -l perl -p --tabs=4 $q_src
+        "\$_bat" -l perl -p --tabs=4 $q_src 2>/dev/null
     else
         cat $q_src
     fi

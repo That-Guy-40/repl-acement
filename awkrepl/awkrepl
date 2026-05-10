@@ -93,9 +93,9 @@ _awkrepl_pretty_print() {
     _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     [[ -n "$_bat" ]] && cat="$_bat -l awk -p --tabs=4"
 
-    if ! gawk --pretty-print=- -f "$src" | $cat; then
+    if ! gawk --pretty-print=- -f "$src" | $cat 2>/dev/null; then
         echo -e "\nERROR parsing AWK source; input was:"
-        $cat "$src"
+        $cat "$src" 2>/dev/null
     fi
 } # _awkrepl_pretty_print
 
