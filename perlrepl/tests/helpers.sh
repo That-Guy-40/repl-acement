@@ -77,7 +77,7 @@ assert_output_contains() {
     shift 2
     local actual
     actual=$("$@" 2>&1)
-    if echo "$actual" | grep -qF "$needle"; then
+    if echo "$actual" | grep -qF -- "$needle"; then
         pass "$desc"
     else
         fail "$desc" "output does not contain '$needle'; got: $actual"

@@ -65,8 +65,8 @@ export -f _sed_in_place
 export -f _jqrepl_divide
 export -f _jqrepl_pretty_print
 
-jqrepl() {
-    local replfile="$HOME/.repl.jq"
+_jqrepl_setup() {
+    local replfile=${1:?missing replfile argument}
     local src data args runner formatter cleanup
     src=$(mktemp /tmp/jqrepl-src-XXXXXX)         || { echo "jqrepl: mktemp failed" >&2; return 1; }
     data=$(mktemp /tmp/jqrepl-data-XXXXXX)        || { echo "jqrepl: mktemp failed" >&2; return 1; }
@@ -74,11 +74,6 @@ jqrepl() {
     runner=$(mktemp /tmp/jqrepl-run-XXXXXX)       || { echo "jqrepl: mktemp failed" >&2; return 1; }
     formatter=$(mktemp /tmp/jqrepl-fmt-XXXXXX)    || { echo "jqrepl: mktemp failed" >&2; return 1; }
     cleanup=$(mktemp /tmp/jqrepl-cleanup-XXXXXX)  || { echo "jqrepl: mktemp failed" >&2; return 1; }
-
-    # make sure the file exists, since 'entr' needs it to exist
-    test -f "$replfile" || touch "$replfile"
-
-    (( ${TRACE:-} )) && set -x
 
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
@@ -140,19 +135,34 @@ CLEANUP
 
     chmod a+x "$runner" "$formatter" "$cleanup"
 
-    # start a new session, or a new window if we're already in tmux
-    # q_* paths are already shell-quoted by printf '%q', so no surrounding
-    # single quotes are needed — this also prevents single-quote injection.
+    # These globals are read by the caller after _jqrepl_setup returns.
+    # shellcheck disable=SC2034
+    REPL_REPLFILE="$replfile"   REPL_SRC="$src"         REPL_DATA="$data"
+    # shellcheck disable=SC2034
+    REPL_ARGS="$args"           REPL_RUNNER="$runner"   REPL_FORMATTER="$formatter"
+    # shellcheck disable=SC2034
+    REPL_CLEANUP="$cleanup"
+    # shellcheck disable=SC2034
+    REPL_Q_REPLFILE="$q_replfile" REPL_Q_SRC="$q_src"   REPL_Q_RUNNER="$q_runner"
+    # shellcheck disable=SC2034
+    REPL_Q_FORMATTER="$q_formatter" REPL_Q_CLEANUP="$q_cleanup"
+} # _jqrepl_setup
+
+jqrepl() {
+    local replfile="$HOME/.repl.jq"
+    test -f "$replfile" || touch "$replfile"
+    (( ${TRACE:-} )) && set -x
+    _jqrepl_setup "$replfile" || return 1
     tmux new${TMUX:+w} -n 'jqrepl'                              \
       "${EDITOR:-nano}" "$replfile" \;                            \
       split-window    -c "$PWD"                                   \
-        "echo $q_replfile | entr -c $q_runner" \;               \
+        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;     \
       split-window -h -c "$PWD"                                   \
-        "echo $q_src | entr -c $q_formatter" \;                 \
+        "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER" \;       \
       select-pane -t 1 \;                                         \
       select-pane -t 2 \;                                         \
       select-pane -t 0 \;                                         \
-      set-hook 'pane-exited[0]' "run-shell $q_cleanup" \;        \
+      set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;   \
       set-hook 'pane-exited[1]' kill-window
 }
 
