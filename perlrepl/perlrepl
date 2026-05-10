@@ -14,9 +14,8 @@
 ##  This is the punchline that awkrepl's own README set up: "the whole
 ##  script probably should've just been written in Perl."
 ##
-# shellcheck disable=SC2155
-
 set -uo pipefail
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "perlrepl: error at line $LINENO" >&2; exit 1' ERR
 
 _sed_in_place() {
     if [[ $(uname -s) == Linux ]]; then
@@ -96,69 +95,90 @@ export -f _perlrepl_needs_n
 
 perlrepl() {
     local replfile="$HOME/.repl.pl"
-    local pref=.perlrepl
-    local src=$(mktemp $pref-src-XXXXXX)
-    local data=$(mktemp $pref-data-XXXXXX)
-    local args=$(mktemp $pref-args-XXXXXX)
-    local runner=$(mktemp $pref-run-XXXXXX)
-    local formatter=$(mktemp $pref-fmt-XXXXXX)
-    local cleanup=$(mktemp $pref-cleanup-XXXXXX)
+    local src data args runner formatter cleanup
+    src=$(mktemp /tmp/perlrepl-src-XXXXXX)         || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    data=$(mktemp /tmp/perlrepl-data-XXXXXX)        || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    args=$(mktemp /tmp/perlrepl-args-XXXXXX)        || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    runner=$(mktemp /tmp/perlrepl-run-XXXXXX)       || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    formatter=$(mktemp /tmp/perlrepl-fmt-XXXXXX)    || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    cleanup=$(mktemp /tmp/perlrepl-cleanup-XXXXXX)  || { echo "perlrepl: mktemp failed" >&2; return 1; }
 
     # make sure the file exists, since 'entr' needs it to exist
     test -f "$replfile" || touch "$replfile"
 
     (( ${TRACE:-} )) && set -x
 
+    # shell-safe (printf '%q') versions of all paths for embedding in generated
+    # scripts and tmux commands — prevents word-splitting, glob expansion, and
+    # single-quote injection when paths contain spaces or special characters.
+    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup
+    q_replfile=$(printf '%q' "$replfile")
+    q_src=$(printf '%q' "$src")
+    q_data=$(printf '%q' "$data")
+    q_args=$(printf '%q' "$args")
+    q_runner=$(printf '%q' "$runner")
+    q_formatter=$(printf '%q' "$formatter")
+    q_cleanup=$(printf '%q' "$cleanup")
+
+    # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
+    # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
     # _perlrepl_needs_n detects bare per-line expressions and adds -n
     # (like awk's default record loop) when data is present.
-    # comments are preserved: Perl supports # natively.
-    echo "#!/usr/bin/env bash
-        set -uo pipefail
-        $(declare -f _sed_in_place _perlrepl_divide _perlrepl_needs_n)
-        _perlrepl_divide $replfile $src $data $args
-        if [[ -s $src ]]; then
-            _auto_n=''
-            if [[ -s $data ]] && _perlrepl_needs_n $src; then
-                _auto_n='-n'
-            fi
-            cmd=\"perl \$_auto_n \$(cat $args) $src \$(test -s $data && echo $data)\"
-            echo \"$(tput setaf 0)# work dir: \$PWD$(tput sgr0)\"
-            echo \"$(tput setaf 0)# command:  \$cmd$(tput sgr0)\"
-            echo
-            if [[ \$(type -t bat) == file ]]; then
-                bat -l perl -p --tabs=4 \"$src\"
-            else
-                cat \"$src\"
-            fi
-            echo
-            eval \"\$cmd\"
-        fi
-    " > "$runner"
+    cat > "$runner" <<RUNNER
+#!/usr/bin/env bash
+set -uo pipefail
+$(declare -f _sed_in_place _perlrepl_divide _perlrepl_needs_n)
+_perlrepl_divide $q_replfile $q_src $q_data $q_args
+if [[ -s $q_src ]]; then
+    _perl_args=()
+    if [[ -s $q_data ]] && _perlrepl_needs_n $q_src; then
+        _perl_args+=( -n )
+    fi
+    # shellcheck disable=SC2046
+    _perl_args+=( \$(cat $q_args) )
+    _perl_args+=( $q_src )
+    [[ -s $q_data ]] && _perl_args+=( $q_data )
+    echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
+    echo "$(tput setaf 0)# command:  perl \${_perl_args[*]}$(tput sgr0)"
+    echo
+    if [[ \$(type -t bat) == file ]]; then
+        bat -l perl -p --tabs=4 $q_src
+    else
+        cat $q_src
+    fi
+    echo
+    perl "\${_perl_args[@]}"
+fi
+RUNNER
 
-    echo "#!/usr/bin/env bash
-        set -uo pipefail
-        $(declare -f _perlrepl_pretty_print)
-        sleep 1
-        _perlrepl_pretty_print $src
-    " > "$formatter"
+    cat > "$formatter" <<FORMATTER
+#!/usr/bin/env bash
+set -uo pipefail
+$(declare -f _perlrepl_pretty_print)
+sleep 1
+_perlrepl_pretty_print $q_src
+FORMATTER
 
-    echo "\
-        rm -f '$src' '$data' '$args' '$runner' '$formatter' '$cleanup'
-    " > "$cleanup"
+    cat > "$cleanup" <<CLEANUP
+#!/usr/bin/env bash
+rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_cleanup
+CLEANUP
 
     chmod a+x "$runner" "$formatter" "$cleanup"
 
     # start a new session, or a new window if we're already in tmux
-    tmux new${TMUX:+w} -n 'perlrepl'                           \
-      "${EDITOR:-nano}" "$replfile" \;                          \
-      split-window    -c "$PWD"                                 \
-        "echo '$replfile' | entr -c './$runner'" \;             \
-      split-window -h -c "$PWD"                                 \
-        "echo '$src'      | entr -c './$formatter'" \;          \
-      select-pane -t 1 \;                                       \
-      select-pane -t 2 \;                                       \
-      select-pane -t 0 \;                                       \
-      set-hook 'pane-exited[0]' "run-shell './$cleanup'" \;     \
+    # q_* paths are already shell-quoted by printf '%q', so no surrounding
+    # single quotes are needed — this also prevents single-quote injection.
+    tmux new${TMUX:+w} -n 'perlrepl'                              \
+      "${EDITOR:-nano}" "$replfile" \;                              \
+      split-window    -c "$PWD"                                     \
+        "echo $q_replfile | entr -c $q_runner" \;                  \
+      split-window -h -c "$PWD"                                     \
+        "echo $q_src | entr -c $q_formatter" \;                    \
+      select-pane -t 1 \;                                           \
+      select-pane -t 2 \;                                           \
+      select-pane -t 0 \;                                           \
+      set-hook 'pane-exited[0]' "run-shell $q_cleanup" \;          \
       set-hook 'pane-exited[1]' kill-window
 }
 

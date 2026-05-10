@@ -26,7 +26,7 @@ else
 fi
 
 # --- chomp + print → needs -n ---
-echo 'chomp; print uc($_) . "\n";' > "$src"
+printf '%s\n' 'chomp; print uc($_) . "\n";' > "$src"
 if _perlrepl_needs_n "$src"; then
     pass "chomp; print expression → needs -n"
 else
