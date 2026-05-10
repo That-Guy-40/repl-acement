@@ -26,9 +26,9 @@ _jqrepl_pretty_print() {
     local src=${1:?missing jq source file argument}
     local cat='cat'
 
-    if [[ $(type -t bat) == file ]]; then
-        cat='bat -l jq -p --tabs=4'
-    fi
+    local _bat
+    _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
+    [[ -n "$_bat" ]] && cat="$_bat -l jq -p --tabs=4"
 
     [[ -s "$src" ]] && $cat "$src"
 } # _jqrepl_pretty_print
@@ -106,8 +106,9 @@ if [[ -s $q_src ]]; then
         echo "$(tput setaf 0)# command:  jq -n \${_jq_args[*]} -f $q_src$(tput sgr0)"
     fi
     echo
-    if [[ \$(type -t bat) == file ]]; then
-        bat -l jq -p --tabs=4 $q_src
+    _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
+    if [[ -n "\$_bat" ]]; then
+        "\$_bat" -l jq -p --tabs=4 $q_src
     else
         cat $q_src
     fi

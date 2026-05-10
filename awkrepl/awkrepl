@@ -89,9 +89,9 @@ _awkrepl_pretty_print() {
     local src=${1:?missing AWK source file argument}
     local cat='cat'
 
-    if [[ $(type -t bat) == file ]]; then
-        cat='bat -l awk -p --tabs=4'
-    fi
+    local _bat
+    _bat=$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
+    [[ -n "$_bat" ]] && cat="$_bat -l awk -p --tabs=4"
 
     if ! gawk --pretty-print=- -f "$src" | $cat; then
         echo -e "\nERROR parsing AWK source; input was:"
