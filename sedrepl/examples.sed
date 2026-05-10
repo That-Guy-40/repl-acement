@@ -30,7 +30,6 @@ s/chr/chromosome/
 # print lines 2 through end-of-file
 #2,$p
 
-#ARGS -n
 #DATA
 chrX	69009356	69009357	rs911397765
 chr1	178100230	178100232	rs142688086
