@@ -101,7 +101,8 @@ set -uo pipefail
 $(declare -f _sed_in_place _yqrepl_divide)
 _yqrepl_divide $q_replfile $q_src $q_data $q_args
 if [[ -s $q_src ]]; then
-    _expr=\$(cat $q_src)
+    _expr=\$(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' $q_src)
+    [[ -z "\$_expr" ]] && exit 0
     # shellcheck disable=SC2046
     _yq_args=( \$(cat $q_args) )
     echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
