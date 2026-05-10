@@ -14,9 +14,8 @@
 ##  Miller DSL expressions are read from a file with 'mlr put -f', which
 ##  completely sidesteps shell quoting of $-fields and string literals.
 ##
-# shellcheck disable=SC2155
-
 set -uo pipefail
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "mlrrepl: error at line $LINENO" >&2; exit 1' ERR
 
 _sed_in_place() {
     if [[ $(uname -s) == Linux ]]; then
@@ -85,72 +84,91 @@ export -f _mlrrepl_detect_format
 
 mlrrepl() {
     local replfile="$HOME/.repl.mlr"
-    local pref=.mlrrepl
-    local src=$(mktemp $pref-src-XXXXXX)
-    local data=$(mktemp $pref-data-XXXXXX)
-    local args=$(mktemp $pref-args-XXXXXX)
-    local runner=$(mktemp $pref-run-XXXXXX)
-    local formatter=$(mktemp $pref-fmt-XXXXXX)
-    local cleanup=$(mktemp $pref-cleanup-XXXXXX)
+    local src data args runner formatter cleanup
+    src=$(mktemp /tmp/mlrrepl-src-XXXXXX)         || { echo "mlrrepl: mktemp failed" >&2; return 1; }
+    data=$(mktemp /tmp/mlrrepl-data-XXXXXX)        || { echo "mlrrepl: mktemp failed" >&2; return 1; }
+    args=$(mktemp /tmp/mlrrepl-args-XXXXXX)        || { echo "mlrrepl: mktemp failed" >&2; return 1; }
+    runner=$(mktemp /tmp/mlrrepl-run-XXXXXX)       || { echo "mlrrepl: mktemp failed" >&2; return 1; }
+    formatter=$(mktemp /tmp/mlrrepl-fmt-XXXXXX)    || { echo "mlrrepl: mktemp failed" >&2; return 1; }
+    cleanup=$(mktemp /tmp/mlrrepl-cleanup-XXXXXX)  || { echo "mlrrepl: mktemp failed" >&2; return 1; }
 
     # make sure the file exists, since 'entr' needs it to exist
     test -f "$replfile" || touch "$replfile"
 
     (( ${TRACE:-} )) && set -x
 
-    # 'mlr put -f $src' reads the DSL from a file, avoiding all quoting issues
-    # with $field references and string literals in the expression.
-    # default args --csv; #ARGS can override (e.g. #ARGS --tsv or #ARGS --nidx)
-    echo "#!/usr/bin/env bash
-        set -uo pipefail
-        $(declare -f _sed_in_place _mlrrepl_divide _mlrrepl_detect_format)
-        _mlrrepl_divide $replfile $src $data $args
-        if [[ -s $src ]]; then
-            if [[ -s $data ]]; then
-                _user_args=\$(cat $args)
-                _fmt=\${_user_args:-\$(_mlrrepl_detect_format $data)}
-                cmd=\"mlr \$_fmt put -f $src $data\"
-            else
-                echo 'mlrrepl: no #DATA section — add data below a #DATA marker'
-                exit 0
-            fi
-            echo \"$(tput setaf 0)# work dir: \$PWD$(tput sgr0)\"
-            echo \"$(tput setaf 0)# command:  \$cmd$(tput sgr0)\"
-            echo
-            if [[ \$(type -t bat) == file ]]; then
-                bat -l ruby -p --tabs=4 \"$src\"
-            else
-                cat \"$src\"
-            fi
-            echo
-            \$cmd
+    # shell-safe (printf '%q') versions of all paths for embedding in generated
+    # scripts and tmux commands — prevents word-splitting, glob expansion, and
+    # single-quote injection when paths contain spaces or special characters.
+    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup
+    q_replfile=$(printf '%q' "$replfile")
+    q_src=$(printf '%q' "$src")
+    q_data=$(printf '%q' "$data")
+    q_args=$(printf '%q' "$args")
+    q_runner=$(printf '%q' "$runner")
+    q_formatter=$(printf '%q' "$formatter")
+    q_cleanup=$(printf '%q' "$cleanup")
+
+    # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
+    # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
+    # 'mlr put -f $src' reads the DSL from a file, sidestepping all quoting
+    # issues with $field references and string literals.
+    # #ARGS content goes into _mlr_args array; avoids the _user_args/$cmd chain
+    # that allowed word-split #ARGS content to reach an unquoted $cmd execution.
+    cat > "$runner" <<RUNNER
+#!/usr/bin/env bash
+set -uo pipefail
+$(declare -f _sed_in_place _mlrrepl_divide _mlrrepl_detect_format)
+_mlrrepl_divide $q_replfile $q_src $q_data $q_args
+if [[ -s $q_src ]]; then
+    if [[ -s $q_data ]]; then
+        # shellcheck disable=SC2046
+        _mlr_args=( \$(cat $q_args) )
+        [[ \${#_mlr_args[@]} -eq 0 ]] && _mlr_args=( \$(_mlrrepl_detect_format $q_data) )
+        echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
+        echo "$(tput setaf 0)# command:  mlr \${_mlr_args[*]} put -f $q_src $q_data$(tput sgr0)"
+        echo
+        if [[ \$(type -t bat) == file ]]; then
+            bat -l ruby -p --tabs=4 $q_src
+        else
+            cat $q_src
         fi
-    " > "$runner"
+        echo
+        mlr "\${_mlr_args[@]}" put -f $q_src $q_data
+    else
+        echo 'mlrrepl: no #DATA section — add data below a #DATA marker'
+    fi
+fi
+RUNNER
 
-    echo "#!/usr/bin/env bash
-        set -uo pipefail
-        $(declare -f _mlrrepl_pretty_print)
-        sleep 1
-        _mlrrepl_pretty_print $src
-    " > "$formatter"
+    cat > "$formatter" <<FORMATTER
+#!/usr/bin/env bash
+set -uo pipefail
+$(declare -f _mlrrepl_pretty_print)
+sleep 1
+_mlrrepl_pretty_print $q_src
+FORMATTER
 
-    echo "\
-        rm -f '$src' '$data' '$args' '$runner' '$formatter' '$cleanup'
-    " > "$cleanup"
+    cat > "$cleanup" <<CLEANUP
+#!/usr/bin/env bash
+rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_cleanup
+CLEANUP
 
     chmod a+x "$runner" "$formatter" "$cleanup"
 
     # start a new session, or a new window if we're already in tmux
-    tmux new${TMUX:+w} -n 'mlrrepl'                            \
-      "${EDITOR:-nano}" "$replfile" \;                          \
-      split-window    -c "$PWD"                                 \
-        "echo '$replfile' | entr -c './$runner'" \;             \
-      split-window -h -c "$PWD"                                 \
-        "echo '$src'      | entr -c './$formatter'" \;          \
-      select-pane -t 1 \;                                       \
-      select-pane -t 2 \;                                       \
-      select-pane -t 0 \;                                       \
-      set-hook 'pane-exited[0]' "run-shell './$cleanup'" \;     \
+    # q_* paths are already shell-quoted by printf '%q', so no surrounding
+    # single quotes are needed — this also prevents single-quote injection.
+    tmux new${TMUX:+w} -n 'mlrrepl'                              \
+      "${EDITOR:-nano}" "$replfile" \;                             \
+      split-window    -c "$PWD"                                    \
+        "echo $q_replfile | entr -c $q_runner" \;                 \
+      split-window -h -c "$PWD"                                    \
+        "echo $q_src | entr -c $q_formatter" \;                   \
+      select-pane -t 1 \;                                          \
+      select-pane -t 2 \;                                          \
+      select-pane -t 0 \;                                          \
+      set-hook 'pane-exited[0]' "run-shell $q_cleanup" \;         \
       set-hook 'pane-exited[1]' kill-window
 }
 
