@@ -4,9 +4,9 @@
 #
 # .[] | .name
 # [.[] | select(.city == "Chicago")] | length
-# .services | keys
-# .. | select(type == "!!str")
-# .items[] | {"name": .name, "ready": .status.ready}
+# . | length
+# .[0]
+# .[] | {"person": .name, "location": .city}
 
 .[] | .name
 
