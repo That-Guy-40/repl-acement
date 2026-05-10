@@ -2,14 +2,14 @@
 #
 # Uncomment any example below to try it out, or write your own.
 #
-# $label = $name . ": " . string($quantity) . " units"
-# $discounted = $price * 0.9
-# filter $quantity >= 5
-# unset $quantity
-# $rank = NR
-# Note: separate multiple statements with semicolons in Miller 6
+# $label = $name . ": " . string($quantity) . " units";
+# $discounted = $price * 0.9;
+# filter $quantity >= 5;
+# unset $quantity;
+# $rank = NR;
+# Note: each statement needs a semicolon; multiple can be active at once
 
-$total = $quantity * $price
+$total = $quantity * $price;
 
 #DATA
 name,quantity,price
