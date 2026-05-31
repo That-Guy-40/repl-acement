@@ -5,8 +5,10 @@ Design document for a PowerShell helper that automates the RemoteApp workflow
 described in [`README.md`](README.md): generate a RemoteApp `.rdp` file, with
 optional host-side registry setup and an optional SSH tunnel.
 
-This is a **plan**, not the implementation. It captures scope, parameters,
-behavior, and edge cases so the script can be built (and reviewed) deliberately.
+This was the **plan**; it captures scope, parameters, behavior, and edge cases.
+It has since been implemented as [`New-RemoteApp.ps1`](New-RemoteApp.ps1), with
+tests in [`New-RemoteApp.Tests.ps1`](New-RemoteApp.Tests.ps1). The document is
+kept as design rationale.
 
 
 Goals

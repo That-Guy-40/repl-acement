@@ -157,9 +157,34 @@ Security notes
 - Prefer NLA (Network Level Authentication) on the host and strong credentials.
 
 
+The helper script
+-----------------
+
+[`New-RemoteApp.ps1`](New-RemoteApp.ps1) implements the workflow above:
+
+```powershell
+# Generate an .rdp for Notepad on a host and launch it as a seamless window.
+.\New-RemoteApp.ps1 -RemoteHost 192.168.1.50 `
+                    -Program 'C:\Windows\System32\notepad.exe' -Launch
+
+# Encrypted via SSH tunnel (opens ssh -L, points the .rdp at localhost:13389).
+.\New-RemoteApp.ps1 -RemoteHost server.lan -SshUser alice `
+                    -Program 'C:\Program Files\App\app.exe' -UseSshTunnel -Launch
+
+# Just write the .rdp file, don't launch (works on any OS, incl. Linux).
+.\New-RemoteApp.ps1 -RemoteHost 10.0.0.5 -Program 'C:\tools\foo.exe' -OutFile .\foo.rdp
+
+# Run ON THE HOST, elevated, to allow launching arbitrary RemoteApps.
+.\New-RemoteApp.ps1 -EnableHostAllowList
+```
+
+It supports `-WhatIf`/`-Confirm`, derives the app name from the program path,
+writes UTF-8 (no BOM) with CRLF endings, and emits a result object. Tests live
+in [`New-RemoteApp.Tests.ps1`](New-RemoteApp.Tests.ps1) (Pester 5).
+
+
 See also
 --------
 
-- [`POWERSHELL_SCRIPT_PLAN.md`](POWERSHELL_SCRIPT_PLAN.md) — design for a
-  PowerShell helper that generates the `.rdp` file, optionally sets up the host
-  registry flag, and can wrap everything in an SSH tunnel.
+- [`POWERSHELL_SCRIPT_PLAN.md`](POWERSHELL_SCRIPT_PLAN.md) — the design behind
+  `New-RemoteApp.ps1`.
