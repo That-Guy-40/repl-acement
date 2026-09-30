@@ -40,7 +40,7 @@ Requirements
 Running tests
 -------------
 
-Each subproject has its own test suite:
+Each subproject has its own smoke + integration suite:
 
 ```bash
 cd awkrepl  && make test
@@ -50,6 +50,26 @@ cd yqrepl   && make test
 cd mlrrepl  && make test   # requires miller (apt install miller)
 cd perlrepl && make test
 ```
+
+From the repo root, `make` drives all of them plus the end-to-end suite:
+
+```bash
+make unit   # every subproject's smoke + integration suites
+make e2e    # the live-UI end-to-end suite (needs tmux + entr)
+make test   # both of the above
+```
+
+### End-to-end (live UI) tests
+
+The per-subproject suites source each REPL script and call its functions
+directly; they never launch the terminal UI. The suite under
+[`tests/`](tests/) closes that gap: it drives each REPL's real three-pane
+tmux session and checks that saving the file live-reloads the output. It uses
+`ttydrive`, a terminal driver vendored from the [socwrap][socwrap] project
+(`tools/ttydrive`), to type into and read back a live session. See
+[`tests/README.md`](tests/README.md) for how it works.
+
+[socwrap]: https://github.com/That-Guy-40/socwrap
 
 
 Attribution
