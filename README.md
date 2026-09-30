@@ -27,13 +27,29 @@ their respective tools support `#` natively.
 **Auto-wrap**: `awkrepl` wraps bare expressions in `{ }` or `END { }` blocks;
 `perlrepl` detects bare per-line expressions and adds `-n` automatically.
 
+**`#ARGS` quoting**: `#ARGS` is parsed with shell-style quoting, so a value
+that contains spaces must be quoted — `#ARGS -v "greeting=hello world"` is one
+argument, while `#ARGS -v greeting=hello world` is three. Quoting is the only
+thing interpreted: a `*` or other glob character is passed through literally
+and is never expanded against the working directory.
+
+**`yq` flavor**: `yqrepl` requires [Mike Farah's Go `yq`][yq-mf]. The unrelated
+Python `yq` (a jq wrapper) uses a different grammar; `yqrepl` detects it and
+refuses to launch with a clear message rather than failing cryptically.
+
+**Temp files**: each REPL keeps its scratch files under `$TMPDIR` (default
+`/tmp`) and cleans them up on exit.
+
+[yq-mf]: https://github.com/mikefarah/yq
+
 
 Requirements
 ------------
 
 - tmux
 - [entr](http://eradman.com/entrproject/)
-- the relevant tool (`gawk`, `sed`, `jq`, `yq`, `mlr`, `perl`)
+- the relevant tool (`gawk`, `sed`, `jq`, [Mike Farah's `yq`][yq-mf], `mlr`, `perl`)
+- `xargs` (from findutils; used to parse `#ARGS` — almost always already present)
 - [bat](https://github.com/sharkdp/bat) (optional, syntax highlighting)
 
 

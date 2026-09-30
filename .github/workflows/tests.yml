@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    branches: [ main, master, "ccr-*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gawk sed jq perl tmux entr miller bat
+          # yqrepl targets Mike Farah's Go yq, not the Python "yq".
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Show tool versions
+        run: |
+          tmux -V; entr 2>&1 | head -1 || true
+          gawk --version | head -1; sed --version | head -1
+          jq --version; yq --version; mlr --version; perl -v | sed -n 2p
+
+      - name: Unit tests (smoke + integration)
+        run: make unit
+
+      - name: End-to-end tests (live tmux UI)
+        run: make e2e

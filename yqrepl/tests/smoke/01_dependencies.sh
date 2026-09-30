@@ -11,4 +11,15 @@ assert_command_found "yq is available"   yq
 assert_command_found "tmux is available" tmux
 assert_command_found "entr is available" entr
 
+# yqrepl targets Mike Farah's Go yq (github.com/mikefarah/yq); the unrelated
+# Python "yq" (a jq wrapper) has a different grammar and will not work.
+if command -v yq > /dev/null 2>&1; then
+    if yq --version 2>&1 | grep -qi 'mikefarah'; then
+        pass "yq is Mike Farah's Go yq (the flavor yqrepl targets)"
+    else
+        fail "yq on PATH is not Mike Farah's Go yq" \
+             "got: $(yq --version 2>&1 | head -1) — install from https://github.com/mikefarah/yq"
+    fi
+fi
+
 summary

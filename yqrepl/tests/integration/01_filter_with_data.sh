@@ -7,6 +7,11 @@
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 YQREPL="$TESTS_DIR/../../yqrepl"
 source "$TESTS_DIR/../helpers.sh"
+
+# yqrepl targets Mike Farah's Go yq; skip cleanly on any other (or missing) yq
+if ! { command -v yq >/dev/null 2>&1 && yq --version 2>&1 | grep -qi mikefarah; }; then
+    echo "  SKIP: yq on PATH is not Mike Farah's Go yq (yqrepl targets that one)"; exit 0
+fi
 cd "$TESTS_DIR/../.." || exit 1
 source "$YQREPL"
 

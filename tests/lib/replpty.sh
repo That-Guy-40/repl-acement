@@ -55,6 +55,7 @@ _RP_TOOL="$_RP_LIB/ttydrive"
 _RP_WORK="${TEST_TMPDIR:-${TMPDIR:-/tmp}}/replpty.$$"
 _RP_TD_DIR="$_RP_WORK/td"                # ttydrive's own state/server
 _RP_INNER_TMPDIR="$_RP_WORK/inner"       # the REPLs' own tmux servers
+_RP_REPL_TMPDIR="$_RP_WORK/tmp"          # the REPLs' mktemp scratch ($TMPDIR)
 _RP_KEEPEDIT="$_RP_WORK/keepedit"        # no-op editor that stays alive
 
 # NAME -> per-session home directory holding the edited file
@@ -70,7 +71,7 @@ _rp() { TTYDRIVE_DIR="$_RP_TD_DIR" bash "$_RP_TOOL" "$@"; }
 
 _rp_init() {
     [[ -e "$_RP_KEEPEDIT" ]] && return 0
-    mkdir -p "$_RP_WORK" "$_RP_INNER_TMPDIR" || return 1
+    mkdir -p "$_RP_WORK" "$_RP_INNER_TMPDIR" "$_RP_REPL_TMPDIR" || return 1
     # an $EDITOR that ignores its file argument and never exits, so the REPL's
     # editor pane stays open (its exit would fire the cleanup/kill-window hook)
     printf '#!/usr/bin/env bash\nexec sleep 2147483647\n' > "$_RP_KEEPEDIT"
@@ -93,6 +94,7 @@ repl_start() {
         -e EDITOR="$_RP_KEEPEDIT" \
         -e TMUX= \
         -e TMUX_TMPDIR="$_RP_INNER_TMPDIR" \
+        -e TMPDIR="$_RP_REPL_TMPDIR" \
         -e PATH="$PATH" \
         -- "$tool"
 }
