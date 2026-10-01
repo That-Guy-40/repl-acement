@@ -80,13 +80,16 @@ _perlrepl_divide() {
       -e "s/$argshdr/\3/w $args" \
       "$in"
 
-    # split the input file at the '#DATA' header and write into two files
-    sed -n \
-      -e "1,/$datahdr/w $src" \
-      -e "/$datahdr/,\$w $data" \
-      "$in"
+    # split the input file at the first '#DATA' header, which may be line 1
+    # (a file that is only data): the source is everything before it, the data
+    # everything after it. (A '1,/re/' range can't do this: it only looks for
+    # its end from line 2, so a header on line 1 used to send the data into the
+    # source as well.) The '{ :a n p ba }' loop prints every line after the
+    # first header and is portable (GNU '0,/re/' is not).
+    sed -e "/$datahdr/,\$d" "$in" > "$src"
+    sed -n -e "/$datahdr/{" -e ':a' -e 'n' -e 'p' -e 'ba' -e '}' "$in" > "$data"
 
-    # remove '#DATA' header from the data file
+    # remove any further '#DATA' lines from the data file
     _sed_in_place -e "/$datahdr/d" "$data"
 
     # remove '#DATA' and '#ARGS' headers from source code
