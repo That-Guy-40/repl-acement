@@ -1,6 +1,7 @@
 # jqrepl - try different filters above the #DATA marker
 #
-# Uncomment any example below to try it out, or write your own.
+# Uncomment any example below (and comment out the active filter) to try it
+# out, or write your own.
 #
 # .[] | .name
 # [.[] | select(.age >= 18)] | length

@@ -9,7 +9,8 @@
 ##    - sed (GNU sed or BSD sed)
 ##    - tmux ≥ 2
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (findutils; used to parse #ARGS)
+##    - bat or batcat (optional) - https://github.com/sharkdp/bat
 ##
 set -uo pipefail
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "sedrepl: error at line $LINENO" >&2; exit 1' ERR

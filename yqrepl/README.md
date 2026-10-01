@@ -5,20 +5,27 @@ A REPL for [yq](https://github.com/mikefarah/yq) — the YAML/JSON/TOML
 processor.  Edit a `.yq` file in your `$EDITOR` and watch the output update
 live in a split tmux window.
 
-Requires [yq](https://github.com/mikefarah/yq) ≥ 4 (Mike Farah's Go
-implementation), [tmux](https://tmux.github.io/), and
-[entr](http://eradman.com/entrproject/).
-[bat](https://github.com/sharkdp/bat) is optional but recommended for
-syntax-highlighted source preview.
+Requires [yq](https://github.com/mikefarah/yq) v4 (Mike Farah's Go
+implementation), [tmux](https://tmux.github.io/),
+[entr](http://eradman.com/entrproject/), and `xargs` (findutils; almost
+always already present).
+[bat](https://github.com/sharkdp/bat) (or Debian/Ubuntu's `batcat`) is
+optional but recommended for syntax-highlighted source preview.
+
+**Which yq?** There are two unrelated tools called `yq`. yqrepl needs Mike
+Farah's; `yq --version` should mention `github.com/mikefarah/yq`. The Python
+`yq` (a jq wrapper, which is what `apt install yq` gives you on
+Debian/Ubuntu) has a different grammar, so yqrepl refuses to launch with it
+and prints which `yq` it found instead.
 
 Usage
 -----
 
 ```
-yqrepl [replfile]
+yqrepl
 ```
 
-Opens `~/.repl.yq` (or a file you specify) in your `$EDITOR` inside a
+Opens `~/.repl.yq` (created if missing) in your `$EDITOR` inside a
 three-pane tmux layout:
 
 ```
@@ -34,7 +41,7 @@ File format
 -----------
 
 ```yaml
-# yq expression goes here — standard YAML comments are preserved
+# yq expression goes here — # comment lines stay in the file
 .[] | .name
 
 #DATA
@@ -44,24 +51,30 @@ File format
   age: 17
 ```
 
-- Everything above `#DATA` is the yq expression.
-- Everything below `#DATA` is piped as input to yq.
+- Everything above `#DATA` is the yq expression. Whole-line `#` comments
+  and blank lines are stripped before it is run as `yq eval "<expr>"`;
+  they stay in your file and in the source preview.
+- Everything below `#DATA` is written to a temp file that yq reads as its
+  input.
 - Without `#DATA`, yq runs with `--null-input` — good for generating YAML
   from scratch (e.g. `{"greeting": "hello"}`).
 - `#ARGS` lines inject extra yq flags (e.g. `#ARGS -o json` to emit JSON).
+  They are split like a shell command line: quotes are honored (so a value
+  may contain spaces), but nothing is expanded — no globs or variables.
+- A comment line that begins with `# data` or `# arg` (any case) is taken
+  as a `#DATA` / `#ARGS` header, so avoid starting comments that way.
 
 Running with Docker
 -------------------
 
-```
-docker run -it ernstki/yqrepl
-```
-
-Or build locally:
+Build the image locally and run it (no prebuilt image is published):
 
 ```
 make build && make run
 ```
+
+The image downloads the latest `yq_linux_amd64` release binary, so it
+targets x86-64 hosts.
 
 Tests
 -----

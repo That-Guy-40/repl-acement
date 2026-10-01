@@ -10,7 +10,7 @@ s/chr/chromosome/
 # delete blank lines
 #/^$/d
 
-# print the first field only (like 'cut -f1')
+# print the first field only (like 'cut -f1'; use -n flag via #ARGS)
 #s/[[:space:]].*//
 #p
 
@@ -27,7 +27,7 @@ s/chr/chromosome/
 # only lines matching 'chr[XY]'
 #/chr[XY]/s/rs[0-9]*/RSXXX/
 
-# print lines 2 through end-of-file
+# print lines 2 through end-of-file (use -n flag via #ARGS)
 #2,$p
 
 #DATA

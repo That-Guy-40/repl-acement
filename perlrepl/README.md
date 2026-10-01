@@ -9,19 +9,20 @@ This is the punchline that awkrepl's own README set up:
 
 > "the whole script probably should've just been written in Perl."
 
-Requires Perl ≥ 5, [tmux](https://tmux.github.io/), and
-[entr](http://eradman.com/entrproject/).
-[bat](https://github.com/sharkdp/bat) is optional but recommended for
-syntax-highlighted source preview.
+Requires Perl ≥ 5, [tmux](https://tmux.github.io/),
+[entr](http://eradman.com/entrproject/), and `xargs` (findutils; almost
+always already present).
+[bat](https://github.com/sharkdp/bat) (or Debian/Ubuntu's `batcat`) is
+optional but recommended for syntax-highlighted source preview.
 
 Usage
 -----
 
 ```
-perlrepl [replfile]
+perlrepl
 ```
 
-Opens `~/.repl.pl` (or a file you specify) in your `$EDITOR` inside a
+Opens `~/.repl.pl` (created if missing) in your `$EDITOR` inside a
 three-pane tmux layout:
 
 ```
@@ -37,7 +38,7 @@ File format
 -----------
 
 ```perl
-# perlrepl expression — standard # comments are preserved
+# perlrepl expression — Perl itself understands # comments
 chomp; print uc($_) . "\n";
 
 #DATA
@@ -47,23 +48,25 @@ foo bar
 
 - Everything above `#DATA` is the Perl source.
 - Everything below `#DATA` is the input data.
-- Without `#DATA`, the script runs without arguments — good for
-  self-contained scripts.
-- `#ARGS` lines inject extra `perl` flags (e.g. `#ARGS -l` for automatic
-  line-ending handling, or `#ARGS -a` for auto-split).
-- **Auto-wrap heuristic**: if the source looks like a bare per-line
-  expression (doesn't start with `BEGIN`, `END`, `sub`, `for`, etc.),
-  `-n` is added automatically when there is data — giving you the AWK-like
-  record loop without the boilerplate.
+- Without `#DATA`, the script runs with no input file and no automatic
+  `-n` — good for self-contained scripts.
+- `#ARGS` lines inject extra `perl` switches, placed before the script
+  (e.g. `#ARGS -l` for automatic line-ending handling, or `#ARGS -a` for
+  auto-split). They are split like a shell command line: quotes are
+  honored, nothing is expanded.
+- **Auto-wrap heuristic**: if the first non-blank, non-comment line doesn't
+  start with `BEGIN`, `END`, `sub`, `use`, `require`, `package`, `for`,
+  `foreach`, `while`, `if`, `unless`, `my`, `our`, or `local`, the source is
+  treated as a bare per-line expression and `-n` is added automatically
+  when there is data — giving you the AWK-like record loop without the
+  boilerplate.
+- A comment line that begins with `# data` or `# arg` (any case) is taken
+  as a `#DATA` / `#ARGS` header, so avoid starting comments that way.
 
 Running with Docker
 -------------------
 
-```
-docker run -it ernstki/perlrepl
-```
-
-Or build locally:
+Build the image locally and run it (no prebuilt image is published):
 
 ```
 make build && make run

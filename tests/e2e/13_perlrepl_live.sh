@@ -45,6 +45,8 @@ else
 fi
 
 # --- a full BEGIN block is a complete script: no -n is added ---
+# (there is no #DATA here, and -n is only ever added with #DATA, so this
+#  checks that the script runs, not the keyword detection itself)
 repl_edit pl <<'EOF'
 BEGIN { print "boot: ", 6 * 7, "\n" }
 EOF

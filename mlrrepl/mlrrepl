@@ -6,10 +6,12 @@
 ##  License:  MIT
 ##
 ##  Requirements:
-##    - miller (mlr) ≥ 5 - https://miller.readthedocs.io/
+##    - miller (mlr) ≥ 6 - https://miller.readthedocs.io/ (JSONL auto-detection
+##      uses --jsonl, which Miller 5 lacks)
 ##    - tmux ≥ 2
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (findutils; used to parse #ARGS)
+##    - bat or batcat (optional) - https://github.com/sharkdp/bat
 ##
 ##  Miller DSL expressions are read from a file with 'mlr put -f', which
 ##  completely sidesteps shell quoting of $-fields and string literals.

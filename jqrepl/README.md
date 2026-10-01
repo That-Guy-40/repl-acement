@@ -4,7 +4,8 @@ jqrepl
 A [REPL][1] of sorts for [jq][2].
 
 Displays your jq filter in the right-hand pane when you save it, and shows the
-results of your filter's execution in the lower-left pane. The top pane is your
+results of your filter's execution in the lower-left pane (preceded by the
+working directory, the `jq` command line, and your filter). The top pane is your
 text editor (whatever you have `$EDITOR` set to, or defaults to `nano`), with
 the file `~/.repl.jq` open for editing.
 
@@ -12,8 +13,9 @@ Any lines after `#DATA` at the end of the file are supplied as JSON input to
 your filter, for quick testing on sample inputs. If you have a line in your
 source file that starts with `#ARGS`, anything on the line after that is
 provided as command-line arguments to `jq` (such as `-r` for raw string
-output). _Whitespace within individual arguments is probably not preserved,
-though._
+output). Arguments are split like a shell would split them, so quotes are
+honored and a quoted argument may contain spaces, but nothing is expanded (no
+globs, variables, or command substitution).
 
 If there is no `#DATA` section, `jq` runs with `--null-input` (`-n`) so the
 filter is evaluated against `null` rather than blocking on stdin — useful for
@@ -24,8 +26,9 @@ Requirements
 ------------
 
 * Docker
-* _—or—_ tmux, [entr][], jq, and Perl
-    * also [bat][], if you want your jq filter source to be syntax-highlighted
+* _—or—_ tmux, [entr][], jq, sed, and xargs
+    * also [bat][] (or `batcat`), if you want your jq filter source to be
+      syntax-highlighted
 
 
 Usage

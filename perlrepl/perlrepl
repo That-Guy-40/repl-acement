@@ -9,7 +9,8 @@
 ##    - perl ≥ 5
 ##    - tmux ≥ 2
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (findutils; used to parse #ARGS)
+##    - bat or batcat (optional) - https://github.com/sharkdp/bat
 ##
 ##  This is the punchline that awkrepl's own README set up: "the whole
 ##  script probably should've just been written in Perl."
@@ -36,8 +37,9 @@ _perlrepl_pretty_print() {
     [[ -s "$src" ]] && $cat "$src" 2>/dev/null
 } # _perlrepl_pretty_print
 
-# returns '-n' if the script looks like a bare per-line expression
-# (i.e. it doesn't open with a block keyword or use BEGIN/END)
+# succeeds (exit 0) if the script looks like a bare per-line expression,
+# i.e. its first non-blank, non-comment line doesn't start with one of the
+# keywords below (BEGIN, END, sub, use, my, while, ...); fails if src is empty
 _perlrepl_needs_n() {
     local src=${1:?missing perl source file argument}
     [[ ! -s "$src" ]] && return 1

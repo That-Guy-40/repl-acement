@@ -17,11 +17,12 @@ sedrepl mirrors the architecture of awkrepl but is tailored for sed's line-by-li
 | `tmux` | Terminal multiplexer for multi-pane interface | ≥ 2.0 |
 | `entr` | File change watcher for event-driven execution | Latest |
 | `bash` | Shell script runner | Any recent |
+| `xargs` | Shell-style splitting/unquoting of `#ARGS` (findutils) | Any |
 
 ### External Dependencies (Optional)
 | Package | Purpose |
 |---------|---------|
-| `bat` | Syntax-highlighted output for sed scripts |
+| `bat` (or `batcat`) | Syntax-highlighted display of the sed script (uses bat's `awk` syntax; bat has no sed syntax) |
 
 ### Build Dependencies
 | Package | Purpose |
@@ -33,31 +34,36 @@ sedrepl mirrors the architecture of awkrepl but is tailored for sed's line-by-li
 
 ## Internal Dependencies (BASH Functions)
 
-| Function | Purpose | Exported |
-|----------|---------|----------|
-| `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes |
-| `_sedrepl_pretty_print()` | Syntax-check and display sed script | ✅ Yes |
-| `_sedrepl_divide()` | Split input file into source/data/args components | ✅ Yes |
-| `sedrepl()` | Main entry point - sets up tmux environment | N/A |
+| Function | Purpose | Exported (`export -f`) | Embedded (`declare -f`) in |
+|----------|---------|----------|----------|
+| `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes | `$runner` |
+| `_sedrepl_pretty_print()` | Syntax-check and display sed script | ✅ Yes | `$formatter` |
+| `_sedrepl_divide()` | Split input file into source/data/args components | ✅ Yes | `$runner` |
+| `_repl_parse_args()` | Split the args file into NUL-separated tokens via `xargs` (quotes honored, no glob/variable expansion) | ✅ Yes | `$runner` |
+| `_sedrepl_setup()` | Create temp files under `${TMPDIR:-/tmp}/sedrepl-*` and generate the runner/formatter/cleanup scripts; sets `REPL_*` globals | No | — |
+| `sedrepl()` | Main entry point - calls `_sedrepl_setup()`, sets up tmux environment | No | — |
 
 ### Function Call Graph
 
 ```
 sedrepl() [ENTRY POINT]
     │
-    ├─ Embeds functions via 'declare -f' in generated scripts
-    │   ├─ _sed_in_place()
-    │   └─ _sedrepl_divide()
+    ├─ _sedrepl_setup() — creates temp files and generated scripts:
+    │   ├─ $runner    (embeds _sed_in_place, _sedrepl_divide, _repl_parse_args)
+    │   │              → _sedrepl_divide() → _repl_parse_args() → runs sed
+    │   ├─ $formatter (embeds _sedrepl_pretty_print)
+    │   │              → sleep 1 → _sedrepl_pretty_print()
+    │   └─ $cleanup   → removes all temp files
     │
-    ├─ Exports functions for tmux subshells via 'export -f':
-    │   ├─ _sed_in_place()
-    │   └─ _sedrepl_divide()
+    ├─ tmux: editor pane, runner pane, formatter pane;
+    │        'pane-exited' hooks run $cleanup / kill the window
     │
-    └─ Generates temporary scripts:
-        ├─ $runner   → calls _sedrepl_divide() → runs sed
-        ├─ $formatter → calls _sedrepl_pretty_print()
-        └─ $cleanup  → removes temp files
+    └─ Backstop cleanup: if not nested in tmux ($TMUX unset), removes
+       the temp files itself after 'tmux new' returns
 ```
+
+All four helper functions are also exported with `export -f`, but the
+generated scripts are self-contained via `declare -f`.
 
 ---
 
@@ -72,21 +78,26 @@ sedrepl() [ENTRY POINT]
   - Supports `#ARGS` section for sed command-line flags
 
 ### Level 2: Runner Interface (Tmux Pane 1)
-- **Component**: `entr -c './$runner'`
+- **Component**: `echo ~/.repl.sed | entr -c $runner`
 - **Triggers**: File change events on `~/.repl.sed`
 - **Operations**:
   - Clears screen before execution (`-c` flag)
   - Splits input file into source/data/args
-  - Executes: `sed $(cat $args) -f $src $data`
-  - Prints dimmed info lines for working directory and command
+  - Parses `#ARGS` with `_repl_parse_args()` into an array
+  - Prints info lines (`tput setaf 0`) for working directory and command
+  - Displays the sed script (`bat -l awk` / `batcat -l awk`, or `cat`)
+  - Executes: `sed "${_sed_args[@]}" -f $src $data`
 
 ### Level 3: Formatter Interface (Tmux Pane 2)
-- **Component**: `entr -c './$formatter'`
+- **Component**: `echo $src | entr -c $formatter`
 - **Triggers**: File change events on temp `$src` file (created by runner)
 - **Operations**:
   - Waits 1 second for runner to finish (race condition prevention)
-  - Syntax-checks sed script using `sed -n -f $src /dev/null`
-  - Displays sed script using `cat` or `bat` for syntax highlighting
+  - Syntax-checks sed script by running `sed -n -f $src /dev/null` once; on a
+    non-zero exit prints an `ERROR parsing sed script` header with sed's error
+    message
+  - Displays sed script using `cat` or `bat`/`batcat` (`-l awk`) for syntax
+    highlighting
 
 ---
 
@@ -108,7 +119,9 @@ entr detects change (pane 1)
         ▼
 $runner executes:
     ├─ _sedrepl_divide() splits input
-    └─ sed $(cat $args) -f $src $data
+    ├─ _repl_parse_args() reads #ARGS
+    ├─ prints header + script
+    └─ sed "${_sed_args[@]}" -f $src $data
         │
         ▼
 Output displayed in pane 1
@@ -133,12 +146,13 @@ sed script displayed in pane 2
 
 ```
 sedrepl/
-├── sedrepl           # Main script (executable)
-├── Makefile          # Build targets
-├── Dockerfile        # Docker image definition
-├── examples.sed      # Demonstration sed code
-├── README.md         # Project documentation
-└── demo.gif          # Demo screenshot (optional)
+├── sedrepl              # Main script (executable)
+├── Makefile             # help/build/run/test/publish targets
+├── Dockerfile           # Docker image definition
+├── examples.sed         # Demonstration sed code
+├── README.md            # Project documentation
+├── PROJECT_BREAKDOWN.md # This file
+└── tests/               # helpers.sh, smoke/ and integration/ suites
 ```
 
 ---
@@ -188,4 +202,4 @@ sedrepl provides a REPL-like environment for sed development where:
 - **One save** triggers **two reactions** (execution and formatting)
 - **No polling** - uses kernel file events via entr
 - **Self-contained** - scripts embed functions via `declare -f`
-- **Clean exit** - resources deleted automatically
+- **Clean exit** - temp files deleted automatically (tmux `pane-exited` hook, plus a backstop `rm` when not nested in tmux)

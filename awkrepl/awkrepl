@@ -11,7 +11,8 @@
 ##    - Perl
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (used to parse '#ARGS' lines)
+##    - bat (optional; also found as 'batcat') - https://github.com/sharkdp/bat
 ##
 set -uo pipefail
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "awkrepl: error at line $LINENO" >&2; exit 1' ERR
@@ -131,8 +132,9 @@ _awkrepl_divide() {
 
     # don't touch if there's any kind of outer brace expression, including
     # implicit '{print}' one like 'NR==…' and '($1 == x && $2 == y) && $3'
+    # (only the FIRST line of the comment-stripped source is examined)
     if perl -${DEBUG:+d}ne '
-        s/\s+//;                     # strip all whitespace
+        s/\s+//;                     # strip the first run of whitespace
 
         /^(                          # at beginning of the line, try to match
 
@@ -200,8 +202,8 @@ _awkrepl_setup() {
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    # Note: sed's 'w filename' ends at the first space; since these are /tmp
-    # mktemp paths they will never contain spaces, but we quote for all other uses.
+    # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
+    # (in GNU sed) takes the rest of the expression, spaces included.
     local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")

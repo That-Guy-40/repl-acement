@@ -7,9 +7,11 @@
 ##
 ##  Requirements:
 ##    - jq ≥ 1.5
+##    - sed (GNU sed or BSD sed; used to split the REPL file)
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (findutils; used to parse #ARGS)
+##    - bat or batcat (optional) - https://github.com/sharkdp/bat
 ##
 set -uo pipefail
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "jqrepl: error at line $LINENO" >&2; exit 1' ERR

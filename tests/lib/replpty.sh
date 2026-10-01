@@ -11,11 +11,14 @@
 #
 # How it drives a REPL that itself spawns tmux:
 #   - ttydrive runs on its OWN private tmux server (its own socket).
-#   - We launch the REPL with TMUX unset, so the REPL starts its own
-#     `tmux new-session` that attaches to ttydrive's visible pane. What
-#     ttydrive captures is the composited three-pane screen a user sees.
+#   - We launch the REPL (in a 120x40 terminal) with TMUX cleared, so the
+#     REPL starts its own `tmux new-session` that attaches to ttydrive's
+#     visible pane. What ttydrive captures is the composited three-pane
+#     screen a user sees.
 #   - The REPL's inner tmux server is isolated under a per-run TMUX_TMPDIR
 #     so cleanup can kill it precisely, touching nothing else on the box.
+#     HOME (per session) and TMPDIR (the REPL's mktemp scratch) also point
+#     into the per-run work area, which cleanup removes.
 #   - The editor pane is replaced with a keep-alive no-op (REPLs read the
 #     file, not the editor), and the file is rewritten from the test to
 #     drive the entr event loop the same way a save would.
@@ -25,27 +28,30 @@
 # line reads as "alpha        <U+2502>{"). Assert with DISTINCTIVE SUBSTRINGS,
 # not "^line$" anchors.
 #
-# Needs: bash 4+, tmux 3.0+ (same as ttydrive). Requires a real inotify/
-# kqueue-backed entr for reloads; without entr the launch is skipped.
+# Needs: bash 4+, tmux 3.0+ (same as ttydrive), and entr for the reloads.
+# This file does not check for them itself: each e2e suite tests
+# repl_have_tmux / repl_have entr (and its tool) and prints SKIP if missing.
 #
 # API
 #   repl_have_tmux                       tmux present? (else skip the suite)
 #   repl_have <cmd>                      command present?
 #   repl_start NAME TOOL BASENAME        start REPL TOOL (abs path); BASENAME is
-#                                        the edited file it opens in $HOME
-#                                        (e.g. .repl.awk). Initial file content
-#                                        is read from stdin.
-#   repl_edit NAME                       rewrite NAME's file from stdin -> reload
+#                                        the edited file it opens in $HOME, a
+#                                        per-session dir (e.g. .repl.awk).
+#                                        Initial file content is read from stdin.
+#   repl_edit NAME                       settle, then rewrite NAME's file from
+#                                        stdin -> reload
 #   repl_screen NAME                     print the visible composited screen
 #   repl_transcript NAME                 screen + scrollback
 #   repl_wait NAME REGEX [SECS]          wait until the transcript matches (10s)
 #   repl_settle NAME [MS]                wait until the screen stops changing
+#                                        for MS (500) ms, up to 10s
 #   repl_replfile NAME                   path to NAME's edited file
 #   repl_cleanup                         stop every session; kill inner servers
 #
-#   assert_screen_contains NAME TEXT MSG
-#   assert_screen_not_contains NAME TEXT MSG
-#   assert_screen_matches NAME REGEX MSG
+#   assert_screen_contains NAME TEXT MSG       checks screen + scrollback
+#   assert_screen_not_contains NAME TEXT MSG   checks the visible screen only
+#   assert_screen_matches NAME REGEX MSG       checks screen + scrollback
 # =============================================================================
 
 _RP_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

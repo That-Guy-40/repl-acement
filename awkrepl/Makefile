@@ -14,7 +14,7 @@ define _PERL_SCRIPT
 		print "\n    ", BRIGHT_BLUE UNDERLINE "Makefile targets:\n\n", RESET;
 	}
 	if (/([-_\w]+):.*#\s+(.*)/) {
-		$$max = length($$1) if length($$1) > max;
+		$$max = length($$1) if length($$1) > $$max;
 		push @targets, "$$1:$$2";
 	}
 	END {

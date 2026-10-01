@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-##  tests/helpers.sh - shared test utilities (assertions, pass/fail counters)
+##  tests/lib/helpers.sh - shared test utilities (assertions, pass/fail counters)
 ##
 
 PASS=0

@@ -13,7 +13,8 @@ AWKREPL="$TESTS_DIR/../../awkrepl"
 source "$TESTS_DIR/../helpers.sh"
 
 # source awkrepl to load helper functions without launching the REPL
-# _trim_blanks creates .awkrepl-* temp files in CWD, so run from awkrepl dir
+# (_trim_blanks uses a mktemp file under ${TMPDIR:-/tmp}, not CWD; we cd to
+# the awkrepl dir only for consistency with the other tests)
 cd "$TESTS_DIR/../.." || exit 1
 source "$AWKREPL"
 

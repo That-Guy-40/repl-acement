@@ -5,7 +5,7 @@
 ##  These drive each REPL's real three-pane tmux session with the vendored
 ##  ttydrive (tests/lib/ttydrive) and check that the entr event loop reacts
 ##  to edits. They need tmux + entr + the relevant tool; a suite that finds
-##  its tool missing prints SKIP and passes.
+##  any of those missing prints SKIP and passes.
 ##
 
 set -uo pipefail
