@@ -5,12 +5,13 @@
 ##
 ##  For each REPL: launch it as a new tmux session, detach with C-b d, and
 ##  check the session and its temp files survive; reattach and check a save
-##  still re-runs the tool; then quit (the editor exits) and check the
-##  pane-exited hook removes the temp files and ends the session.
+##  still re-runs the tool; then quit (the editor exits) and check the editor
+##  pane's wrapper removes the temp files and ends the session.
 ##
 ##  Regression test: the post-'tmux new' cleanup backstop used to run on a
 ##  plain detach too, deleting the files the live session still needed, which
-##  made the formatter's entr exit and the kill-window hook end the session.
+##  made the formatter's entr exit and the (since removed) tmux kill-window
+##  hook end the session.
 ##
 
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,20 +33,6 @@ wait_for() {
 no_session()  { ! repl_sessions | grep -qxF -- "$1"; }
 no_scratch()  { [[ $(repl_scratch_count "$1") -eq 0 ]]; }
 
-# content_for TOOL N — a program whose output is "M<N>-x", while its source
-# never contains that literal string (the source pane shows the source too)
-content_for() {
-    local n=$2
-    case $1 in
-        awk)  printf '{ print "M%s-" $1 }\n\n#DATA\nx\n' "$n" ;;
-        sed)  printf 's/x/M%s-&/\n\n#DATA\nx\n' "$n" ;;
-        jq)   printf '"M%s-" + .\n\n#DATA\n"x"\n' "$n" ;;
-        yq)   printf '"M%s-" + .a\n\n#DATA\na: x\n' "$n" ;;
-        mlr)  printf '$m = "M%s-" . $a;\n\n#DATA\na,b\nx,y\n' "$n" ;;
-        perl) printf 'print "M%s-$_"\n\n#DATA\nx\n' "$n" ;;
-    esac
-}
-
 check_tool() {
     local tool=$1 repl=$2 base=$3 need=$4
     local name="d_$tool" again="r_$tool" sess pid
@@ -57,7 +44,7 @@ check_tool() {
 
     # redirect, don't pipe: a piped repl_start runs in a subshell, and its
     # record of the edited file (which repl_edit needs) would be lost
-    repl_start "$name" "$REPO/$repl/$repl" "$base" < <(content_for "$tool" 1)
+    repl_start "$name" "$REPO/$repl/$repl" "$base" < <(repl_sample "$tool" 1)
     if ! repl_wait "$name" 'M1-x' 15; then
         fail "$repl: initial output never appeared" "$(repl_screen "$name")"
         return
@@ -86,7 +73,7 @@ check_tool() {
         fail "$repl: reattached screen does not show the output" "$(repl_screen "$again")"
         return
     fi
-    repl_edit "$name" < <(content_for "$tool" 2)
+    repl_edit "$name" < <(repl_sample "$tool" 2)
     if repl_wait "$again" 'M2-x' 15; then
         pass "$repl: after reattaching, a save still re-runs the tool"
     else
@@ -94,8 +81,10 @@ check_tool() {
     fi
 
     # --- quit (the editor exits): hooks clean up and end the session ---
+    # pane 0 runs the REPL's editor wrapper; quitting the editor means ending
+    # the editor process under it (the wrapper then cleans up)
     pid=$(repl_tmux display-message -p -t "=$sess:0.0" '#{pane_pid}')
-    kill "$pid" 2>/dev/null
+    pkill -TERM -P "$pid" 2>/dev/null
     if wait_for 10 no_session "$sess"; then
         pass "$repl: quitting the editor ends the session"
     else

@@ -53,6 +53,8 @@
 #   repl_sessions                        session names on the inner server
 #   repl_scratch_count PREFIX            REPL temp files named PREFIX* in $TMPDIR
 #   repl_attach NAME SESSION             new terminal NAME attached to SESSION
+#   repl_sample TOOL N                   a small program (+ #DATA) for TOOL
+#                                        (awk sed jq yq mlr perl) printing M<N>-x
 #   repl_cleanup                         stop every session; kill inner servers
 #
 #   assert_screen_contains NAME TEXT MSG       checks screen + scrollback
@@ -129,6 +131,20 @@ repl_wait()       { _rp wait "$1" "$2" -t "${3:-10}"; }
 repl_settle()     { _rp settle "$1" -q "${2:-500}" -t 10; }
 repl_keys()       { _rp keys "$@"; }
 repl_wait_exit()  { _rp wait-exit "$1" -t "${2:-10}"; }
+
+# repl_sample TOOL N — a program whose output is "M<N>-x", while its source
+# never contains that literal string (the source pane shows the source too)
+repl_sample() {
+    local n=$2
+    case $1 in
+        awk)  printf '{ print "M%s-" $1 }\n\n#DATA\nx\n' "$n" ;;
+        sed)  printf 's/x/M%s-&/\n\n#DATA\nx\n' "$n" ;;
+        jq)   printf '"M%s-" + .\n\n#DATA\n"x"\n' "$n" ;;
+        yq)   printf '"M%s-" + .a\n\n#DATA\na: x\n' "$n" ;;
+        mlr)  printf '$m = "M%s-" . $a;\n\n#DATA\na,b\nx,y\n' "$n" ;;
+        perl) printf 'print "M%s-$_"\n\n#DATA\nx\n' "$n" ;;
+    esac
+}
 
 # --- the REPLs' own (inner) tmux server and scratch files --------------------
 

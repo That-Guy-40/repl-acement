@@ -108,4 +108,31 @@ assert_equals "regex pattern (implicit print) executes correctly" \
     "foo bar
 foo qux" "$output"
 
+
+# --- valid AWK as written is never wrapped, whatever its first line ---
+# (the old heuristic only looked at the first line, and wrapped these)
+not_wrapped() {  # DESC PROGRAM DATA EXPECTED-OUTPUT
+    local desc=$1 prog=$2 rows=$3 want=$4
+    : > "$src"; : > "$data"; : > "$args"
+    printf '%s\n\n#DATA\n%s\n' "$prog" "$rows" > "$replfile"
+    _awkrepl_divide "$replfile" "$src" "$data" "$args"
+    if [[ $(head -1 "$src") == '{' || $(head -1 "$src") == 'END {' ]]; then
+        fail "$desc: was wrapped" "$(cat "$src")"
+    else
+        pass "$desc: not wrapped"
+    fi
+    assert_equals "$desc: output" "$want" "$(gawk -f "$src" "$data")"
+}
+not_wrapped "negated regex !/re/"      '!/^foo/'                   $'foo\nbar\nbaz'  $'bar\nbaz'
+not_wrapped "\$NF pattern"             '$NF > 4'                   $'a 3\nb 5'      'b 5'
+not_wrapped "dedupe idiom !seen[]++"   '!seen[$1]++'               $'x\ny\nx'       $'x\ny'
+not_wrapped "function definition"      $'function dbl(n) { return n * 2 }\n{ print dbl($1) }' $'2\n5' $'4\n10'
+not_wrapped "length() pattern"         'length($0) > 3'            $'ab\nabcd'      'abcd'
+
+# --- code that doesn't parse either way is left as written ---
+: > "$src"; : > "$data"; : > "$args"
+printf '{ print $1\n' > "$replfile"
+_awkrepl_divide "$replfile" "$src" "$data" "$args"
+assert_equals "unparseable code is left as written (no wrapping)" '{ print $1' "$(cat "$src")"
+
 summary

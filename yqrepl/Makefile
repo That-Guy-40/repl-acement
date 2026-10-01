@@ -5,7 +5,9 @@
 ME = $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST))
 EDITOR ?= nano
 TAG = yqrepl
-DOCKER_HUB_TAG = ernstki/$(TAG)
+# your Docker Hub account, for `make publish` (e.g. make publish DOCKER_HUB_USER=you)
+DOCKER_HUB_USER ?=
+DOCKER_HUB_TAG = $(DOCKER_HUB_USER)/$(TAG)
 
 define _PERL_SCRIPT
 	BEGIN {
@@ -39,6 +41,7 @@ run:  # run the Docker image
 test:  # run smoke and integration tests
 	bash tests/smoke/run.sh && bash tests/integration/run.sh
 
-publish:  # push the image to Docker Hub
+publish:  # push the image to Docker Hub as DOCKER_HUB_USER/<image>
+	@test -n "$(DOCKER_HUB_USER)" || { echo "set DOCKER_HUB_USER to your Docker Hub account, e.g. 'make publish DOCKER_HUB_USER=yourname'" >&2; exit 2; }
 	docker tag $(TAG) $(DOCKER_HUB_TAG)
 	docker push $(DOCKER_HUB_TAG)

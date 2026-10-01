@@ -101,17 +101,28 @@ _awkrepl_pretty_print() {
 } # _awkrepl_pretty_print
 
 # divide input file $1 into source ($2), data ($3), and args ($4) files
+# _awkrepl_parses GAWK-PROGRAM-ARGS... — true if gawk can parse the program
+# (e.g. `-f file` or `-e text`). --pretty-print parses without running it, so
+# BEGIN blocks and getline never execute here.
+_awkrepl_parses() {
+    gawk --pretty-print=/dev/null "$@" >/dev/null 2>&1
+}
+
 _awkrepl_divide() {
     local in=${1:?missing input file argument}
     local src=${2:?missing source output file argument}
     local data=${3:?missing data output file argument}
     local args=${4:?missing args output file argument}
-    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa]'
-    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\(ument\)*[Ss]*:*[[:space:]]*'
+    # Headers (case-insensitive): '#DATA' must be alone on its line, and
+    # '#ARGS' (or #ARG / #ARGUMENT(S)) must be followed by nothing or by options
+    # starting with '-'. So comments like '# Database…', '# data comes from…'
+    # or '# Args are cool' stay comments. In argshdr, \3 is the options part.
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
+    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\([Uu][Mm][Ee][Nn][Tt]\)\{0,1\}[Ss]\{0,1\}\([:[:space:]]\{1,\}\(-.*\)\)\{0,1\}[:[:space:]]*$'
 
     # extract arguments
     sed -n \
-      -e "s/$argshdr//w $args" \
+      -e "s/$argshdr/\3/w $args" \
       "$in"
 
     # split the input file at the '#DATA' header and write into two files
@@ -130,41 +141,20 @@ _awkrepl_divide() {
     # remove comments and blank lines from source (see #6)
     _sed_in_place -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$src"
 
-    # don't touch if there's any kind of outer brace expression, including
-    # implicit '{print}' one like 'NR==…' and '($1 == x && $2 == y) && $3'
-    # (only the FIRST line of the comment-stripped source is examined)
-    if perl -${DEBUG:+d}ne '
-        s/\s+//;                     # strip the first run of whitespace
+    # Auto-wrap a bare program such as 'print $1' so it runs. gawk decides:
+    # if the source already parses as AWK (rules, patterns such as '!/re/' or
+    # '$NF > 3', function definitions, BEGIN/END, …) leave it alone. Otherwise
+    # wrap the whole source in '{ … }' when there's #DATA, or in 'END { … }'
+    # when there isn't, and keep that only if the wrapped program parses. If
+    # neither parses, leave it as written, so the error shown is about the
+    # user's own code.
+    _awkrepl_parses -f "$src" && return 0
 
-        /^(                          # at beginning of the line, try to match
-
-          \{          |              # a curly brace, or...
-          (BEGIN|END) |              # BEGIN or END, or...
-
-          \(?                        # maybe an open paren
-            ( N[FR] | \$\d | \/. )   # NF, NR, field reference, or regex
-          \)?                        # maybe a close paren
-        )/x && exit;                 # return success if we matched
-
-        exit 1;' "$src"
-    then
-        # no further processing
-        return
-    fi
-
-    # otherwise:
-    #   - wrap entire source in '{ }' if there's #DATA
-    #   - wrap in 'END { … }' if not
-
-    # sed 'i\' and 'a\' expect a newline, so embed that with ANSI-C quoting
-    local awkbegin=$'\n{'
-    local awkendbegin=$'\nEND {'
-    local awkend=$'\n}'
-
-    if [[ -s "$data" ]]; then
-        _sed_in_place -e "1i\\$awkbegin" -e "\$a\\$awkend" "$src"
-    else
-        _sed_in_place -e "1i\\$awkendbegin" -e "\$a\\$awkend" "$src"
+    local opener='{' wrapped
+    [[ -s "$data" ]] || opener='END {'
+    wrapped=$(printf '%s\n' "$opener"; cat "$src"; printf '}\n')
+    if _awkrepl_parses -e "$wrapped"; then
+        printf '%s\n' "$wrapped" > "$src"
     fi
 } # _awkrepl_divide
 
@@ -175,19 +165,31 @@ _awkrepl_divide() {
 #   args=(); while IFS= read -r -d '' a; do args+=("$a"); done < <(_repl_parse_args "$f")
 _repl_parse_args() {
     local f=${1:?missing args file}
+    local -a w
     grep -q '[^[:space:]]' "$f" 2>/dev/null || return 0   # nothing but whitespace
-    xargs printf '%s\0' < "$f" 2>/dev/null
+    if xargs true < "$f" >/dev/null 2>&1; then
+        xargs printf '%s\0' < "$f"
+    else
+        # xargs rejects an unmatched quote (e.g. "it's") and would drop every
+        # argument. Say so, and fall back to splitting on whitespace with the
+        # quote characters kept as typed (still no globbing: read never globs).
+        echo "warning: #ARGS has an unmatched quote; splitting it on whitespace instead" >&2
+        while read -r -a w || (( ${#w[@]} )); do
+            (( ${#w[@]} )) && printf '%s\0' "${w[@]}"
+        done < "$f"
+    fi
 }
 
 # the tmux subshells need these
 export -f _sed_in_place
 export -f _awkrepl_divide
 export -f _awkrepl_pretty_print
+export -f _awkrepl_parses
 export -f _repl_parse_args
 
 _awkrepl_setup() {
     local replfile=${1:?missing replfile argument}
-    local src data args runner formatter helpers cleanup
+    local src data args runner formatter helpers cleanup editpane
     src=$(mktemp "${TMPDIR:-/tmp}/awkrepl-src-XXXXXX")         || { echo "awkrepl: mktemp failed" >&2; return 1; }
     data=$(mktemp "${TMPDIR:-/tmp}/awkrepl-data-XXXXXX")        || { echo "awkrepl: mktemp failed" >&2; return 1; }
     args=$(mktemp "${TMPDIR:-/tmp}/awkrepl-args-XXXXXX")        || { echo "awkrepl: mktemp failed" >&2; return 1; }
@@ -195,6 +197,7 @@ _awkrepl_setup() {
     formatter=$(mktemp "${TMPDIR:-/tmp}/awkrepl-fmt-XXXXXX")    || { echo "awkrepl: mktemp failed" >&2; return 1; }
     helpers=$(mktemp "${TMPDIR:-/tmp}/awkrepl-helpers-XXXXXX")  || { echo "awkrepl: mktemp failed" >&2; return 1; }
     cleanup=$(mktemp "${TMPDIR:-/tmp}/awkrepl-cleanup-XXXXXX")  || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    editpane=$(mktemp "${TMPDIR:-/tmp}/awkrepl-edit-XXXXXX")     || { echo "awkrepl: mktemp failed" >&2; return 1; }
 
     # AWK array helper functions like printa and printaa
     echo "$AWKHELPERS" > "$helpers"
@@ -204,7 +207,7 @@ _awkrepl_setup() {
     # single-quote injection when paths contain spaces or special characters.
     # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
     # (in GNU sed) takes the rest of the expression, spaces included.
-    local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup
+    local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup q_editpane q_editor
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
     q_data=$(printf '%q' "$data")
@@ -213,13 +216,15 @@ _awkrepl_setup() {
     q_runner=$(printf '%q' "$runner")
     q_formatter=$(printf '%q' "$formatter")
     q_cleanup=$(printf '%q' "$cleanup")
+    q_editpane=$(printf '%q' "$editpane")
+    q_editor=$(printf '%q' "${EDITOR:-nano}")
 
     # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
     # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
     cat > "$runner" <<RUNNER
 #!/usr/bin/env bash
 set -uo pipefail
-$(declare -f _sed_in_place _trim_blanks _awkrepl_divide _repl_parse_args)
+$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_divide _repl_parse_args)
 _awkrepl_divide $q_replfile $q_src $q_data $q_args
 _gawk_args=()
 while IFS= read -r -d '' _a; do _gawk_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
@@ -238,10 +243,30 @@ FORMATTER
 
     cat > "$cleanup" <<CLEANUP
 #!/usr/bin/env bash
-rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_helpers $q_cleanup
+rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_helpers $q_editpane $q_cleanup
 CLEANUP
 
-    chmod a+x "$runner" "$formatter" "$cleanup"
+    # Pane 0 runs this wrapper rather than the editor itself. When the editor
+    # exits, or the window is killed (SIGHUP), it removes the temp files and
+    # closes this REPL's window, found from its own pane ($TMUX_PANE), so it
+    # never touches other windows when the REPL runs inside an existing tmux
+    # session. (tmux 'pane-exited' hooks can't be scoped like that: tmux
+    # resolves them against the session's current window, whichever pane
+    # exited.)
+    cat > "$editpane" <<EDITPANE
+#!/usr/bin/env bash
+_done() {
+    trap - HUP TERM
+    $q_cleanup
+    tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
+    exit 0
+}
+trap _done HUP TERM
+$q_editor $q_replfile
+_done
+EDITPANE
+
+    chmod a+x "$runner" "$formatter" "$cleanup" "$editpane"
 
     # These globals are read by the caller after _awkrepl_setup returns.
     # shellcheck disable=SC2034
@@ -249,11 +274,11 @@ CLEANUP
     # shellcheck disable=SC2034
     REPL_ARGS="$args"           REPL_HELPERS="$helpers"  REPL_RUNNER="$runner"
     # shellcheck disable=SC2034
-    REPL_FORMATTER="$formatter" REPL_CLEANUP="$cleanup"
+    REPL_FORMATTER="$formatter" REPL_CLEANUP="$cleanup" REPL_EDITPANE="$editpane"
     # shellcheck disable=SC2034
     REPL_Q_REPLFILE="$q_replfile" REPL_Q_SRC="$q_src"   REPL_Q_HELPERS="$q_helpers"
     # shellcheck disable=SC2034
-    REPL_Q_RUNNER="$q_runner"  REPL_Q_FORMATTER="$q_formatter" REPL_Q_CLEANUP="$q_cleanup"
+    REPL_Q_RUNNER="$q_runner"  REPL_Q_FORMATTER="$q_formatter" REPL_Q_CLEANUP="$q_cleanup" REPL_Q_EDITPANE="$q_editpane"
 } # _awkrepl_setup
 
 awkrepl() {
@@ -261,33 +286,36 @@ awkrepl() {
     test -f "$replfile" || touch "$replfile"
     (( ${TRACE:-} )) && set -x
     _awkrepl_setup "$replfile" || return 1
+    # if a runner/formatter pane's entr exits, close this REPL's window too
+    # (the editor pane's wrapper then removes the temp files)
+    # shellcheck disable=SC2016  # $TMUX_PANE is expanded later, by the pane's shell
+    local close='; tmux kill-window -t "$TMUX_PANE"'
     # A new session (not nested in tmux) gets a known name, so the cleanup
     # below can tell "the session ended" from "the client only detached".
     local session="awkrepl-$$"
     local -a launch=(new-session -s "$session")
     if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
-    tmux "${launch[@]}" -n 'awkrepl'                              \
-      "${EDITOR:-nano}" "$replfile" \;                             \
+    tmux "${launch[@]}" -n 'awkrepl'                               \
+      "$REPL_Q_EDITPANE" \;                                        \
       split-window    -c "$PWD"                                    \
-        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;      \
+        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER$close" \;  \
       split-window -h -c "$PWD"                                    \
-        "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER" \;        \
+        "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER$close" \;    \
       select-pane -t 1 \;                                          \
       select-pane -t 2 \;                                          \
-      select-pane -t 0 \;                                          \
-      set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;   \
-      set-hook 'pane-exited[1]' kill-window
+      select-pane -t 0
 
-    # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
-    # tmux builds, leaking temp files. A new session's 'tmux new-session'
-    # returns both when the session ends and when the client merely detaches,
-    # so only clean up once our named session is really gone: a detached
-    # session still needs these files. In the nested case ('new-window'
-    # returns at once) the window is still live, so cleanup is left to the
-    # hook.
+    # Backstop cleanup. The editor pane's wrapper removes the temp files when
+    # the editor exits or the window is killed; this covers the rare case it
+    # can't (e.g. its process was SIGKILLed). A new session's 'tmux
+    # new-session' returns both when the session ends and when the client
+    # merely detaches, so only clean up once our named session is really
+    # gone: a detached session still needs these files. In the nested case
+    # ('new-window' returns at once) the window is still live, so cleanup is
+    # left to the wrapper.
     if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
         rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
-              "$REPL_FORMATTER" "$REPL_CLEANUP" "${REPL_HELPERS:-}"
+              "$REPL_FORMATTER" "$REPL_CLEANUP" "$REPL_EDITPANE" "${REPL_HELPERS:-}"
     fi
 }
 
