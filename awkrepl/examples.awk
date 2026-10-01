@@ -9,7 +9,7 @@ print
 
 # print the first three columns joined by a custom delimiter
 # be sure to uncomment *both* lines, and comment out any other examples
-#BEGIN { FS = "|" }
+#BEGIN { OFS = "|" }
 #{ print $1, $2, $3 }
 
 # just print chromosome 10 coordinates

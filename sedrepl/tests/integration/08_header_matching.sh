@@ -77,4 +77,12 @@ row2" "$(cat "$data")"
 divide_lines '' '#DATA' 'row1'
 assert_equals "#DATA after a blank first line: the row is data" "row1" "$(cat "$data")"
 
+# --- an '#ARGS' line after '#DATA' is a data row, not options ---
+# (it used to be extracted as options AND left in the data)
+divide_lines 'PROGRAM_LINE' '#ARGS -n' '#DATA' 'row1' '#ARGS -x' 'row2'
+assert_equals "only the #ARGS before #DATA gives options" "-n" "$(cat "$args")"
+assert_equals "an #ARGS line after #DATA stays in the data, untouched" "row1
+#ARGS -x
+row2" "$(cat "$data")"
+
 summary

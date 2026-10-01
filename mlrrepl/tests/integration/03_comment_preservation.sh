@@ -14,8 +14,7 @@ cd "$TESTS_DIR/../.." || exit 1
 source "$MLRREPL"
 
 if ! command -v mlr > /dev/null 2>&1; then
-    pass "mlr not installed — skipping comment preservation tests"
-    summary
+    echo "  SKIP: mlr not installed (comment preservation tests)"
     exit 0
 fi
 

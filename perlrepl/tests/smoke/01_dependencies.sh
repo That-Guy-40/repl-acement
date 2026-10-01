@@ -10,5 +10,6 @@ source "$TESTS_DIR/../helpers.sh"
 assert_command_found "perl is available" perl
 assert_command_found "tmux is available" tmux
 assert_command_found "entr is available" entr
+assert_command_found "xargs is available" xargs
 
 summary

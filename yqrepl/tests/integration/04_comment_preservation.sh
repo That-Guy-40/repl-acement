@@ -3,9 +3,9 @@
 # shellcheck disable=SC1090,SC1091,SC2016
 ##  integration/04_comment_preservation.sh
 ##
-##  yqrepl preserves # comments in the source — unlike awkrepl, which strips
-##  them.  yq supports YAML comments natively, and comments in the expression
-##  file act as documentation without interfering with evaluation.
+##  yqrepl keeps # comments in the edited file and the source pane, but strips
+##  whole-line comments and blank lines from the expression it hands to yq,
+##  so they never interfere with evaluation.
 ##
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

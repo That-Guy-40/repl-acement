@@ -3,11 +3,13 @@
 # shellcheck disable=SC1090,SC1091
 ##  integration/04_auto_wrap.sh
 ##
-##  awkrepl's Perl heuristic inspects the first non-blank, non-comment line
-##  of the source. If it starts with a plain statement (no leading '{',
-##  'BEGIN'/'END', pattern reference, or regex) the source is wrapped:
+##  awkrepl asks gawk (parse only) whether the comment-stripped source parses
+##  as written and/or wrapped. A bare statement such as 'print $1' only parses
+##  wrapped, so it is wrapped:
 ##    - in '{ }' when #DATA is present (runs per-line)
 ##    - in 'END { }' when #DATA is absent (runs once, on empty input)
+##  Rules, functions and BEGIN/END only parse as written and are left alone;
+##  a bare expression parses both ways and is judged by how it starts.
 ##
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -128,6 +130,9 @@ not_wrapped "\$NF pattern"             '$NF > 4'                   $'a 3\nb 5'  
 not_wrapped "dedupe idiom !seen[]++"   '!seen[$1]++'               $'x\ny\nx'       $'x\ny'
 not_wrapped "function definition"      $'function dbl(n) { return n * 2 }\n{ print dbl($1) }' $'2\n5' $'4\n10'
 not_wrapped "length() pattern"         'length($0) > 3'            $'ab\nabcd'      'abcd'
+# a bare NR/NF/FNR/FILENAME expression is a pattern even without an operator
+not_wrapped "bare NF pattern"            'NF'                        $'a b\n\nc'      $'a b\nc'
+not_wrapped "NR arithmetic pattern"      'NR % 2'                    $'a\nb\nc'       $'a\nc'
 
 # --- code that doesn't parse either way is left as written ---
 : > "$src"; : > "$data"; : > "$args"
@@ -137,7 +142,7 @@ assert_equals "unparseable code is left as written (no wrapping)" '{ print $1' "
 
 # --- a bare expression that reads as a statement is still wrapped, even though
 #     it would also parse as a pattern (e.g. the printa() helper idiom) ---
-wrapped_as() {  # DESC PROGRAM DATA OPENER EXPECTED-OUTPUT-SUBSTRING
+wrapped_as() {  # DESC PROGRAM DATA OPENER EXPECTED-OUTPUT (substring; '' = no output)
     local desc=$1 prog=$2 rows=$3 opener=$4 want=$5 out
     : > "$src"; : > "$data"; : > "$args"
     if [[ -n $rows ]]; then
@@ -148,7 +153,7 @@ wrapped_as() {  # DESC PROGRAM DATA OPENER EXPECTED-OUTPUT-SUBSTRING
     _awkrepl_divide "$replfile" "$src" "$data" "$args"
     assert_equals "$desc: wrapped in '$opener'" "$opener" "$(head -1 "$src")"
     out=$(gawk -f "$helpers" -f "$src" "$data" 2>&1)
-    if [[ $out == *"$want"* ]]; then
+    if [[ -z $want && -z $out ]] || [[ -n $want && $out == *"$want"* ]]; then
         pass "$desc: output"
     else
         fail "$desc: output" "wanted '$want' in: $out"

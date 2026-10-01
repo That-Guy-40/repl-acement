@@ -75,11 +75,6 @@ _perlrepl_divide() {
     local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
     local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\([Uu][Mm][Ee][Nn][Tt]\)\{0,1\}[Ss]\{0,1\}\([:[:space:]]\{1,\}\(-.*\)\)\{0,1\}[:[:space:]]*$'
 
-    # extract arguments
-    sed -n \
-      -e "s/$argshdr/\3/w $args" \
-      "$in"
-
     # split the input file at the first '#DATA' header, which may be line 1
     # (a file that is only data): the source is everything before it, the data
     # everything after it. (A '1,/re/' range can't do this: it only looks for
@@ -88,6 +83,10 @@ _perlrepl_divide() {
     # first header and is portable (GNU '0,/re/' is not).
     sed -e "/$datahdr/,\$d" "$in" > "$src"
     sed -n -e "/$datahdr/{" -e ':a' -e 'n' -e 'p' -e 'ba' -e '}' "$in" > "$data"
+
+    # extract the #ARGS options from the program section only: everything
+    # after '#DATA' is data, so an '#ARGS' line there is just another data row
+    sed -n -e "s/$argshdr/\3/p" "$src" > "$args"
 
     # remove any further '#DATA' lines from the data file
     _sed_in_place -e "/$datahdr/d" "$data"
@@ -119,12 +118,6 @@ _repl_parse_args() {
     fi
 }
 
-# the tmux subshells need these
-export -f _repl_parse_args
-export -f _sed_in_place
-export -f _perlrepl_divide
-export -f _perlrepl_pretty_print
-export -f _perlrepl_needs_n
 
 _perlrepl_setup() {
     local replfile=${1:?missing replfile argument}
@@ -167,8 +160,8 @@ if [[ -s $q_src ]]; then
     while IFS= read -r -d '' _a; do _perl_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
     _perl_args+=( $q_src )
     [[ -s $q_data ]] && _perl_args+=( $q_data )
-    echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
-    echo "$(tput setaf 0)# command:  perl \${_perl_args[*]}$(tput sgr0)"
+    echo "$(tput dim 2>/dev/null)# work dir: \$PWD$(tput sgr0)"
+    echo "$(tput dim 2>/dev/null)# command:  perl \${_perl_args[*]}$(tput sgr0)"
     echo
     _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
     if [[ -n "\$_bat" ]]; then
@@ -279,4 +272,4 @@ perlrepl() {
 }
 
 # allow sourcing for tests without launching the REPL
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] && perlrepl "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then perlrepl "$@"; fi

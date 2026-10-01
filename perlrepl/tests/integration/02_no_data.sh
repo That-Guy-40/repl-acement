@@ -25,11 +25,11 @@ assert_empty "data file empty when no #DATA" "$data"
 output=$(perl "$src")
 assert_equals "self-contained script runs without -n" "hello, world" "$output"
 
-# --- test: _perlrepl_needs_n returns false when no data file ---
-if ! _perlrepl_needs_n "$src"; then
-    pass "bare expr without data: _perlrepl_needs_n still reports needs-n"
-    # (it checks source only, not data; but we don't add -n when data is empty)
-fi
+# --- _perlrepl_needs_n looks at the source only: a bare expression reports
+#     "needs -n" whether or not there is data (the runner then adds -n only
+#     when there IS data, checked below) ---
+_perlrepl_needs_n "$src"; rc=$?
+assert_equals "bare expression: _perlrepl_needs_n reports needs-n (0)" "0" "$rc"
 # what matters is the pipeline: no data → no -n regardless of heuristic
 auto_n=''
 if [[ -s "$data" ]] && _perlrepl_needs_n "$src"; then auto_n='-n'; fi

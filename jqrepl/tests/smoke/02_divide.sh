@@ -12,12 +12,10 @@ source "$TESTS_DIR/../helpers.sh"
 source "$JQREPL"
 
 # temp files, cleaned up on exit
-src=$(mktemp); data=$(mktemp); args=$(mktemp)
-trap 'rm -f "$src" "$data" "$args"' EXIT
+src=$(mktemp); data=$(mktemp); args=$(mktemp); in=$(mktemp)
+trap 'rm -f "$src" "$data" "$args" "$in"' EXIT
 
 # --- test: filter + #DATA split ---
-in=$(mktemp)
-trap 'rm -f "$in"' EXIT
 cat > "$in" <<'EOF'
 .[] | .name
 
@@ -58,5 +56,10 @@ _jqrepl_divide "$in" "$src" "$data" "$args"
 assert_file_contains     "#ARGS value written to args file" '-r'       "$args"
 assert_file_not_contains "#ARGS line removed from src"      '#ARGS'    "$src"
 assert_file_contains     "filter still in src"              '.[] | .name' "$src"
+
+# --- sourcing the script (as these tests do) must not return failure ---
+# (a trailing '[[ … ]] && jqrepl' used to leave status 1, killing set -e callers)
+assert_equals "sourcing jqrepl returns 0" "0" \
+    "$(bash -c 'source "$1"' _ "$TESTS_DIR/../../jqrepl" >/dev/null 2>&1; echo $?)"
 
 summary

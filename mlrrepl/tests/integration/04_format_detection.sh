@@ -79,4 +79,16 @@ else
     fail "auto-detected --jsonl produces output with computed field" "got: $output"
 fi
 
+# --- a blank line right after #DATA must not hide the CSV ---
+# (the sniff used to look at the first line even when it was blank → --nidx)
+printf '\na,b\n1,2\n' > "$data"
+assert_equals "blank first data line: CSV still detected" '--csv' "$(_mlrrepl_detect_format "$data")"
+
+# --- a JSON array is --json (it starts with '[' and contains commas) ---
+printf '[{"a":1,"b":2},{"a":3,"b":4}]\n' > "$data"
+assert_equals "JSON array is detected as --json" '--json' "$(_mlrrepl_detect_format "$data")"
+printf '$c = $a + $b;\n' > "$src"
+assert_equals "--json processes the array" '[{"a":1,"b":2,"c":3},{"a":3,"b":4,"c":7}]' \
+    "$(mlr --json put -f "$src" "$data" | tr -d ' \n')"
+
 summary
