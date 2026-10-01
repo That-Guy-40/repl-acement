@@ -87,7 +87,18 @@ _perlrepl_divide() {
     _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
 } # _perlrepl_divide
 
+# _repl_parse_args FILE — print the #ARGS tokens NUL-separated, honoring shell
+# quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
+# command expansion. xargs only splits and unquotes; it never expands, so a
+# literal '*' stays '*'.
+_repl_parse_args() {
+    local f=${1:?missing args file}
+    grep -q '[^[:space:]]' "$f" 2>/dev/null || return 0
+    xargs printf '%s\0' < "$f" 2>/dev/null
+}
+
 # the tmux subshells need these
+export -f _repl_parse_args
 export -f _sed_in_place
 export -f _perlrepl_divide
 export -f _perlrepl_pretty_print
@@ -96,12 +107,12 @@ export -f _perlrepl_needs_n
 _perlrepl_setup() {
     local replfile=${1:?missing replfile argument}
     local src data args runner formatter cleanup
-    src=$(mktemp /tmp/perlrepl-src-XXXXXX)         || { echo "perlrepl: mktemp failed" >&2; return 1; }
-    data=$(mktemp /tmp/perlrepl-data-XXXXXX)        || { echo "perlrepl: mktemp failed" >&2; return 1; }
-    args=$(mktemp /tmp/perlrepl-args-XXXXXX)        || { echo "perlrepl: mktemp failed" >&2; return 1; }
-    runner=$(mktemp /tmp/perlrepl-run-XXXXXX)       || { echo "perlrepl: mktemp failed" >&2; return 1; }
-    formatter=$(mktemp /tmp/perlrepl-fmt-XXXXXX)    || { echo "perlrepl: mktemp failed" >&2; return 1; }
-    cleanup=$(mktemp /tmp/perlrepl-cleanup-XXXXXX)  || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    src=$(mktemp "${TMPDIR:-/tmp}/perlrepl-src-XXXXXX")         || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    data=$(mktemp "${TMPDIR:-/tmp}/perlrepl-data-XXXXXX")        || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    args=$(mktemp "${TMPDIR:-/tmp}/perlrepl-args-XXXXXX")        || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    runner=$(mktemp "${TMPDIR:-/tmp}/perlrepl-run-XXXXXX")       || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    formatter=$(mktemp "${TMPDIR:-/tmp}/perlrepl-fmt-XXXXXX")    || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    cleanup=$(mktemp "${TMPDIR:-/tmp}/perlrepl-cleanup-XXXXXX")  || { echo "perlrepl: mktemp failed" >&2; return 1; }
 
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
@@ -122,15 +133,14 @@ _perlrepl_setup() {
     cat > "$runner" <<RUNNER
 #!/usr/bin/env bash
 set -uo pipefail
-$(declare -f _sed_in_place _perlrepl_divide _perlrepl_needs_n)
+$(declare -f _sed_in_place _perlrepl_divide _perlrepl_needs_n _repl_parse_args)
 _perlrepl_divide $q_replfile $q_src $q_data $q_args
 if [[ -s $q_src ]]; then
     _perl_args=()
     if [[ -s $q_data ]] && _perlrepl_needs_n $q_src; then
         _perl_args+=( -n )
     fi
-    # shellcheck disable=SC2046
-    _perl_args+=( \$(cat $q_args) )
+    while IFS= read -r -d '' _a; do _perl_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
     _perl_args+=( $q_src )
     [[ -s $q_data ]] && _perl_args+=( $q_data )
     echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
@@ -191,6 +201,15 @@ perlrepl() {
       select-pane -t 0 \;                                           \
       set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;    \
       set-hook 'pane-exited[1]' kill-window
+
+    # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
+    # tmux builds, leaking temp files. When we launched a NEW session (not
+    # nested — $TMUX was unset), 'tmux new' blocks until it exits, so by here
+    # the panes are gone and it is safe to remove the temp files ourselves.
+    if [[ -z "${TMUX:-}" ]]; then
+        rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
+              "$REPL_FORMATTER" "$REPL_CLEANUP"
+    fi
 }
 
 # allow sourcing for tests without launching the REPL

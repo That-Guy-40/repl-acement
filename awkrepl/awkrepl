@@ -71,7 +71,7 @@ _trim_blanks() {
     # macOS doesn't have 'tac'
     local tac='tac'; [[ $(uname -s) == Darwin ]] && tac='tail -r'
     local tmp
-    tmp=$(mktemp /tmp/awkrepl-XXXXXX) || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    tmp=$(mktemp "${TMPDIR:-/tmp}/awkrepl-XXXXXX") || { echo "awkrepl: mktemp failed" >&2; return 1; }
     # shellcheck disable=SC2064
     trap "rm -f '$tmp'" RETURN
 
@@ -166,21 +166,33 @@ _awkrepl_divide() {
     fi
 } # _awkrepl_divide
 
+# _repl_parse_args FILE — print the #ARGS tokens NUL-separated, honoring shell
+# quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
+# command expansion. xargs only splits and unquotes; it never expands, so a
+# literal '*' stays '*'. Read the result with:
+#   args=(); while IFS= read -r -d '' a; do args+=("$a"); done < <(_repl_parse_args "$f")
+_repl_parse_args() {
+    local f=${1:?missing args file}
+    grep -q '[^[:space:]]' "$f" 2>/dev/null || return 0   # nothing but whitespace
+    xargs printf '%s\0' < "$f" 2>/dev/null
+}
+
 # the tmux subshells need these
 export -f _sed_in_place
 export -f _awkrepl_divide
 export -f _awkrepl_pretty_print
+export -f _repl_parse_args
 
 _awkrepl_setup() {
     local replfile=${1:?missing replfile argument}
     local src data args runner formatter helpers cleanup
-    src=$(mktemp /tmp/awkrepl-src-XXXXXX)         || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    data=$(mktemp /tmp/awkrepl-data-XXXXXX)        || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    args=$(mktemp /tmp/awkrepl-args-XXXXXX)        || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    runner=$(mktemp /tmp/awkrepl-run-XXXXXX)       || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    formatter=$(mktemp /tmp/awkrepl-fmt-XXXXXX)    || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    helpers=$(mktemp /tmp/awkrepl-helpers-XXXXXX)  || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    cleanup=$(mktemp /tmp/awkrepl-cleanup-XXXXXX)  || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    src=$(mktemp "${TMPDIR:-/tmp}/awkrepl-src-XXXXXX")         || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    data=$(mktemp "${TMPDIR:-/tmp}/awkrepl-data-XXXXXX")        || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    args=$(mktemp "${TMPDIR:-/tmp}/awkrepl-args-XXXXXX")        || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    runner=$(mktemp "${TMPDIR:-/tmp}/awkrepl-run-XXXXXX")       || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    formatter=$(mktemp "${TMPDIR:-/tmp}/awkrepl-fmt-XXXXXX")    || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    helpers=$(mktemp "${TMPDIR:-/tmp}/awkrepl-helpers-XXXXXX")  || { echo "awkrepl: mktemp failed" >&2; return 1; }
+    cleanup=$(mktemp "${TMPDIR:-/tmp}/awkrepl-cleanup-XXXXXX")  || { echo "awkrepl: mktemp failed" >&2; return 1; }
 
     # AWK array helper functions like printa and printaa
     echo "$AWKHELPERS" > "$helpers"
@@ -205,10 +217,10 @@ _awkrepl_setup() {
     cat > "$runner" <<RUNNER
 #!/usr/bin/env bash
 set -uo pipefail
-$(declare -f _sed_in_place _trim_blanks _awkrepl_divide)
+$(declare -f _sed_in_place _trim_blanks _awkrepl_divide _repl_parse_args)
 _awkrepl_divide $q_replfile $q_src $q_data $q_args
-# shellcheck disable=SC2046
-_gawk_args=( \$(cat $q_args) )
+_gawk_args=()
+while IFS= read -r -d '' _a; do _gawk_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
 echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
 echo "$(tput setaf 0)# command:  gawk \${_gawk_args[*]} -f $q_helpers -f $q_src $q_data$(tput sgr0)"
 gawk "\${_gawk_args[@]}" -f $q_helpers -f $q_src $q_data
@@ -258,9 +270,17 @@ awkrepl() {
       select-pane -t 0 \;                                          \
       set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;   \
       set-hook 'pane-exited[1]' kill-window
-      # FIXME: weird, but the 'pane-exited' hooks don't seem to work with the
-      # tmux that's in the Docker image (3.1c); maybe disable input to panes
-      # 1 and 2 again if I can get this working reliably
+
+    # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
+    # tmux builds, leaking temp files. When we launched a NEW session (not
+    # nested — $TMUX was unset), the 'tmux new' above blocks until it exits, so
+    # by here the panes are gone and it is safe to remove the temp files
+    # ourselves. In the nested case ('tmux neww' returned immediately) the
+    # window is still live, so we leave cleanup to the hook.
+    if [[ -z "${TMUX:-}" ]]; then
+        rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
+              "$REPL_FORMATTER" "$REPL_CLEANUP" "${REPL_HELPERS:-}"
+    fi
 }
 
 # allow sourcing for tests without launching the REPL
