@@ -9,9 +9,9 @@ DOCKER_HUB_TAG = ernstki/$(TAG)
 
 define _PERL_SCRIPT
 	BEGIN {
-		use Term::ANSIColor qw(:REDIRECT);
+		use Term::ANSIColor qw(:constants);
 		$$max = 0;
-		print "\n    ", "Makefile targets:\n\n";
+		print "\n    ", BRIGHT_BLUE UNDERLINE "Makefile targets:\n\n", RESET;
 	}
 	if (/([-_\w]+):.*#\s+(.*)/) {
 		$$max = length($$1) if length($$1) > $$max;
@@ -20,7 +20,7 @@ define _PERL_SCRIPT
 	END {
 		for (@targets) {
 			($$t, $$h) = split /:/;
-			printf "    %s%-${max}s%s    %s\n", "", $$t, "", $$h;
+			printf "    %smake %-$${max}s%s    %s\n", BOLD, $$t, RESET, $$h;
 		}
 		printf "\n";
 	}

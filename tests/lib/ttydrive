@@ -8,8 +8,9 @@
 # text, read the screen and collect the exit status the way a person would.
 #
 # It is vendored here unmodified (below this header) so repl-acement's
-# end-to-end tests are self-contained and need only tmux to run. Keep this
-# copy in sync with socwrap upstream when the tool changes there.
+# end-to-end tests don't need a socwrap checkout; ttydrive itself needs only
+# bash 4+ and tmux 3.0+. Keep this copy in sync with socwrap upstream when the
+# tool changes there.
 # =============================================================================
 # =============================================================================
 # ttydrive — drive an interactive program in a real terminal, one command at

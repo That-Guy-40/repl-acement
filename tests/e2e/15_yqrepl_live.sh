@@ -4,7 +4,7 @@
 ##  e2e/15_yqrepl_live.sh — drive a LIVE yqrepl tmux session with ttydrive.
 ##
 ##  yqrepl targets Mike Farah's Go yq (github.com/mikefarah/yq), whose grammar
-##  ('yq eval', --null-input) differs from the unrelated Python "yq". If the
+##  (e.g. the 'yq eval' subcommand) differs from the unrelated Python "yq". If the
 ##  yq on PATH is not Mike Farah's, this suite skips rather than misreport.
 ##
 

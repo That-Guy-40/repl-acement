@@ -4,16 +4,19 @@ sedrepl
 A [REPL][1] of sorts for [sed][2].
 
 Syntax-checks and displays your sed code in the right-hand pane when you save
-it, and shows the results of your script's execution in the lower-left pane.
+it, and shows the results of your script's execution in the lower-left pane
+(preceded by the working directory, the `sed` command line, and your script).
 The top pane is your text editor (whatever you have `$EDITOR` set to, or
 defaults to `nano`), with the file `~/.repl.sed` open for editing.
 
 Any lines after `#DATA` at the end of the file are supplied as input to your
-script, for quick testing on sample inputs. If you have a line in your source
-file that starts with `#ARGS`, anything on the line after that is provided as
-command-line arguments to your script (such as `-n` to suppress automatic
-printing). _Whitespace within individual arguments is probably not preserved,
-though._
+script, for quick testing on sample inputs. (With no `#DATA` section, sed reads
+an empty input and prints nothing.) If you have a line in your source file that
+starts with `#ARGS`, anything on the line after that is provided as
+command-line arguments to `sed` (such as `-n` to suppress automatic printing).
+Arguments are split like a shell would split them, so quotes are honored and a
+quoted argument may contain spaces, but nothing is expanded (no globs,
+variables, or command substitution).
 
 Unlike `awkrepl` (the AWK version on which this is based), sed operates on
 every line of input by default, so no automatic wrapping of your code is
@@ -26,7 +29,9 @@ Requirements
 - tmux
 - [entr][]
 - sed (GNU or BSD)
-- [bat][] (optional, for syntax-highlighted output)
+- xargs (part of findutils; used to parse `#ARGS`)
+- [bat][] or `batcat` (optional, for syntax-highlighted source; bat has no sed
+  syntax, so AWK highlighting is used)
 
 
 Usage
@@ -36,9 +41,10 @@ Make the `sedrepl` script executable with `chmod a+x` (if it's not already) and
 put it somewhere in your search path, like `$HOME/bin`. Run `sedrepl`.
 
 The [`examples.sed`](examples.sed) from this repository is copied to
-`~/.repl.sed` in the Docker container, to provide you with some working
-examples to play with. Just clear out the entire contents of this file and
-replace with your own code when you get bored with those examples.
+`~/.repl.sed` in the Docker container (`make build`, then `make run`), to
+provide you with some working examples to play with. Just clear out the entire
+contents of this file and replace with your own code when you get bored with
+those examples.
 
 ### Using a different editor
 
@@ -78,7 +84,9 @@ chr8	50	75
 
 ### `#ARGS` and `#DATA` together
 
-Use both `#ARGS` and `#DATA` in any order, but typically `#ARGS` comes first:
+Use both `#ARGS` and `#DATA` together, with `#ARGS` before `#DATA` (an `#ARGS`
+line placed after `#DATA` is still used for arguments, but is also fed to sed
+as a line of input):
 
 ```sed
 #ARGS -n

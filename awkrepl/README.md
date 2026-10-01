@@ -12,13 +12,19 @@ to, or defaults to `nano`), with the file `~/.repl.awk` open for editing.
 
 Any lines after `#DATA` at the end of the program are supplied as input to your
 program, for quick testing on sample inputs. If you have a line in your source
-file that starts with `#ARGS`, anything on the line after that is provided as
-command-line arguments to your script (which you can read from `ARGV[1]`…).
-_Whitespace within individual arguments is probably not preserved, though; see
-#4._
+file that starts with `#ARGS`, anything on the line after that is passed to
+`gawk` as command-line options, _ahead of_ the `-f` for your script, so use it
+for options like `-v name=value` or `-F,` (a bare word there is not delivered
+to `ARGV`; `gawk` would take it as program text). The line is split with
+shell-style quoting, so `#ARGS -v "x=a b"` is one `-v` with the value `x=a b`;
+globs and `$variables` are not expanded.
 
-`awkrepl` automatically wraps simple programs like `print $1` in `END{…}` for
-you, so it's a piece of cake to try out little snippets of AWK code.
+Comment lines (starting with `#`) and blank lines are stripped from your source
+before it's run.
+
+`awkrepl` automatically wraps simple programs like `print $1` in `END{…}` (or
+in `{…}`, if there's `#DATA`) for you, so it's a piece of cake to try out
+little snippets of AWK code.
 
 Some reasonable heuristics are applied when deciding whether to automatically
 apply an outer set of curly braces for you, so that if your script contains
@@ -31,16 +37,19 @@ something like
 NF>1
 ```
 
-where the `{print}` is implicit, this should work as expected.
+where the `{print}` is implicit, this should work as expected. Only the first
+line of the source is checked: if it starts with `{`, `BEGIN`, `END`, `NR`,
+`NF`, a field reference like `$1`, or a `/regex/` (optionally after a `(`),
+nothing is wrapped.
 
 
 Requirements
 ------------
 
 * Docker
-* _—or—_ tmux, [entr][], GNU Awk (as `gawk`), and Perl
-    * also [bat][], if you want your pretty-printed AWK source to also be
-      syntax-highlighted
+* _—or—_ Bash, tmux, [entr][], GNU Awk (as `gawk`), Perl, and `xargs`
+    * also [bat][] (as `bat` or `batcat`), if you want your pretty-printed AWK
+      source to also be syntax-highlighted
 
 
 Usage
@@ -62,13 +71,16 @@ make run
 docker run -it --rm awkrepl
 ```
 
-Or, pull the image straight from Docker Hub, without even cloning this repo:
+Or, pull the original author's image straight from Docker Hub, without even
+cloning this repo (it's built from the upstream [ernstki/awkrepl][upstream]
+repository, so it may not include changes made here):
 
 ```bash
 docker run -it --rm ernstki/awkrepl
 ```
 
-The image is about ~65 MB compressed, and based on [debian:stable-slim][slim].
+The image is based on [debian:stable-slim][slim]; upstream described it as
+about ~65 MB compressed.
 
 The [`examples.awk`](examples.awk) from this repository is copied to
 `~/.repl.awk` in the Docker container, to provide you with some working
@@ -85,11 +97,12 @@ You can specify a different editor like this:
 make run EDITOR=vim
 
 # or
-docker run -it -e EDITOR=vim --rm
+docker run -it -e EDITOR=vim --rm awkrepl
 ```
 
 There's no GNU Emacs in the Docker image to keep the size down, but there's
-[jove][], which installs itself as `emacs`, and that'll do in a pinch.  You
+[jove][], which installs itself as `emacs`, and that'll do in a pinch (`vim`,
+`nano`, and `jed` are installed too).  You
 could always modify the Dockerfile and `make build`!
 
 It's also possible to run straight from [Docker Hub][hub], if that's your
@@ -136,3 +149,4 @@ MIT.
 [slim]: https://hub.docker.com/_/debian
 [hub]: https://hub.docker.com/repository/docker/ernstki/awkrepl
 [issues]: https://github.com/ernstki/awkrepl/issues
+[upstream]: https://github.com/ernstki/awkrepl

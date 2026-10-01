@@ -11,7 +11,8 @@
 ##    - Perl
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
-##    - bat (optional) - https://github.com/sharkdp/bat
+##    - xargs (used to parse '#ARGS' lines)
+##    - bat (optional; also found as 'batcat') - https://github.com/sharkdp/bat
 ##
 set -uo pipefail
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "awkrepl: error at line $LINENO" >&2; exit 1' ERR
@@ -131,8 +132,9 @@ _awkrepl_divide() {
 
     # don't touch if there's any kind of outer brace expression, including
     # implicit '{print}' one like 'NR==…' and '($1 == x && $2 == y) && $3'
+    # (only the FIRST line of the comment-stripped source is examined)
     if perl -${DEBUG:+d}ne '
-        s/\s+//;                     # strip all whitespace
+        s/\s+//;                     # strip the first run of whitespace
 
         /^(                          # at beginning of the line, try to match
 
@@ -200,8 +202,8 @@ _awkrepl_setup() {
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    # Note: sed's 'w filename' ends at the first space; since these are /tmp
-    # mktemp paths they will never contain spaces, but we quote for all other uses.
+    # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
+    # (in GNU sed) takes the rest of the expression, spaces included.
     local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
@@ -259,7 +261,12 @@ awkrepl() {
     test -f "$replfile" || touch "$replfile"
     (( ${TRACE:-} )) && set -x
     _awkrepl_setup "$replfile" || return 1
-    tmux new${TMUX:+w} -n 'awkrepl'                              \
+    # A new session (not nested in tmux) gets a known name, so the cleanup
+    # below can tell "the session ended" from "the client only detached".
+    local session="awkrepl-$$"
+    local -a launch=(new-session -s "$session")
+    if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
+    tmux "${launch[@]}" -n 'awkrepl'                              \
       "${EDITOR:-nano}" "$replfile" \;                             \
       split-window    -c "$PWD"                                    \
         "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;      \
@@ -272,12 +279,13 @@ awkrepl() {
       set-hook 'pane-exited[1]' kill-window
 
     # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
-    # tmux builds, leaking temp files. When we launched a NEW session (not
-    # nested — $TMUX was unset), the 'tmux new' above blocks until it exits, so
-    # by here the panes are gone and it is safe to remove the temp files
-    # ourselves. In the nested case ('tmux neww' returned immediately) the
-    # window is still live, so we leave cleanup to the hook.
-    if [[ -z "${TMUX:-}" ]]; then
+    # tmux builds, leaking temp files. A new session's 'tmux new-session'
+    # returns both when the session ends and when the client merely detaches,
+    # so only clean up once our named session is really gone: a detached
+    # session still needs these files. In the nested case ('new-window'
+    # returns at once) the window is still live, so cleanup is left to the
+    # hook.
+    if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
         rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
               "$REPL_FORMATTER" "$REPL_CLEANUP" "${REPL_HELPERS:-}"
     fi
