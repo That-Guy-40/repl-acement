@@ -46,7 +46,10 @@ awkrepl creates a **three-pane tmux window** (in a new tmux session, or as a new
 ### Command Structure (in `awkrepl()`)
 
 ```bash
-tmux new${TMUX:+w} -n 'awkrepl'                              \   # Step A
+local session="awkrepl-$$"                                   # Step A
+local -a launch=(new-session -s "$session")
+if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
+tmux "${launch[@]}" -n 'awkrepl'                              \
   "${EDITOR:-nano}" "$replfile" \;                             \   # Step B
   split-window    -c "$PWD"                                    \   # Step C
     "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;      \   # Step D
@@ -70,10 +73,13 @@ survive being embedded in the tmux command strings and generated scripts.
 
 #### Step A: Create Session or Window
 ```bash
-tmux new${TMUX:+w} -n 'awkrepl'
+local session="awkrepl-$$"
+local -a launch=(new-session -s "$session")
+if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
+tmux "${launch[@]}" -n 'awkrepl'
 ```
-- If **outside tmux**: `tmux new` creates a new session whose first window is named `awkrepl` (the session itself gets tmux's default name; `-n` names the window). This call blocks until the session ends.
-- If **inside tmux** (`$TMUX` is set): `tmux neww` creates a new window named `awkrepl` in the current session and returns immediately.
+- If **outside tmux**: `tmux new-session -s awkrepl-<pid>` creates a new session with a known name, whose first window is named `awkrepl` (`-n` names the window). This call returns when the session ends **or when the client detaches**; the name lets the cleanup backstop tell the two apart.
+- If **inside tmux** (`$TMUX` is set): `tmux new-window` creates a new window named `awkrepl` in the current session and returns immediately.
 
 #### Step B: Create Pane 0 (Editor)
 ```bash
@@ -365,13 +371,15 @@ kill-window  # Close the (current) tmux window
 ### Trigger 2: Backstop in `awkrepl()`
 
 Because the hooks are unreliable on some tmux builds, `awkrepl()` removes the
-temp files itself after `tmux new` returns, **only when not nested in tmux**
-(`$TMUX` unset — `tmux new` blocks until the session ends). When nested,
-`tmux neww` returns immediately while the window is still live, so cleanup is
-left to the hook.
+temp files itself after `tmux new-session` returns, **only when not nested in
+tmux** (`$TMUX` unset) **and only once its named session is gone**.
+`tmux new-session` also returns when the client merely detaches (`C-b d`); the
+detached session still needs its files, so they are left alone and you can
+reattach later. When nested, `tmux new-window` returns immediately while the
+window is still live, so cleanup is left to the hook.
 
 ```bash
-if [[ -z "${TMUX:-}" ]]; then
+if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
     rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
           "$REPL_FORMATTER" "$REPL_CLEANUP" "${REPL_HELPERS:-}"
 fi
@@ -383,8 +391,9 @@ fi
 
 | Feature | Purpose in awkrepl |
 |---------|-------------------|
-| `tmux new` | Start new session |
-| `tmux neww` | Create new window (when in tmux) |
+| `tmux new-session -s awkrepl-<pid>` | Start a new, named session |
+| `tmux new-window` | Create new window (when in tmux) |
+| `tmux has-session` | Backstop: check the named session is really gone |
 | `-n awkrepl` | Name the window |
 | `split-window` | Create top/bottom and side-by-side panes |
 | `-c $PWD` | Set working directory for pane |
@@ -429,7 +438,7 @@ DEBUG=1                      # (optional) run the auto-wrap perl check under 'pe
    - Runtime still requires external tools: tmux, entr, gawk, perl, sed (bat/batcat optional)
 
 5. **Cleanup**:
-   - tmux hooks delete temp files on pane exit, plus a backstop `rm -f` in `awkrepl()` when not nested in tmux
+   - tmux hooks delete temp files on pane exit, plus a backstop `rm -f` in `awkrepl()` when not nested in tmux and the session has ended (not on a detach)
 
 ### Data Access Flow
 
@@ -437,7 +446,7 @@ DEBUG=1                      # (optional) run the auto-wrap perl check under 'pe
 User → editor (pane 0) → save
       → entr (pane 1) → runner → gawk → output (pane 1)
       → entr (pane 2) → formatter → pretty (pane 2)
-      → cleanup (pane exit hook; backstop rm when not nested)
+      → cleanup (pane exit hook; backstop rm when not nested and the session is gone)
 ```
 
 This creates a **reactive development loop** where every save automatically triggers both code execution and formatting feedback.

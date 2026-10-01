@@ -66,9 +66,10 @@ awkrepl() [ENTRY POINT]
     │       ├─ $formatter → calls _awkrepl_pretty_print()
     │       └─ $cleanup   → removes temp files
     │
-    ├─ tmux new (or 'tmux neww' when already inside tmux)
+    ├─ tmux new-session -s awkrepl-<pid> (or 'tmux new-window' when already inside tmux)
     │
-    └─ Backstop: if not nested ($TMUX unset), removes temp files after tmux exits
+    └─ Backstop: if not nested ($TMUX unset) and the named session is gone,
+       removes temp files (a detach returns too, but leaves the session running)
 ```
 
 ### Runtime Call Chain
@@ -246,8 +247,11 @@ run, in order:
 
 Backstop: because the hooks are unreliable on some tmux builds, when awkrepl
 started a new tmux session (not nested; `$TMUX` unset) it also removes the temp
-files itself once `tmux new` returns. In the nested (`tmux neww`) case cleanup is
-left to the hook.
+files itself once `tmux new-session` returns **and** `tmux has-session` shows the
+named session (`awkrepl-<pid>`) is gone. A detach (`C-b d`) also makes
+`tmux new-session` return, but the session is still alive, so its files are
+kept and you can reattach. In the nested (`tmux new-window`) case cleanup is left
+to the hook.
 
 ---
 

@@ -47,6 +47,12 @@
 #   repl_settle NAME [MS]                wait until the screen stops changing
 #                                        for MS (500) ms, up to 10s
 #   repl_replfile NAME                   path to NAME's edited file
+#   repl_keys NAME KEY...                press keys in NAME's terminal (C-b d …)
+#   repl_wait_exit NAME [SECS]           wait for NAME's program to exit (10s)
+#   repl_tmux ARGS...                    tmux on the REPLs' own (inner) server
+#   repl_sessions                        session names on the inner server
+#   repl_scratch_count PREFIX            REPL temp files named PREFIX* in $TMPDIR
+#   repl_attach NAME SESSION             new terminal NAME attached to SESSION
 #   repl_cleanup                         stop every session; kill inner servers
 #
 #   assert_screen_contains NAME TEXT MSG       checks screen + scrollback
@@ -121,6 +127,29 @@ repl_screen()     { _rp screen "$1"; }
 repl_transcript() { _rp screen "$1" --all; }
 repl_wait()       { _rp wait "$1" "$2" -t "${3:-10}"; }
 repl_settle()     { _rp settle "$1" -q "${2:-500}" -t 10; }
+repl_keys()       { _rp keys "$@"; }
+repl_wait_exit()  { _rp wait-exit "$1" -t "${2:-10}"; }
+
+# --- the REPLs' own (inner) tmux server and scratch files --------------------
+
+# tmux on the REPLs' inner server (the one isolated under our TMUX_TMPDIR)
+repl_tmux() { tmux -S "$_RP_INNER_TMPDIR/tmux-$(id -u)/default" "$@"; }
+
+# repl_sessions — names of the sessions on the inner server, one per line
+repl_sessions() { repl_tmux list-sessions -F '#{session_name}' 2>/dev/null; }
+
+# repl_scratch_count PREFIX — how many of the REPLs' temp files start with
+# PREFIX (e.g. "awkrepl-") in the isolated $TMPDIR
+repl_scratch_count() {
+    find "$_RP_REPL_TMPDIR" -maxdepth 1 -name "$1*" 2>/dev/null | wc -l
+}
+
+# repl_attach NAME SESSION — open a new terminal NAME attached to the inner
+# server's SESSION (to reattach after the REPL's client has detached)
+repl_attach() {
+    _rp start "$1" -s 120x40 -e TMUX= -e PATH="$PATH" -- \
+        tmux -S "$_RP_INNER_TMPDIR/tmux-$(id -u)/default" attach -t "=$2"
+}
 
 repl_cleanup() {
     _rp stop --all 2>/dev/null

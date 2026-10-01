@@ -58,8 +58,9 @@ sedrepl() [ENTRY POINT]
     ├─ tmux: editor pane, runner pane, formatter pane;
     │        'pane-exited' hooks run $cleanup / kill the window
     │
-    └─ Backstop cleanup: if not nested in tmux ($TMUX unset), removes
-       the temp files itself after 'tmux new' returns
+    └─ Backstop cleanup: if not nested in tmux ($TMUX unset), removes the
+       temp files itself once 'tmux new-session' returns and the named
+       session (sedrepl-<pid>) is gone; a detach leaves it running
 ```
 
 All four helper functions are also exported with `export -f`, but the
@@ -202,4 +203,4 @@ sedrepl provides a REPL-like environment for sed development where:
 - **One save** triggers **two reactions** (execution and formatting)
 - **No polling** - uses kernel file events via entr
 - **Self-contained** - scripts embed functions via `declare -f`
-- **Clean exit** - temp files deleted automatically (tmux `pane-exited` hook, plus a backstop `rm` when not nested in tmux)
+- **Clean exit** - temp files deleted automatically (tmux `pane-exited` hook, plus a backstop `rm` when not nested in tmux and the session has ended)

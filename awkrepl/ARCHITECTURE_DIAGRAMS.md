@@ -297,8 +297,9 @@ This document contains visual representations of the awkrepl architecture, data 
 │  [1] kill-window                                                    │
 │     │                                                               │
 │     ▼                                                               │
-│  Backstop (not nested in tmux): awkrepl() rm -f's the same files    │
-│  after 'tmux new' returns                                           │
+│  Backstop (not nested in tmux): once 'tmux new-session' returns     │
+│  and the named session is gone, awkrepl() rm -f's the same files    │
+│  (a detach also returns, but the session lives on: no rm)           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -533,7 +534,8 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  $cleanup runs (tmux hook pane-exited[0]): rm -f temp files   │  │
 │  │  kill-window (tmux hook pane-exited[1])                       │  │
 │  │  Backstop when not nested: awkrepl() rm -f's temp files       │  │
-│  │  after 'tmux new' returns                                     │  │
+│  │  once 'tmux new-session' returns and the session is gone      │  │
+│  │  (not on a detach: the detached session keeps its files)      │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │         │                                                           │
 │         ▼                                                           │
@@ -574,7 +576,8 @@ Runner → writes $src → Formatter watches $src → reads $src
 ### 4. Cleanup on Exit
 ```
 Pane exit (e.g. editor) → tmux hooks → cleanup script + kill-window → rm temp files
-Not nested in tmux: 'tmux new' returns → awkrepl() backstop rm -f
+Not nested in tmux: 'tmux new-session' returns and the named session is gone → awkrepl() backstop rm -f
+Detach (C-b d): 'tmux new-session' returns but the session lives on → no rm; reattach later
 ```
 
 ---
@@ -583,4 +586,4 @@ This architecture provides a responsive, interactive development environment whe
 - **One save** triggers **two independent reactions** (execution and formatting)
 - **No polling** - uses kernel file events via `entr`
 - **Self-contained scripts** - generated scripts embed the functions they need via `declare -f`
-- **Clean exit** - temp files deleted by the tmux hook, with a backstop `rm -f` when not nested in tmux
+- **Clean exit** - temp files deleted by the tmux hook, with a backstop `rm -f` when not nested in tmux and the session has really ended (a detach leaves it running)

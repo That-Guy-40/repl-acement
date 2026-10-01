@@ -18,7 +18,8 @@ Layout
 | `lib/ttydrive` | the terminal driver, vendored from [socwrap][] (`tools/ttydrive`) |
 | `lib/replpty.sh` | helpers that launch a REPL under ttydrive, edit its file, read the panes |
 | `lib/helpers.sh` | the shared `assert_*` / `pass` / `fail` counters |
-| `e2e/*.sh` | one live-UI suite per REPL |
+| `e2e/1[0-5]_*.sh` | one live-UI suite per REPL |
+| `e2e/16_detach_reattach.sh` | detach, reattach and quit each REPL; checks the session and its temp files survive a detach and are cleaned up on quit |
 | `e2e/run.sh` | runs them all |
 
 How it works

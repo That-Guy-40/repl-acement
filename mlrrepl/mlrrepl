@@ -184,7 +184,12 @@ mlrrepl() {
     test -f "$replfile" || touch "$replfile"
     (( ${TRACE:-} )) && set -x
     _mlrrepl_setup "$replfile" || return 1
-    tmux new${TMUX:+w} -n 'mlrrepl'                              \
+    # A new session (not nested in tmux) gets a known name, so the cleanup
+    # below can tell "the session ended" from "the client only detached".
+    local session="mlrrepl-$$"
+    local -a launch=(new-session -s "$session")
+    if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
+    tmux "${launch[@]}" -n 'mlrrepl'                              \
       "${EDITOR:-nano}" "$replfile" \;                             \
       split-window    -c "$PWD"                                    \
         "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;      \
@@ -197,10 +202,13 @@ mlrrepl() {
       set-hook 'pane-exited[1]' kill-window
 
     # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
-    # tmux builds, leaking temp files. When we launched a NEW session (not
-    # nested — $TMUX was unset), 'tmux new' blocks until it exits, so by here
-    # the panes are gone and it is safe to remove the temp files ourselves.
-    if [[ -z "${TMUX:-}" ]]; then
+    # tmux builds, leaking temp files. A new session's 'tmux new-session'
+    # returns both when the session ends and when the client merely detaches,
+    # so only clean up once our named session is really gone: a detached
+    # session still needs these files. In the nested case ('new-window'
+    # returns at once) the window is still live, so cleanup is left to the
+    # hook.
+    if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
         rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
               "$REPL_FORMATTER" "$REPL_CLEANUP"
     fi

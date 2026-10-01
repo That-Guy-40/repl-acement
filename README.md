@@ -50,9 +50,11 @@ Python `yq` (a jq wrapper) uses a different grammar; `yqrepl` detects it and
 refuses to launch with a clear message rather than failing cryptically.
 
 **Temp files**: each REPL keeps its scratch files under `$TMPDIR` (default
-`/tmp`) and removes them when its tmux session ends. When started from inside
-an existing tmux session (a new window rather than a new session), removal
-relies on a tmux `pane-exited` hook and is best-effort.
+`/tmp`) and removes them when its tmux session ends. Detaching (`C-b d`) does
+not end the session: it keeps running with its files, and you can reattach
+with `tmux attach -t <tool>repl-<pid>`. When started from inside an existing
+tmux session (a new window rather than a new session), removal relies on a
+tmux `pane-exited` hook and is best-effort.
 
 [yq-mf]: https://github.com/mikefarah/yq
 
