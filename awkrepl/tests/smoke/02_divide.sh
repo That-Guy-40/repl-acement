@@ -75,4 +75,9 @@ _awkrepl_divide "$in" "$src" "$data" "$args"
 assert_file_contains     "#ARGS value written to args file" '-v'    "$args"
 assert_file_not_contains "#ARGS line removed from src"      '#ARGS' "$src"
 
+# --- sourcing the script (as these tests do) must not return failure ---
+# (a trailing '[[ … ]] && awkrepl' used to leave status 1, killing set -e callers)
+assert_equals "sourcing awkrepl returns 0" "0" \
+    "$(bash -c 'source "$1"' _ "$TESTS_DIR/../../awkrepl" >/dev/null 2>&1; echo $?)"
+
 summary

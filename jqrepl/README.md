@@ -10,14 +10,16 @@ text editor (whatever you have `$EDITOR` set to, or defaults to `nano`), with
 the file `~/.repl.jq` open for editing.
 
 Any lines after `#DATA` at the end of the file are supplied as JSON input to
-your filter, for quick testing on sample inputs. If you have a line in your
-source file that starts with `#ARGS`, anything on the line after that is
-provided as command-line arguments to `jq` (such as `-r` for raw string
-output). Arguments are split like a shell would split them, so quotes are
-honored and a quoted argument may contain spaces, but nothing is expanded (no
-globs, variables, or command substitution). If the line has an unmatched quote
-(say, `it's`), a warning is shown in the output pane and the line is split on
-whitespace instead, with the quote characters kept as typed.
+your filter, for quick testing on sample inputs. If the filter section
+(everything before `#DATA`) has a line that starts with `#ARGS`, the options
+after it on that line (the first of which must start with `-`) are provided as
+command-line arguments to `jq` (such as `-r` for raw string output); an
+`#ARGS` line after `#DATA` is just another line of data. Arguments are split
+like a shell would split them, so quotes are honored and a quoted argument may
+contain spaces, but nothing is expanded (no globs, variables, or command
+substitution). If the line has an unmatched quote (say, `it's`), a warning is
+shown in the output pane and the line is split on whitespace instead, with the
+quote characters kept as typed.
 
 Both headers are case-insensitive and may take a colon (`# data:`,
 `#args: -r`). `#DATA` must be alone on its line, and `#ARGS` (or `#ARG`,
@@ -27,7 +29,9 @@ of which starts with `-` (`#ARGS -r`, `#ARGS:-c`). Any other comment, such as
 
 If there is no `#DATA` section, `jq` runs with `--null-input` (`-n`) so the
 filter is evaluated against `null` rather than blocking on stdin — useful for
-constructing JSON from scratch or trying built-in functions.
+constructing JSON from scratch or trying built-in functions. A filter that is
+only comments and blank lines runs nothing at all (as with `yqrepl`), rather
+than handing `jq` an empty program.
 
 
 Requirements
@@ -144,7 +148,8 @@ Differences from `awkrepl`
 * Without `#DATA`, jq runs in `--null-input` mode rather than wrapping in
   `END {}`.
 * `#` comments in the filter source are preserved (jq supports them natively
-  in filter files).
+  in filter files). A filter that is only comments and blank lines runs
+  nothing, like yqrepl, instead of running jq on an empty program.
 
 
 Bugs
@@ -181,4 +186,4 @@ MIT.
 [2]: https://jqlang.github.io/jq/
 [entr]: http://eradman.com/entrproject/
 [bat]: https://github.com/sharkdp/bat
-[issues]: https://github.com/ernstki/awkrepl/issues
+[issues]: https://github.com/That-Guy-40/repl-acement/issues

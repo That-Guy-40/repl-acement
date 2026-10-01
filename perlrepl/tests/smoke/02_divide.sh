@@ -67,4 +67,9 @@ _perlrepl_divide "$in" "$src" "$data" "$args"
 assert_file_contains     "#ARGS value written to args file" '-l'    "$args"
 assert_file_not_contains "#ARGS line removed from src"      '#ARGS' "$src"
 
+# --- sourcing the script (as these tests do) must not return failure ---
+# (a trailing '[[ … ]] && perlrepl' used to leave status 1, killing set -e callers)
+assert_equals "sourcing perlrepl returns 0" "0" \
+    "$(bash -c 'source "$1"' _ "$TESTS_DIR/../../perlrepl" >/dev/null 2>&1; echo $?)"
+
 summary

@@ -80,7 +80,7 @@ check_tool() {
         fail "$repl: no reload after reattach" "$(repl_screen "$again")"
     fi
 
-    # --- quit (the editor exits): hooks clean up and end the session ---
+    # --- quit (the editor exits): the editor-pane wrapper cleans up and ends the session ---
     # pane 0 runs the REPL's editor wrapper; quitting the editor means ending
     # the editor process under it (the wrapper then cleans up)
     pid=$(repl_tmux display-message -p -t "=$sess:0.0" '#{pane_pid}')

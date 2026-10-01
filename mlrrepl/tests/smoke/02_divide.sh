@@ -68,4 +68,9 @@ _mlrrepl_divide "$in" "$src" "$data" "$args"
 assert_file_contains     "#ARGS value written to args file" '--tsv'  "$args"
 assert_file_not_contains "#ARGS line removed from src"      '#ARGS'  "$src"
 
+# --- sourcing the script (as these tests do) must not return failure ---
+# (a trailing '[[ … ]] && mlrrepl' used to leave status 1, killing set -e callers)
+assert_equals "sourcing mlrrepl returns 0" "0" \
+    "$(bash -c 'source "$1"' _ "$TESTS_DIR/../../mlrrepl" >/dev/null 2>&1; echo $?)"
+
 summary

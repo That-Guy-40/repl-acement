@@ -12,7 +12,8 @@
 | Package | Purpose | Version |
 |---------|---------|---------|
 | `gawk` | GNU AWK interpreter, required for `--pretty-print` | Any recent |
-| `tmux` | Terminal multiplexer for multi-pane interface | ≥ 2.0 |
+| `sed` | Splits `~/.repl.awk` into source/data/args and cleans the source (GNU or BSD) | Any |
+| `tmux` | Terminal multiplexer for multi-pane interface | ≥ 2 |
 | `entr` | File change watcher for event-driven execution | Latest |
 | `xargs` | Shell-style splitting/unquoting of `#ARGS` (in `_repl_parse_args`) | Any |
 | `bash` | Shell script runner | Any recent |
@@ -24,17 +25,20 @@
 | `nano`, `vim`, `jove`, `emacs` | Text editors (`$EDITOR` variable, defaults to `nano`) |
 
 ### Internal Dependencies (BASH Functions)
-| Function | Purpose | Exported (`export -f`) | Embedded (`declare -f`) in |
-|----------|---------|----------|----------|
-| `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes | `$runner` |
-| `_trim_blanks()` | Remove leading/trailing blank lines (via a `mktemp` file) | ❌ No | `$runner` |
-| `_awkrepl_pretty_print()` | Pretty-print AWK code with optional syntax highlighting | ✅ Yes | `$formatter` |
-| `_awkrepl_parses()` | True if `gawk --pretty-print=/dev/null` can parse the program (parses without running it) | ✅ Yes | `$runner` |
-| `_awkrepl_looks_like_statement()` | For source that parses both as written and wrapped: true if it looks like a statement (starts with a name, no comparison/match operator) rather than a pattern | ✅ Yes | `$runner` |
-| `_awkrepl_divide()` | Split input file into source/data/args components; strip comments; auto-wrap (if needed, via `_awkrepl_parses` and `_awkrepl_looks_like_statement`) | ✅ Yes | `$runner` |
-| `_repl_parse_args()` | Print `#ARGS` tokens NUL-separated (shell quoting, no globbing/expansion) | ✅ Yes | `$runner` |
-| `_awkrepl_setup()` | Create temp files and generate `$runner`, `$formatter`, `$cleanup`, `$editpane` | ❌ No | — |
-| `awkrepl()` | Main entry point - sets up tmux environment | N/A | — |
+
+Nothing is `export -f`ed: every pane runs a generated script that embeds the
+functions it needs with `declare -f`.
+
+| Function | Purpose | Embedded (`declare -f`) in |
+|----------|---------|----------|
+| `_sed_in_place()` | Cross-platform `sed -i` wrapper | `$runner` |
+| `_awkrepl_pretty_print()` | Pretty-print AWK code with optional syntax highlighting | `$formatter` |
+| `_awkrepl_parses()` | True if `gawk --pretty-print=/dev/null` can parse the program (parses without running it) | `$runner` |
+| `_awkrepl_looks_like_statement()` | For source that parses both as written and wrapped: true if it looks like a statement (starts with a name, no comparison/match operator) rather than a pattern | `$runner` |
+| `_awkrepl_divide()` | Split input file into source/data/args components; strip comments and blank lines; auto-wrap (if needed, via `_awkrepl_parses` and `_awkrepl_looks_like_statement`) | `$runner` |
+| `_repl_parse_args()` | Print `#ARGS` tokens NUL-separated (shell quoting, no globbing/expansion) | `$runner` |
+| `_awkrepl_setup()` | Create temp files and generate `$runner`, `$formatter`, `$cleanup`, `$editpane` | — |
+| `awkrepl()` | Main entry point - sets up tmux environment | — |
 
 ### Build Dependencies
 | Package | Purpose | Required |
@@ -49,10 +53,6 @@
 ### Function Call Graph
 
 ```
-(at source time, top level) 'export -f' for tmux subshells:
-    _sed_in_place(), _awkrepl_divide(), _awkrepl_pretty_print(), _awkrepl_parses(),
-    _awkrepl_looks_like_statement(), _repl_parse_args()
-
 awkrepl() [ENTRY POINT]
     │
     ├─ _awkrepl_setup($HOME/.repl.awk)
@@ -60,7 +60,7 @@ awkrepl() [ENTRY POINT]
     │   ├─ mktemp "${TMPDIR:-/tmp}/awkrepl-{src,data,args,run,fmt,helpers,cleanup,edit}-XXXXXX"
     │   │
     │   ├─ Embeds functions via 'declare -f' in generated scripts:
-    │   │   ├─ $runner:    _sed_in_place, _trim_blanks, _awkrepl_parses,
+    │   │   ├─ $runner:    _sed_in_place, _awkrepl_parses,
     │   │   │              _awkrepl_looks_like_statement, _awkrepl_divide, _repl_parse_args
     │   │   └─ $formatter: _awkrepl_pretty_print
     │   │
@@ -93,9 +93,9 @@ $runner executes:
     │
     ├─ _awkrepl_divide($replfile, $src, $data, $args)
     │   │
-    │   ├─ _sed_in_place() [×3 calls]
+    │   ├─ sed > $src, $data [split at the first #DATA]; sed -n p > $args [#ARGS from $src]
     │   │
-    │   ├─ _trim_blanks()
+    │   ├─ _sed_in_place() [×3 calls: strip further #DATA from $data; headers, then comments/blank lines, from $src]
     │   │
     │   ├─ _awkrepl_parses() ×2 [as written, and wrapped in { } / END { }]
     │   │
@@ -134,7 +134,7 @@ Formatted code displayed in pane 2
 - **File path**: `$HOME/.repl.awk`
 - **Features**: 
   - Supports `#DATA` section for test input (the `#DATA` header must be alone on its line)
-  - Supports `#ARGS` lines for gawk command-line flags (`#ARGS` followed by nothing, or by options whose first starts with `-`)
+  - Supports `#ARGS` lines for gawk command-line flags (`#ARGS` followed by nothing, or by options whose first starts with `-`); only in the program section, before `#DATA` (after it, such a line is data)
   - Auto-wraps AWK statements (e.g. `print $1`, `x = 3`, `printa(arr)`) in `{ }` or `END { }`; patterns, rules and functions are left alone
 - **On exit**: when the editor exits, the wrapper removes the temp files and closes the REPL's window
 
@@ -146,7 +146,7 @@ Formatted code displayed in pane 2
   - Splits input file into source/data/args
   - Executes AWK with `#ARGS` options, helpers, source, and data
   - If `entr` exits, closes the REPL's window (`tmux kill-window -t "$TMUX_PANE"`)
-  - Prints dimmed info lines for working directory and command
+  - Prints dimmed (`tput dim`) info lines for working directory and command
 
 ### Level 3: Formatter Interface (Tmux Pane 2)
 - **Component**: `echo $src | entr -c $formatter`
@@ -210,22 +210,14 @@ Formatted code displayed in pane 2
 
 ### 1. Function Propagation
 
-Two mechanisms for making functions available in subprocesses:
+One mechanism makes functions available to the panes: `_awkrepl_setup` inlines
+them into the generated scripts with `declare -f` (inside unquoted heredocs, so
+the function bodies are expanded at generation time). Every pane runs one of
+these scripts, so nothing is `export -f`ed:
 
-**`export -f`** (exported to tmux subshells):
-```bash
-export -f _sed_in_place          # Available to tmux shells
-export -f _awkrepl_divide
-export -f _awkrepl_pretty_print
-export -f _awkrepl_parses
-export -f _awkrepl_looks_like_statement
-export -f _repl_parse_args
-```
-
-**`declare -f`** (inlined into scripts):
 ```bash
 # $runner
-$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
+$(declare -f _sed_in_place _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
 # $formatter
 $(declare -f _awkrepl_pretty_print)
 ```

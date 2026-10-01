@@ -48,11 +48,6 @@ _jqrepl_divide() {
     local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
     local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\([Uu][Mm][Ee][Nn][Tt]\)\{0,1\}[Ss]\{0,1\}\([:[:space:]]\{1,\}\(-.*\)\)\{0,1\}[:[:space:]]*$'
 
-    # extract arguments
-    sed -n \
-      -e "s/$argshdr/\3/w $args" \
-      "$in"
-
     # split the input file at the first '#DATA' header, which may be line 1
     # (a file that is only data): the source is everything before it, the data
     # everything after it. (A '1,/re/' range can't do this: it only looks for
@@ -61,6 +56,10 @@ _jqrepl_divide() {
     # first header and is portable (GNU '0,/re/' is not).
     sed -e "/$datahdr/,\$d" "$in" > "$src"
     sed -n -e "/$datahdr/{" -e ':a' -e 'n' -e 'p' -e 'ba' -e '}' "$in" > "$data"
+
+    # extract the #ARGS options from the program section only: everything
+    # after '#DATA' is data, so an '#ARGS' line there is just another data row
+    sed -n -e "s/$argshdr/\3/p" "$src" > "$args"
 
     # remove any further '#DATA' lines from the data file
     _sed_in_place -e "/$datahdr/d" "$data"
@@ -92,11 +91,6 @@ _repl_parse_args() {
     fi
 }
 
-# the tmux subshells need these
-export -f _repl_parse_args
-export -f _sed_in_place
-export -f _jqrepl_divide
-export -f _jqrepl_pretty_print
 
 _jqrepl_setup() {
     local replfile=${1:?missing replfile argument}
@@ -131,14 +125,15 @@ _jqrepl_setup() {
 set -uo pipefail
 $(declare -f _sed_in_place _jqrepl_divide _repl_parse_args)
 _jqrepl_divide $q_replfile $q_src $q_data $q_args
-if [[ -s $q_src ]]; then
+# like yqrepl: nothing to run if the program is only comments and blank lines
+if grep -v '^[[:space:]]*#' $q_src | grep -q '[^[:space:]]'; then
     _jq_args=()
     while IFS= read -r -d '' _a; do _jq_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
-    echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
+    echo "$(tput dim 2>/dev/null)# work dir: \$PWD$(tput sgr0)"
     if [[ -s $q_data ]]; then
-        echo "$(tput setaf 0)# command:  jq \${_jq_args[*]} -f $q_src $q_data$(tput sgr0)"
+        echo "$(tput dim 2>/dev/null)# command:  jq \${_jq_args[*]} -f $q_src $q_data$(tput sgr0)"
     else
-        echo "$(tput setaf 0)# command:  jq -n \${_jq_args[*]} -f $q_src$(tput sgr0)"
+        echo "$(tput dim 2>/dev/null)# command:  jq -n \${_jq_args[*]} -f $q_src$(tput sgr0)"
     fi
     echo
     _bat=\$(type -p bat 2>/dev/null || type -p batcat 2>/dev/null || true)
@@ -254,4 +249,4 @@ jqrepl() {
 }
 
 # allow sourcing for tests without launching the REPL
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] && jqrepl "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then jqrepl "$@"; fi

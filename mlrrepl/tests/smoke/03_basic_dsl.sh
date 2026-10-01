@@ -8,8 +8,7 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/../helpers.sh"
 
 if ! command -v mlr > /dev/null 2>&1; then
-    pass "mlr not installed — skipping DSL execution tests"
-    summary
+    echo "  SKIP: mlr not installed (DSL execution tests)"
     exit 0
 fi
 

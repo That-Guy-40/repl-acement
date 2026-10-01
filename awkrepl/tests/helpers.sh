@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-##  tests/helpers.sh - shared test utilities for jqrepl tests
+##  tests/helpers.sh - shared test utilities for awkrepl tests
 ##
 
 PASS=0

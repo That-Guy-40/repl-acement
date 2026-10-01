@@ -46,4 +46,16 @@ EOF
 
 assert_output_contains "#ARGS -r produces raw string output without quotes" "Springfield" "$REPL_RUNNER"
 
+# --- a program that is only comments/blank lines: no run, no jq error ---
+# (jq used to be run with an empty program → "Top-level program not given")
+cat > "$replfile" <<'EOF'
+# everything commented out
+
+#DATA
+{"city": "Springfield"}
+EOF
+out=$("$REPL_RUNNER" 2>&1); rc=$?
+assert_equals "comment-only program: runner exits 0" "0" "$rc"
+assert_equals "comment-only program: no output and no jq error" "" "$out"
+
 summary

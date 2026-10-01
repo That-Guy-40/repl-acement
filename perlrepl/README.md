@@ -10,8 +10,8 @@ This is the punchline that awkrepl's own README set up:
 > "the whole script probably should've just been written in Perl."
 
 Requires Perl ≥ 5, [tmux](https://tmux.github.io/),
-[entr](http://eradman.com/entrproject/), and `xargs` (findutils; almost
-always already present).
+[entr](http://eradman.com/entrproject/), `sed` (GNU sed or BSD sed; used to
+split the REPL file), and `xargs` (findutils; almost always already present).
 [bat](https://github.com/sharkdp/bat) (or Debian/Ubuntu's `batcat`) is
 optional but recommended for syntax-highlighted source preview.
 
@@ -50,9 +50,10 @@ foo bar
 - Everything below `#DATA` is the input data.
 - Without `#DATA`, the script runs with no input file and no automatic
   `-n` — good for self-contained scripts.
-- `#ARGS` lines inject extra `perl` switches, placed before the script
-  (e.g. `#ARGS -l` for automatic line-ending handling, or `#ARGS -a` for
-  auto-split). They are split like a shell command line: quotes are
+- `#ARGS` lines above `#DATA` inject extra `perl` switches, placed before
+  the script (e.g. `#ARGS -l` for automatic line-ending handling, or
+  `#ARGS -a` for auto-split); an `#ARGS` line below `#DATA` is just another
+  line of data. They are split like a shell command line: quotes are
   honored, nothing is expanded.
   If the line has an unmatched quote (say, `it's`), a warning is shown in
   the output pane and the line is split on whitespace instead, with the

@@ -59,4 +59,9 @@ assert_file_not_contains "#ARGS line removed from src"      '#ARGS'       "$src"
 assert_file_contains     "script still in src"              '/^chr8/p'    "$src"
 assert_file_contains     "data has content"                 'chr8'        "$data"
 
+# --- sourcing the script (as these tests do) must not return failure ---
+# (a trailing '[[ … ]] && sedrepl' used to leave status 1, killing set -e callers)
+assert_equals "sourcing sedrepl returns 0" "0" \
+    "$(bash -c 'source "$1"' _ "$TESTS_DIR/../../sedrepl" >/dev/null 2>&1; echo $?)"
+
 summary

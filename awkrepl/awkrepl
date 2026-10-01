@@ -8,6 +8,7 @@
 ##
 ##  Requirements:
 ##    - GNU awk, as 'gawk'
+##    - sed (GNU sed or BSD sed; used to split the REPL file)
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
 ##    - xargs (used to parse '#ARGS' lines)
@@ -66,25 +67,6 @@ _sed_in_place() {
     fi
 }
 
-_trim_blanks() {
-    local in=${1:?missing input file argument}
-    # macOS doesn't have 'tac'
-    local tac='tac'; [[ $(uname -s) == Darwin ]] && tac='tail -r'
-    local tmp
-    tmp=$(mktemp "${TMPDIR:-/tmp}/awkrepl-XXXXXX") || { echo "awkrepl: mktemp failed" >&2; return 1; }
-    # shellcheck disable=SC2064
-    trap "rm -f '$tmp'" RETURN
-
-    # trim spaces from the front; reverse; trim spaces from the front; reverse
-    sed -e '1,/^[^[:space:]]/ { /^[[:space:]]*$/d; }' "$in" \
-      | $tac \
-      | sed -e '1,/^[^[:space:]]/ { /^[[:space:]]*$/d; }' \
-      | $tac \
-      > "$tmp"
-
-    mv -f "$tmp" "$1"
-}
-
 _awkrepl_pretty_print() {
     local src=${1:?missing AWK source file argument}
     local cat='cat'
@@ -135,11 +117,6 @@ _awkrepl_divide() {
     local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
     local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\([Uu][Mm][Ee][Nn][Tt]\)\{0,1\}[Ss]\{0,1\}\([:[:space:]]\{1,\}\(-.*\)\)\{0,1\}[:[:space:]]*$'
 
-    # extract arguments
-    sed -n \
-      -e "s/$argshdr/\3/w $args" \
-      "$in"
-
     # split the input file at the first '#DATA' header, which may be line 1
     # (a file that is only data): the source is everything before it, the data
     # everything after it. (A '1,/re/' range can't do this: it only looks for
@@ -149,12 +126,15 @@ _awkrepl_divide() {
     sed -e "/$datahdr/,\$d" "$in" > "$src"
     sed -n -e "/$datahdr/{" -e ':a' -e 'n' -e 'p' -e 'ba' -e '}' "$in" > "$data"
 
+    # extract the #ARGS options from the program section only: everything
+    # after '#DATA' is data, so an '#ARGS' line there is just another data row
+    sed -n -e "s/$argshdr/\3/p" "$src" > "$args"
+
     # remove any further '#DATA' lines from the data file
     _sed_in_place -e "/$datahdr/d" "$data"
 
-    # remove '#DATA' and '#ARGS' headers from source code; trim blanks
+    # remove '#DATA' and '#ARGS' headers from source code
     _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
-    _trim_blanks "$src"
 
     # remove comments and blank lines from source (see #6)
     _sed_in_place -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$src"
@@ -185,8 +165,9 @@ _awkrepl_divide() {
 # _repl_parse_args FILE — print the #ARGS tokens NUL-separated, honoring shell
 # quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
 # command expansion. xargs only splits and unquotes; it never expands, so a
-# literal '*' stays '*'. Read the result with:
-#   args=(); while IFS= read -r -d '' a; do args+=("$a"); done < <(_repl_parse_args "$f")
+# literal '*' stays '*'.
+# On an unmatched quote it warns on stderr (shown in the runner pane) and
+# splits on whitespace instead, keeping the quote characters literally.
 _repl_parse_args() {
     local f=${1:?missing args file}
     local -a w
@@ -204,13 +185,6 @@ _repl_parse_args() {
     fi
 }
 
-# the tmux subshells need these
-export -f _sed_in_place
-export -f _awkrepl_divide
-export -f _awkrepl_pretty_print
-export -f _awkrepl_parses
-export -f _awkrepl_looks_like_statement
-export -f _repl_parse_args
 
 _awkrepl_setup() {
     local replfile=${1:?missing replfile argument}
@@ -230,8 +204,6 @@ _awkrepl_setup() {
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
-    # (in GNU sed) takes the rest of the expression, spaces included.
     local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup q_editpane
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
@@ -248,12 +220,12 @@ _awkrepl_setup() {
     cat > "$runner" <<RUNNER
 #!/usr/bin/env bash
 set -uo pipefail
-$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
+$(declare -f _sed_in_place _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
 _awkrepl_divide $q_replfile $q_src $q_data $q_args
 _gawk_args=()
 while IFS= read -r -d '' _a; do _gawk_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
-echo "$(tput setaf 0)# work dir: \$PWD$(tput sgr0)"
-echo "$(tput setaf 0)# command:  gawk \${_gawk_args[*]} -f $q_helpers -f $q_src $q_data$(tput sgr0)"
+echo "$(tput dim 2>/dev/null)# work dir: \$PWD$(tput sgr0)"
+echo "$(tput dim 2>/dev/null)# command:  gawk \${_gawk_args[*]} -f $q_helpers -f $q_src $q_data$(tput sgr0)"
 gawk "\${_gawk_args[@]}" -f $q_helpers -f $q_src $q_data
 RUNNER
 
@@ -355,4 +327,4 @@ awkrepl() {
 }
 
 # allow sourcing for tests without launching the REPL
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] && awkrepl "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then awkrepl "$@"; fi

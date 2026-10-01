@@ -25,10 +25,12 @@ All six share the same file conventions:
   may be the very first line, for a file that is only data; the program is
   then empty. Only the first `#DATA` line splits the file; any later one is
   dropped from the data.
-- A `#ARGS` line passes the options after it as command-line flags, e.g.
-  `#ARGS -n` or `#args: --csv`. `#ARG`, `#ARGUMENT` and `#ARGUMENTS` work too.
-  The header must be followed by nothing or by options whose first one starts
-  with `-` (later ones need not)
+- A `#ARGS` line in the program section (before `#DATA`) passes the options
+  after it as command-line flags, e.g. `#ARGS -n` or `#args: --csv`. `#ARG`,
+  `#ARGUMENT` and `#ARGUMENTS` work too. The header must be followed by
+  nothing or by options whose first one starts with `-` (later ones need not).
+  `#ARGS` must come before `#DATA`: an `#ARGS` line after `#DATA` is an
+  ordinary data row
 - Both headers are case-insensitive, must start with `#` in the first column,
   and may have whitespace between the `#` and the word; a colon after the word
   is optional. Any other line is an ordinary comment, so `# Database…`,
@@ -116,9 +118,9 @@ cd mlrrepl  && make test
 cd perlrepl && make test
 ```
 
-Each suite's dependency check fails if its tool, `tmux` or `entr` is missing
-(e.g. `apt install miller` for mlrrepl); yqrepl's also fails unless the `yq`
-on `PATH` is Mike Farah's.
+Each suite's dependency check fails if its tool, `tmux`, `entr` or `xargs` is
+missing (e.g. `apt install miller` for mlrrepl); yqrepl's also fails unless
+the `yq` on `PATH` is Mike Farah's.
 
 From the repo root, `make` drives all of them plus the end-to-end suite:
 
@@ -128,9 +130,14 @@ make e2e    # the live-UI end-to-end suite (needs tmux + entr; suites skip witho
 make test   # both of the above
 ```
 
+`make unit` runs every subproject's suite even when an earlier one fails, and
+lists the failing subprojects at the end; `make test` runs `unit` and then
+`e2e`, and fails at the end if either of them did.
+
 ### End-to-end (live UI) tests
 
-The per-subproject suites source each REPL script and call its functions
+The per-subproject suites source each REPL script (which defines its
+functions and returns 0 without launching anything) and call those functions
 directly; they never launch the terminal UI. The suite under
 [`tests/`](tests/) closes that gap: it drives each REPL's real three-pane
 tmux session and checks that saving the file live-reloads the output. It uses

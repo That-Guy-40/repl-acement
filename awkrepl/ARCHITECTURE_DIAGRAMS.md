@@ -72,10 +72,9 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  │   Global: AWKHELPERS (printerr, printa, printaa)        │  │  │
 │  │  │                                                         │  │  │
 │  │  │   Helper Functions                                      │  │  │
-│  │  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐       │  │  │
-│  │  │  │ _sed_    │  │ _trim_   │  │ _awkrepl_        │       │  │  │
-│  │  │  │ in_place │  │ blanks   │  │   divide         │       │  │  │
-│  │  │  └──────────┘  └──────────┘  └──────────────────┘       │  │  │
+│  │  │  ┌───────────────┐  ┌─────────────────┐                 │  │  │
+│  │  │  │ _sed_in_place │  │ _awkrepl_divide │                 │  │  │
+│  │  │  └───────────────┘  └─────────────────┘                 │  │  │
 │  │  │                                                         │  │  │
 │  │  │  ┌───────────────────────┐  ┌──────────────────┐        │  │  │
 │  │  │  │ _awkrepl_pretty_print │  │ _repl_parse_args │        │  │  │
@@ -91,11 +90,9 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  └─────────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                              │                                      │
-│  export -f: _sed_in_place, _awkrepl_divide,                         │
-│             _awkrepl_pretty_print, _awkrepl_parses,                 │
-│             _awkrepl_looks_like_statement, _repl_parse_args         │
-│  declare -f (embedded in generated scripts):                        │
-│    $runner:    _sed_in_place, _trim_blanks, _awkrepl_parses,        │
+│  declare -f (embedded in the generated scripts; no export -f,       │
+│  every pane runs a generated script):                               │
+│    $runner:    _sed_in_place, _awkrepl_parses,                      │
 │                _awkrepl_looks_like_statement, _awkrepl_divide,      │
 │                _repl_parse_args                                     │
 │    $formatter: _awkrepl_pretty_print                                │
@@ -103,7 +100,6 @@ This document contains visual representations of the awkrepl architecture, data 
 │  ┌───────────────────────────┴───────────────────────────────────┐  │
 │  │                   Bash Functions                              │  │
 │  │  - _sed_in_place():         sed -i wrapper (GNU/BSD)          │  │
-│  │  - _trim_blanks():          strip leading/trailing blank lines│  │
 │  │  - _awkrepl_pretty_print(): pretty-print, optional bat/batcat │  │
 │  │  - _awkrepl_divide():       split file into src/data/args     │  │
 │  │  - _awkrepl_parses():       gawk --pretty-print parse check   │  │
@@ -119,7 +115,6 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │                   File Operations                             │  │
 │  │  - mktemp:       create temp files under ${TMPDIR:-/tmp}      │  │
 │  │  - touch:        ensure ~/.repl.awk exists                    │  │
-│  │  - mv:           replace $src after _trim_blanks              │  │
 │  │  - chmod:        make scripts executable                      │  │
 │  │  - rm:           cleanup ($cleanup script + backstop)         │  │
 │  └───────────────────────────────────────────────────────────────┘  │
@@ -133,8 +128,7 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  - entr:         file change watcher                          │  │
 │  │  - sed:          text processing                              │  │
 │  │  - xargs:        #ARGS tokenizing (quotes, no globbing)       │  │
-│  │  - tac / tail -r: line reversal in _trim_blanks               │  │
-│  │  - tput:         dim header color in runner                   │  │
+│  │  - tput:         dim (tput dim) header lines in runner        │  │
 │  │  - bat/batcat:   optional syntax highlighting (else cat)      │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
@@ -256,13 +250,15 @@ This document contains visual representations of the awkrepl architecture, data 
 │     ▼                                                               │
 │  _awkrepl_divide()                                                  │
 │     │                                                               │
-│     ├─ sed -n ... w  [write $args, $src, $data]                     │
+│     ├─ sed > $src, $data  [split at the first #DATA line]           │
 │     │                                                               │
-│     ├─ _sed_in_place()  [remove #DATA/#ARGS headers]                │
+│     ├─ sed -n p > $args  [#ARGS options, from $src only]            │
 │     │                                                               │
-│     ├─ _trim_blanks()  [strip leading/trailing blank lines]         │
+│     ├─ _sed_in_place()  [remove further #DATA lines from $data]     │
 │     │                                                               │
-│     ├─ _sed_in_place()  [remove comment and blank lines]            │
+│     ├─ _sed_in_place()  [remove #DATA/#ARGS headers from $src]      │
+│     │                                                               │
+│     ├─ _sed_in_place()  [remove comment and blank lines from $src]  │
 │     │                                                               │
 │     └─ _awkrepl_parses() as written and wrapped in { } / END { }    │
 │        - only as written, or neither: leave as written              │

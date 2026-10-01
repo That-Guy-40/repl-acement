@@ -187,7 +187,7 @@ echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
-# (embeds _sed_in_place, _trim_blanks, _awkrepl_parses, _awkrepl_looks_like_statement,
+# (embeds _sed_in_place, _awkrepl_parses, _awkrepl_looks_like_statement,
 #  _awkrepl_divide, _repl_parse_args via declare -f)
 _awkrepl_divide ~/.repl.awk $src $data $args
 _gawk_args=()
@@ -202,8 +202,8 @@ tokens, honoring shell quotes but performing no globbing or expansion. On an
 unmatched quote (e.g. `it's`) it prints `warning: #ARGS has an unmatched quote;
 splitting it on whitespace instead` to stderr (shown in pane 1) and splits the
 line on whitespace, keeping the quote characters as typed. The two
-`echo` header lines are wrapped in `tput setaf 0` / `tput sgr0` (evaluated when
-the script is generated).
+`echo` header lines are wrapped in `tput dim` / `tput sgr0` (evaluated when
+the script is generated, so the dim attribute is baked into `$runner`).
 
 #### entr #2: Formatter (Pane 2)
 
@@ -230,9 +230,11 @@ _awkrepl_pretty_print $src
 ### Why `sleep 1` in Formatter?
 
 The script does not document the reason, but the `sleep 1` gives the runner
-time to finish rewriting `$src`. `_awkrepl_divide` rewrites `$src` several
-times in a row (`sed ... w`, several `sed -i` passes, and `_trim_blanks`'s
-temp-file `mv`), each of which can fire entr #2:
+time to finish rewriting `$src`. `_awkrepl_divide` writes `$src` up to four
+times in a row: `sed … > $src` (the split at `#DATA`), two `_sed_in_place`
+passes (`sed -i`, each of which replaces the file; a third `_sed_in_place`
+call edits `$data`, not `$src`), and, when the program is auto-wrapped, a
+final `printf … > $src`. Each of those writes can fire entr #2:
 
 ```
 entr #1 triggers $runner              entr #2 triggers $formatter
@@ -271,8 +273,8 @@ Without the sleep, the formatter could read `$src` while the runner is still rew
 ┌──────────────────────────────────────────────────────┐
 │ $runner executes:                                    │
 │   _awkrepl_divide ~/.repl.awk $src $data $args       │
-│     ├─ Extract #ARGS line(s) → $args                 │
-│     ├─ Split at #DATA → $src / $data                 │
+│     ├─ Split at the first #DATA → $src / $data       │
+│     ├─ Extract #ARGS line(s) from $src → $args       │
 │     ├─ Clean source (remove headers/comments)        │
 │     ├─ Auto-wrap in { } or END { } if it parses only │
 │     │  wrapped, or both ways and looks like a        │

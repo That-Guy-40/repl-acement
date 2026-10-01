@@ -7,8 +7,8 @@ live in a split tmux window.
 
 Requires [yq](https://github.com/mikefarah/yq) v4 (Mike Farah's Go
 implementation), [tmux](https://tmux.github.io/),
-[entr](http://eradman.com/entrproject/), and `xargs` (findutils; almost
-always already present).
+[entr](http://eradman.com/entrproject/), `sed` (GNU sed or BSD sed; used to
+split the REPL file), and `xargs` (findutils; almost always already present).
 [bat](https://github.com/sharkdp/bat) (or Debian/Ubuntu's `batcat`) is
 optional but recommended for syntax-highlighted source preview.
 
@@ -58,7 +58,8 @@ File format
   input.
 - Without `#DATA`, yq runs with `--null-input` — good for generating YAML
   from scratch (e.g. `{"greeting": "hello"}`).
-- `#ARGS` lines inject extra yq flags (e.g. `#ARGS -o json` to emit JSON).
+- `#ARGS` lines above `#DATA` inject extra yq flags (e.g. `#ARGS -o json` to
+  emit JSON); an `#ARGS` line below `#DATA` is just another line of data.
   They are split like a shell command line: quotes are honored (so a value
   may contain spaces), but nothing is expanded — no globs or variables.
   If the line has an unmatched quote (say, `it's`), a warning is shown in
