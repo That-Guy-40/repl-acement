@@ -53,6 +53,8 @@
 #   repl_sessions                        session names on the inner server
 #   repl_scratch_count PREFIX            REPL temp files named PREFIX* in $TMPDIR
 #   repl_attach NAME SESSION             new terminal NAME attached to SESSION
+#   repl_sample TOOL N                   a small program (+ #DATA) for TOOL
+#                                        (awk sed jq yq mlr perl) printing M<N>-x
 #   repl_cleanup                         stop every session; kill inner servers
 #
 #   assert_screen_contains NAME TEXT MSG       checks screen + scrollback
@@ -85,7 +87,8 @@ _rp_init() {
     [[ -e "$_RP_KEEPEDIT" ]] && return 0
     mkdir -p "$_RP_WORK" "$_RP_INNER_TMPDIR" "$_RP_REPL_TMPDIR" || return 1
     # an $EDITOR that ignores its file argument and never exits, so the REPL's
-    # editor pane stays open (its exit would fire the cleanup/kill-window hook)
+    # editor pane stays open (when the editor exits, the pane's wrapper
+    # removes the temp files and closes the REPL's window)
     printf '#!/usr/bin/env bash\nexec sleep 2147483647\n' > "$_RP_KEEPEDIT"
     chmod +x "$_RP_KEEPEDIT"
 }
@@ -129,6 +132,20 @@ repl_wait()       { _rp wait "$1" "$2" -t "${3:-10}"; }
 repl_settle()     { _rp settle "$1" -q "${2:-500}" -t 10; }
 repl_keys()       { _rp keys "$@"; }
 repl_wait_exit()  { _rp wait-exit "$1" -t "${2:-10}"; }
+
+# repl_sample TOOL N — a program whose output is "M<N>-x", while its source
+# never contains that literal string (the source pane shows the source too)
+repl_sample() {
+    local n=$2
+    case $1 in
+        awk)  printf '{ print "M%s-" $1 }\n\n#DATA\nx\n' "$n" ;;
+        sed)  printf 's/x/M%s-&/\n\n#DATA\nx\n' "$n" ;;
+        jq)   printf '"M%s-" + .\n\n#DATA\n"x"\n' "$n" ;;
+        yq)   printf '"M%s-" + .a\n\n#DATA\na: x\n' "$n" ;;
+        mlr)  printf '$m = "M%s-" . $a;\n\n#DATA\na,b\nx,y\n' "$n" ;;
+        perl) printf 'print "M%s-$_"\n\n#DATA\nx\n' "$n" ;;
+    esac
+}
 
 # --- the REPLs' own (inner) tmux server and scratch files --------------------
 

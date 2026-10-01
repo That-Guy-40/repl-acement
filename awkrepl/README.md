@@ -10,14 +10,23 @@ you save it, and shows the results of your program's execution in the
 lower-left. The top pane is your text editor (whatever you have `$EDITOR` set
 to, or defaults to `nano`), with the file `~/.repl.awk` open for editing.
 
-Any lines after `#DATA` at the end of the program are supplied as input to your
-program, for quick testing on sample inputs. If you have a line in your source
-file that starts with `#ARGS`, anything on the line after that is passed to
-`gawk` as command-line options, _ahead of_ the `-f` for your script, so use it
-for options like `-v name=value` or `-F,` (a bare word there is not delivered
-to `ARGV`; `gawk` would take it as program text). The line is split with
+Any lines after a `#DATA` line at the end of the program are supplied as input
+to your program, for quick testing on sample inputs. The `#DATA` header must be
+alone on its line (any case, optionally followed by a colon), so a comment like
+`# Database…` or `# data comes from…` is just a comment.
+
+If you have a line in your source file that starts with `#ARGS` (or `#ARG`,
+`#ARGUMENT`, `#ARGUMENTS`, in any case, optionally followed by a colon),
+anything on the line after that is passed to `gawk` as command-line options,
+_ahead of_ the `-f` for your script, so use it for options like `-v name=value`
+or `-F,` (a bare word there is not delivered to `ARGV`; `gawk` would take it as
+program text). The header must be followed by nothing or by options, the first
+of which starts with `-` (`#ARGS -v x=1`, `#args: -F,`, `#ARGS:-n`); otherwise,
+as with `# Args are cool`, the line is just a comment. The line is split with
 shell-style quoting, so `#ARGS -v "x=a b"` is one `-v` with the value `x=a b`;
-globs and `$variables` are not expanded.
+globs and `$variables` are not expanded. If a quote is unmatched (e.g.
+`#ARGS -v msg=it's`), a warning is printed in the output pane and the line is
+split on whitespace instead, with the quote characters kept as typed.
 
 Comment lines (starting with `#`) and blank lines are stripped from your source
 before it's run.
@@ -26,28 +35,42 @@ before it's run.
 in `{…}`, if there's `#DATA`) for you, so it's a piece of cake to try out
 little snippets of AWK code.
 
-Some reasonable heuristics are applied when deciding whether to automatically
-apply an outer set of curly braces for you, so that if your script contains
-something like
+`gawk` itself decides whether to wrap, by parsing your (comment-stripped)
+source both as written and wrapped (with `gawk --pretty-print`, which parses
+without running anything):
 
-```awk
-/^r/
+* if it parses only as written, it's left alone, so rules with actions,
+  `BEGIN`/`END` blocks, function definitions, and multi-line programs work
+* if it parses only when wrapped (statements like `print $1` or
+  `x = 3; print x`), it's wrapped
+* if it parses neither way, it's left as written, so the error you see is
+  about your own code
+* if it parses both ways (a bare expression, which AWK accepts as a pattern
+  and as a statement), how it starts decides: something like
 
-# or
-NF>1
-```
+  ```awk
+  /^r/
 
-where the `{print}` is implicit, this should work as expected. Only the first
-line of the source is checked: if it starts with `{`, `BEGIN`, `END`, `NR`,
-`NF`, a field reference like `$1`, or a `/regex/` (optionally after a `(`),
-nothing is wrapped.
+  # or
+  NF>1
 
+  # or
+  !seen[$1]++
+  ```
+
+  where the `{print}` is implicit is a pattern and is left alone. That's any
+  expression that starts with `{`, `!`, `/`, `(`, `$`, `-`, a number or string,
+  or `NR`/`NF`/`FNR`/`FILENAME`, or that contains a comparison or match
+  operator (`==`, `!=`, `<`, `>`, `~`) outside a string literal.
+  Anything else, starting with a name (an assignment like `x = 3`, a function
+  call like `printa(arr)`, `i++`), is taken as a statement and wrapped, so
+  `n = split("a b c", arr); printa(arr)` works without `#DATA`.
 
 Requirements
 ------------
 
 * Docker
-* _—or—_ Bash, tmux, [entr][], GNU Awk (as `gawk`), Perl, and `xargs`
+* _—or—_ Bash, tmux, [entr][], GNU Awk (as `gawk`), and `xargs`
     * also [bat][] (as `bat` or `batcat`), if you want your pretty-printed AWK
       source to also be syntax-highlighted
 
@@ -70,6 +93,10 @@ make run
 # or
 docker run -it --rm awkrepl
 ```
+
+To push your build to your own Docker Hub account (as `<you>/awkrepl`), use
+`make publish DOCKER_HUB_USER=<you>`; without `DOCKER_HUB_USER`, `make publish`
+stops with a message and pushes nothing.
 
 Or, pull the original author's image straight from Docker Hub, without even
 cloning this repo (it's built from the upstream [ernstki/awkrepl][upstream]

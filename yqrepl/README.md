@@ -61,8 +61,14 @@ File format
 - `#ARGS` lines inject extra yq flags (e.g. `#ARGS -o json` to emit JSON).
   They are split like a shell command line: quotes are honored (so a value
   may contain spaces), but nothing is expanded — no globs or variables.
-- A comment line that begins with `# data` or `# arg` (any case) is taken
-  as a `#DATA` / `#ARGS` header, so avoid starting comments that way.
+  If the line has an unmatched quote (say, `it's`), a warning is shown in
+  the output pane and the line is split on whitespace instead, with the
+  quote characters kept as typed.
+- Headers are case-insensitive and may take a colon. `#DATA` must be alone
+  on its line; `#ARGS` (or `#ARG`, `#ARGUMENT`, `#ARGUMENTS`) must be
+  followed by nothing or by options, the first of which starts with `-`
+  (e.g. `#ARGS -o json`, `#args: -o yaml`). Any other comment, such as `# Database records`
+  or `# Args are cool`, is just a comment.
 
 Running with Docker
 -------------------
@@ -72,6 +78,9 @@ Build the image locally and run it (no prebuilt image is published):
 ```
 make build && make run
 ```
+
+To push your build to Docker Hub, run `make publish DOCKER_HUB_USER=you`
+(tagged `you/yqrepl`).
 
 The image downloads the latest `yq_linux_amd64` release binary, so it
 targets x86-64 hosts.

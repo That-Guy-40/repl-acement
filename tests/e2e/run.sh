@@ -4,8 +4,10 @@
 ##
 ##  These drive each REPL's real three-pane tmux session with the vendored
 ##  ttydrive (tests/lib/ttydrive) and check that the entr event loop reacts
-##  to edits. They need tmux + entr + the relevant tool; a suite that finds
-##  any of those missing prints SKIP and passes.
+##  to edits (17_nested_tmux.sh instead launches each REPL inside a host tmux
+##  session of its own, the nested case). They need tmux + entr + the
+##  relevant tool; a suite that finds any of those missing prints SKIP and
+##  passes.
 ##
 
 set -uo pipefail

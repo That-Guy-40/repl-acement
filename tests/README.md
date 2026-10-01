@@ -19,7 +19,8 @@ Layout
 | `lib/replpty.sh` | helpers that launch a REPL under ttydrive, edit its file, read the panes |
 | `lib/helpers.sh` | the shared `assert_*` / `pass` / `fail` counters |
 | `e2e/1[0-5]_*.sh` | one live-UI suite per REPL |
-| `e2e/16_detach_reattach.sh` | detach, reattach and quit each REPL; checks the session and its temp files survive a detach and are cleaned up on quit |
+| `e2e/16_detach_reattach.sh` | detach, reattach and quit each REPL; checks the session and its temp files survive a detach, and that quitting the editor (whose pane wrapper then cleans up) removes them and ends the session |
+| `e2e/17_nested_tmux.sh` | launches each REPL from a pane inside a host tmux session (its own server, not ttydrive), so it opens as a new window; checks it survives other panes exiting, leaves no `pane-exited` hooks on the session, still reloads on save, and on quitting closes only its own window and removes its temp files; the same cleanup is checked when the REPL window is killed from tmux and when one of its `entr` panes exits |
 | `e2e/run.sh` | runs them all |
 
 How it works

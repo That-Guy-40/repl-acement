@@ -12,7 +12,7 @@ source "$MLRREPL"
 
 replfile=$(mktemp /tmp/mlrrepl-test-XXXXXX)
 trap 'rm -f "$replfile" "${REPL_SRC:-}" "${REPL_DATA:-}" "${REPL_ARGS:-}" \
-    "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}"' EXIT
+    "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}" "${REPL_EDITPANE:-}"' EXIT
 
 _mlrrepl_setup "$replfile"
 

@@ -68,12 +68,16 @@ _perlrepl_divide() {
     local src=${2:?missing source output file argument}
     local data=${3:?missing data output file argument}
     local args=${4:?missing args output file argument}
-    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa]'
-    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\(ument\)*[Ss]*:*[[:space:]]*'
+    # Headers (case-insensitive): '#DATA' must be alone on its line, and
+    # '#ARGS' (or #ARG / #ARGUMENT(S)) must be followed by nothing or by options
+    # starting with '-'. So comments like '# Database…', '# data comes from…'
+    # or '# Args are cool' stay comments. In argshdr, \3 is the options part.
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
+    local argshdr='^#[[:space:]]*[Aa][Rr][Gg]\([Uu][Mm][Ee][Nn][Tt]\)\{0,1\}[Ss]\{0,1\}\([:[:space:]]\{1,\}\(-.*\)\)\{0,1\}[:[:space:]]*$'
 
     # extract arguments
     sed -n \
-      -e "s/$argshdr//w $args" \
+      -e "s/$argshdr/\3/w $args" \
       "$in"
 
     # split the input file at the '#DATA' header and write into two files
@@ -93,10 +97,23 @@ _perlrepl_divide() {
 # quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
 # command expansion. xargs only splits and unquotes; it never expands, so a
 # literal '*' stays '*'.
+# On an unmatched quote it warns on stderr (shown in the runner pane) and
+# splits on whitespace instead, keeping the quote characters literally.
 _repl_parse_args() {
     local f=${1:?missing args file}
-    grep -q '[^[:space:]]' "$f" 2>/dev/null || return 0
-    xargs printf '%s\0' < "$f" 2>/dev/null
+    local -a w
+    grep -q '[^[:space:]]' "$f" 2>/dev/null || return 0   # nothing but whitespace
+    if xargs true < "$f" >/dev/null 2>&1; then
+        xargs printf '%s\0' < "$f"
+    else
+        # xargs rejects an unmatched quote (e.g. "it's") and would drop every
+        # argument. Say so, and fall back to splitting on whitespace with the
+        # quote characters kept as typed (still no globbing: read never globs).
+        echo "warning: #ARGS has an unmatched quote; splitting it on whitespace instead" >&2
+        while read -r -a w || (( ${#w[@]} )); do
+            (( ${#w[@]} )) && printf '%s\0' "${w[@]}"
+        done < "$f"
+    fi
 }
 
 # the tmux subshells need these
@@ -108,18 +125,19 @@ export -f _perlrepl_needs_n
 
 _perlrepl_setup() {
     local replfile=${1:?missing replfile argument}
-    local src data args runner formatter cleanup
+    local src data args runner formatter cleanup editpane
     src=$(mktemp "${TMPDIR:-/tmp}/perlrepl-src-XXXXXX")         || { echo "perlrepl: mktemp failed" >&2; return 1; }
     data=$(mktemp "${TMPDIR:-/tmp}/perlrepl-data-XXXXXX")        || { echo "perlrepl: mktemp failed" >&2; return 1; }
     args=$(mktemp "${TMPDIR:-/tmp}/perlrepl-args-XXXXXX")        || { echo "perlrepl: mktemp failed" >&2; return 1; }
     runner=$(mktemp "${TMPDIR:-/tmp}/perlrepl-run-XXXXXX")       || { echo "perlrepl: mktemp failed" >&2; return 1; }
     formatter=$(mktemp "${TMPDIR:-/tmp}/perlrepl-fmt-XXXXXX")    || { echo "perlrepl: mktemp failed" >&2; return 1; }
     cleanup=$(mktemp "${TMPDIR:-/tmp}/perlrepl-cleanup-XXXXXX")  || { echo "perlrepl: mktemp failed" >&2; return 1; }
+    editpane=$(mktemp "${TMPDIR:-/tmp}/perlrepl-edit-XXXXXX")     || { echo "perlrepl: mktemp failed" >&2; return 1; }
 
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup
+    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup q_editpane
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
     q_data=$(printf '%q' "$data")
@@ -127,6 +145,7 @@ _perlrepl_setup() {
     q_runner=$(printf '%q' "$runner")
     q_formatter=$(printf '%q' "$formatter")
     q_cleanup=$(printf '%q' "$cleanup")
+    q_editpane=$(printf '%q' "$editpane")
 
     # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
     # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
@@ -169,10 +188,41 @@ FORMATTER
 
     cat > "$cleanup" <<CLEANUP
 #!/usr/bin/env bash
-rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_cleanup
+rm -f $q_src $q_data $q_args $q_runner $q_formatter $q_editpane $q_cleanup
 CLEANUP
 
-    chmod a+x "$runner" "$formatter" "$cleanup"
+    # Pane 0 runs this wrapper rather than the editor itself. When the editor
+    # exits, or the window is killed (SIGHUP), it removes the temp files and
+    # closes this REPL's window, found from its own pane ($TMUX_PANE), so it
+    # never touches other windows when the REPL runs inside an existing tmux
+    # session. (tmux 'pane-exited' hooks can't be scoped like that: tmux
+    # resolves them against the session's current window, whichever pane
+    # exited.) $EDITOR is run by the shell, as git does, so it may carry
+    # flags (e.g. 'code -w' or 'emacsclient -t'). The editor runs as a child
+    # the wrapper waits on, so a hangup (the window killed) is handled at
+    # once: bash defers a trap until a foreground child exits, and the
+    # killed window's editor might never exit. '<&0' keeps the pane's
+    # terminal as its input (a background command would get /dev/null).
+    cat > "$editpane" <<EDITPANE
+#!/usr/bin/env bash
+_editor=
+_done() {
+    trap - HUP TERM
+    [[ -n "\$_editor" ]] && kill "\$_editor" 2>/dev/null
+    $q_cleanup
+    [[ -n "\${TMUX_PANE:-}" ]] && tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
+    exit 0
+}
+trap _done HUP TERM
+trap '' INT QUIT
+${EDITOR:-nano} $q_replfile <&0 &
+_editor=\$!
+wait "\$_editor"
+_editor=
+_done
+EDITPANE
+
+    chmod a+x "$runner" "$formatter" "$cleanup" "$editpane"
 
     # These globals are read by the caller after _perlrepl_setup returns.
     # shellcheck disable=SC2034
@@ -180,11 +230,11 @@ CLEANUP
     # shellcheck disable=SC2034
     REPL_ARGS="$args"           REPL_RUNNER="$runner"   REPL_FORMATTER="$formatter"
     # shellcheck disable=SC2034
-    REPL_CLEANUP="$cleanup"
+    REPL_CLEANUP="$cleanup" REPL_EDITPANE="$editpane"
     # shellcheck disable=SC2034
     REPL_Q_REPLFILE="$q_replfile" REPL_Q_SRC="$q_src"   REPL_Q_RUNNER="$q_runner"
     # shellcheck disable=SC2034
-    REPL_Q_FORMATTER="$q_formatter" REPL_Q_CLEANUP="$q_cleanup"
+    REPL_Q_FORMATTER="$q_formatter" REPL_Q_CLEANUP="$q_cleanup" REPL_Q_EDITPANE="$q_editpane"
 } # _perlrepl_setup
 
 perlrepl() {
@@ -192,33 +242,36 @@ perlrepl() {
     test -f "$replfile" || touch "$replfile"
     (( ${TRACE:-} )) && set -x
     _perlrepl_setup "$replfile" || return 1
+    # if a runner/formatter pane's entr exits, close this REPL's window too
+    # (the editor pane's wrapper then removes the temp files)
+    # shellcheck disable=SC2016  # $TMUX_PANE is expanded later, by the pane's shell
+    local close='; tmux kill-window -t "$TMUX_PANE"'
     # A new session (not nested in tmux) gets a known name, so the cleanup
     # below can tell "the session ended" from "the client only detached".
     local session="perlrepl-$$"
     local -a launch=(new-session -s "$session")
     if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
     tmux "${launch[@]}" -n 'perlrepl'                              \
-      "${EDITOR:-nano}" "$replfile" \;                              \
-      split-window    -c "$PWD"                                     \
-        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;       \
-      split-window -h -c "$PWD"                                     \
-        "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER" \;         \
-      select-pane -t 1 \;                                           \
-      select-pane -t 2 \;                                           \
-      select-pane -t 0 \;                                           \
-      set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;    \
-      set-hook 'pane-exited[1]' kill-window
+      "$REPL_Q_EDITPANE" \;                                        \
+      split-window    -c "$PWD"                                    \
+        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER$close" \;  \
+      split-window -h -c "$PWD"                                    \
+        "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER$close" \;    \
+      select-pane -t 1 \;                                          \
+      select-pane -t 2 \;                                          \
+      select-pane -t 0
 
-    # Backstop cleanup: the 'pane-exited' hooks above are unreliable on some
-    # tmux builds, leaking temp files. A new session's 'tmux new-session'
-    # returns both when the session ends and when the client merely detaches,
-    # so only clean up once our named session is really gone: a detached
-    # session still needs these files. In the nested case ('new-window'
-    # returns at once) the window is still live, so cleanup is left to the
-    # hook.
+    # Backstop cleanup. The editor pane's wrapper removes the temp files when
+    # the editor exits or the window is killed; this covers the rare case it
+    # can't (e.g. its process was SIGKILLed). A new session's 'tmux
+    # new-session' returns both when the session ends and when the client
+    # merely detaches, so only clean up once our named session is really
+    # gone: a detached session still needs these files. In the nested case
+    # ('new-window' returns at once) the window is still live, so cleanup is
+    # left to the wrapper.
     if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
         rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
-              "$REPL_FORMATTER" "$REPL_CLEANUP"
+              "$REPL_FORMATTER" "$REPL_CLEANUP" "$REPL_EDITPANE"
     fi
 }
 

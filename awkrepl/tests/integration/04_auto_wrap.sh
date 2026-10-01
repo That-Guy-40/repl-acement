@@ -108,4 +108,58 @@ assert_equals "regex pattern (implicit print) executes correctly" \
     "foo bar
 foo qux" "$output"
 
+
+# --- valid AWK as written is never wrapped, whatever its first line ---
+# (the old heuristic only looked at the first line, and wrapped these)
+not_wrapped() {  # DESC PROGRAM DATA EXPECTED-OUTPUT
+    local desc=$1 prog=$2 rows=$3 want=$4
+    : > "$src"; : > "$data"; : > "$args"
+    printf '%s\n\n#DATA\n%s\n' "$prog" "$rows" > "$replfile"
+    _awkrepl_divide "$replfile" "$src" "$data" "$args"
+    if [[ $(head -1 "$src") == '{' || $(head -1 "$src") == 'END {' ]]; then
+        fail "$desc: was wrapped" "$(cat "$src")"
+    else
+        pass "$desc: not wrapped"
+    fi
+    assert_equals "$desc: output" "$want" "$(gawk -f "$src" "$data")"
+}
+not_wrapped "negated regex !/re/"      '!/^foo/'                   $'foo\nbar\nbaz'  $'bar\nbaz'
+not_wrapped "\$NF pattern"             '$NF > 4'                   $'a 3\nb 5'      'b 5'
+not_wrapped "dedupe idiom !seen[]++"   '!seen[$1]++'               $'x\ny\nx'       $'x\ny'
+not_wrapped "function definition"      $'function dbl(n) { return n * 2 }\n{ print dbl($1) }' $'2\n5' $'4\n10'
+not_wrapped "length() pattern"         'length($0) > 3'            $'ab\nabcd'      'abcd'
+
+# --- code that doesn't parse either way is left as written ---
+: > "$src"; : > "$data"; : > "$args"
+printf '{ print $1\n' > "$replfile"
+_awkrepl_divide "$replfile" "$src" "$data" "$args"
+assert_equals "unparseable code is left as written (no wrapping)" '{ print $1' "$(cat "$src")"
+
+# --- a bare expression that reads as a statement is still wrapped, even though
+#     it would also parse as a pattern (e.g. the printa() helper idiom) ---
+wrapped_as() {  # DESC PROGRAM DATA OPENER EXPECTED-OUTPUT-SUBSTRING
+    local desc=$1 prog=$2 rows=$3 opener=$4 want=$5 out
+    : > "$src"; : > "$data"; : > "$args"
+    if [[ -n $rows ]]; then
+        printf '%s\n\n#DATA\n%s\n' "$prog" "$rows" > "$replfile"
+    else
+        printf '%s\n' "$prog" > "$replfile"
+    fi
+    _awkrepl_divide "$replfile" "$src" "$data" "$args"
+    assert_equals "$desc: wrapped in '$opener'" "$opener" "$(head -1 "$src")"
+    out=$(gawk -f "$helpers" -f "$src" "$data" 2>&1)
+    if [[ $out == *"$want"* ]]; then
+        pass "$desc: output"
+    else
+        fail "$desc: output" "wanted '$want' in: $out"
+    fi
+}
+helpers=$(mktemp); echo "$AWKHELPERS" > "$helpers"
+wrapped_as "printa() helper idiom, no #DATA" 'n = split("a b c", arr); printa(arr)' '' 'END {' 'noname[2]=b'
+wrapped_as "bare assignment, no #DATA"       'x = 6 * 7'                            '' 'END {' ''
+wrapped_as "counter, with #DATA"             'n++'                                  $'a\nb' '{'  ''
+wrapped_as "function call, with #DATA"       'printf("<%s>\n", $1)'                 $'a\nb' '{'  '<a>'
+wrapped_as "'<' or '>' inside a string"      's = "<td>" $1 "</td>"'                $'a\nb' '{'  ''
+rm -f "$helpers"
+
 summary

@@ -14,7 +14,6 @@
 | `gawk` | GNU AWK interpreter, required for `--pretty-print` | Any recent |
 | `tmux` | Terminal multiplexer for multi-pane interface | ≥ 2.0 |
 | `entr` | File change watcher for event-driven execution | Latest |
-| `perl` | Pattern matching for AWK structure detection | Any recent |
 | `xargs` | Shell-style splitting/unquoting of `#ARGS` (in `_repl_parse_args`) | Any |
 | `bash` | Shell script runner | Any recent |
 
@@ -30,9 +29,11 @@
 | `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes | `$runner` |
 | `_trim_blanks()` | Remove leading/trailing blank lines (via a `mktemp` file) | ❌ No | `$runner` |
 | `_awkrepl_pretty_print()` | Pretty-print AWK code with optional syntax highlighting | ✅ Yes | `$formatter` |
-| `_awkrepl_divide()` | Split input file into source/data/args components; strip comments; auto-wrap | ✅ Yes | `$runner` |
+| `_awkrepl_parses()` | True if `gawk --pretty-print=/dev/null` can parse the program (parses without running it) | ✅ Yes | `$runner` |
+| `_awkrepl_looks_like_statement()` | For source that parses both as written and wrapped: true if it looks like a statement (starts with a name, no comparison/match operator) rather than a pattern | ✅ Yes | `$runner` |
+| `_awkrepl_divide()` | Split input file into source/data/args components; strip comments; auto-wrap (if needed, via `_awkrepl_parses` and `_awkrepl_looks_like_statement`) | ✅ Yes | `$runner` |
 | `_repl_parse_args()` | Print `#ARGS` tokens NUL-separated (shell quoting, no globbing/expansion) | ✅ Yes | `$runner` |
-| `_awkrepl_setup()` | Create temp files and generate `$runner`, `$formatter`, `$cleanup` | ❌ No | — |
+| `_awkrepl_setup()` | Create temp files and generate `$runner`, `$formatter`, `$cleanup`, `$editpane` | ❌ No | — |
 | `awkrepl()` | Main entry point - sets up tmux environment | N/A | — |
 
 ### Build Dependencies
@@ -49,24 +50,31 @@
 
 ```
 (at source time, top level) 'export -f' for tmux subshells:
-    _sed_in_place(), _awkrepl_divide(), _awkrepl_pretty_print(), _repl_parse_args()
+    _sed_in_place(), _awkrepl_divide(), _awkrepl_pretty_print(), _awkrepl_parses(),
+    _awkrepl_looks_like_statement(), _repl_parse_args()
 
 awkrepl() [ENTRY POINT]
     │
     ├─ _awkrepl_setup($HOME/.repl.awk)
     │   │
-    │   ├─ mktemp "${TMPDIR:-/tmp}/awkrepl-{src,data,args,run,fmt,helpers,cleanup}-XXXXXX"
+    │   ├─ mktemp "${TMPDIR:-/tmp}/awkrepl-{src,data,args,run,fmt,helpers,cleanup,edit}-XXXXXX"
     │   │
     │   ├─ Embeds functions via 'declare -f' in generated scripts:
-    │   │   ├─ $runner:    _sed_in_place, _trim_blanks, _awkrepl_divide, _repl_parse_args
+    │   │   ├─ $runner:    _sed_in_place, _trim_blanks, _awkrepl_parses,
+    │   │   │              _awkrepl_looks_like_statement, _awkrepl_divide, _repl_parse_args
     │   │   └─ $formatter: _awkrepl_pretty_print
     │   │
     │   └─ Generates temporary scripts:
     │       ├─ $runner    → calls _awkrepl_divide() → _repl_parse_args() → runs gawk
     │       ├─ $formatter → calls _awkrepl_pretty_print()
-    │       └─ $cleanup   → removes temp files
+    │       ├─ $cleanup   → removes temp files (all eight, itself included)
+    │       └─ $editpane  → runs $EDITOR ~/.repl.awk; when the editor exits (or on
+    │                       SIGHUP/SIGTERM) runs $cleanup, then
+    │                       'tmux kill-window -t "$TMUX_PANE"' (its own window only)
     │
-    ├─ tmux new-session -s awkrepl-<pid> (or 'tmux new-window' when already inside tmux)
+    ├─ tmux new-session -s awkrepl-<pid> (or 'tmux new-window' when already inside tmux):
+    │   pane 0 runs $editpane; panes 1 and 2 run 'echo … | entr -c …', followed by
+    │   'tmux kill-window -t "$TMUX_PANE"' so the window closes if either entr exits
     │
     └─ Backstop: if not nested ($TMUX unset) and the named session is gone,
        removes temp files (a detach returns too, but leaves the session running)
@@ -85,11 +93,13 @@ $runner executes:
     │
     ├─ _awkrepl_divide($replfile, $src, $data, $args)
     │   │
-    │   ├─ _sed_in_place() [×3 calls, +1 if auto-wrapping]
+    │   ├─ _sed_in_place() [×3 calls]
     │   │
     │   ├─ _trim_blanks()
     │   │
-    │   └─ perl heuristic (decides whether to wrap in { } / END { })
+    │   ├─ _awkrepl_parses() ×2 [as written, and wrapped in { } / END { }]
+    │   │
+    │   └─ _awkrepl_looks_like_statement() [only if it parses both ways]
     │
     ├─ _repl_parse_args($args) → gawk argument array
     │
@@ -119,13 +129,14 @@ Formatted code displayed in pane 2
 ## Interface at Each Level
 
 ### Level 1: User Interface (Tmux Pane 0)
-- **Component**: `$EDITOR ~/.repl.awk` (defaults to `nano`)
+- **Component**: the generated `$editpane` wrapper, which runs `$EDITOR ~/.repl.awk` (defaults to `nano`)
 - **User actions**: Edit AWK source code
 - **File path**: `$HOME/.repl.awk`
 - **Features**: 
-  - Supports `#DATA` section for test input
-  - Supports `#ARGS` section for gawk command-line flags
-  - Auto-wraps simple AWK statements in `{ }` or `END { }`
+  - Supports `#DATA` section for test input (the `#DATA` header must be alone on its line)
+  - Supports `#ARGS` lines for gawk command-line flags (`#ARGS` followed by nothing, or by options whose first starts with `-`)
+  - Auto-wraps AWK statements (e.g. `print $1`, `x = 3`, `printa(arr)`) in `{ }` or `END { }`; patterns, rules and functions are left alone
+- **On exit**: when the editor exits, the wrapper removes the temp files and closes the REPL's window
 
 ### Level 2: Runner Interface (Tmux Pane 1)
 - **Component**: `echo $replfile | entr -c $runner`
@@ -134,6 +145,7 @@ Formatted code displayed in pane 2
   - Clears screen before execution (`-c` flag)
   - Splits input file into source/data/args
   - Executes AWK with `#ARGS` options, helpers, source, and data
+  - If `entr` exits, closes the REPL's window (`tmux kill-window -t "$TMUX_PANE"`)
   - Prints dimmed info lines for working directory and command
 
 ### Level 3: Formatter Interface (Tmux Pane 2)
@@ -143,6 +155,7 @@ Formatted code displayed in pane 2
   - Waits 1 second for runner to finish (race condition prevention)
   - Pretty-prints AWK source using `gawk --pretty-print`
   - Pipes through `bat` for syntax highlighting if available
+  - If `entr` exits, closes the REPL's window (`tmux kill-window -t "$TMUX_PANE"`)
 
 ### Level 4: AWK Execution Interface
 - **Component**: `gawk` command
@@ -169,13 +182,13 @@ Formatted code displayed in pane 2
 │ On change:                                                      │
 │   1. Clear pane                                                 │
 │   2. Execute $runner                                            │
-│      ├─ _awkrepl_divide splits input into:                     │
-│      │   - $src (AWK code, cleaned)                            │
-│      │   - $data (test input)                                  │
-│      │   - $args (gawk flags)                                  │
-│      ├─ gawk <#ARGS> -f $helpers -f $src $data                 │
-│      └─ Output shown in pane 1                                 │
-│      (side effect: $src rewritten)                             │
+│      ├─ _awkrepl_divide splits input into:                      │
+│      │   - $src (AWK code, cleaned)                             │
+│      │   - $data (test input)                                   │
+│      │   - $args (gawk flags)                                   │
+│      ├─ gawk <#ARGS> -f $helpers -f $src $data                  │
+│      └─ Output shown in pane 1                                  │
+│      (side effect: $src rewritten)                              │
 └─────────────────────────────────────────────────────────────────┘
                              │
                              ▼ (file change)
@@ -185,9 +198,9 @@ Formatted code displayed in pane 2
 │ On change:                                                      │
 │   1. Clear pane                                                 │
 │   2. Execute $formatter                                         │
-│      ├─ Sleep 1 second (wait for writer)                       │
-│      ├─ _awkrepl_pretty_print($src)                            │
-│      └─ Output shown in pane 2                                 │
+│      ├─ Sleep 1 second (wait for writer)                        │
+│      ├─ _awkrepl_pretty_print($src)                             │
+│      └─ Output shown in pane 2                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -204,13 +217,15 @@ Two mechanisms for making functions available in subprocesses:
 export -f _sed_in_place          # Available to tmux shells
 export -f _awkrepl_divide
 export -f _awkrepl_pretty_print
+export -f _awkrepl_parses
+export -f _awkrepl_looks_like_statement
 export -f _repl_parse_args
 ```
 
 **`declare -f`** (inlined into scripts):
 ```bash
 # $runner
-$(declare -f _sed_in_place _trim_blanks _awkrepl_divide _repl_parse_args)
+$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
 # $formatter
 $(declare -f _awkrepl_pretty_print)
 ```
@@ -224,34 +239,49 @@ Wait for file change → Execute command → Wait...
 
 Each pane runs one `entr` process, creating two parallel event loops.
 
-### 3. Auto-Wrapping Heuristics
+### 3. Auto-Wrapping
 
 Simple AWK statements are automatically wrapped:
 
 - **With `#DATA`**: Wrapped in `{ }` (applies to each input line)
 - **Without `#DATA`**: Wrapped in `END { }` (runs once at EOF)
 
-Pattern detection (Perl one-liner), applied to the **first line only** of the
-comment-stripped source:
-- Matches (no wrapping): a line starting with `{`, `BEGIN`, `END`, `NR`, `NF`,
-  a field reference `$<digit>`, or `/` (regex), optionally after a `(`
-- Non-matches get automatic wrapping
+`gawk` decides: the whole comment-stripped source is parsed both as written and
+wrapped, with `_awkrepl_parses` (`gawk --pretty-print=/dev/null`, which parses
+the program without running it):
+- Parses only as written (rules with actions, function definitions,
+  `BEGIN`/`END`, …): left alone
+- Parses only wrapped (statements such as `print $1` or `x = 3; print x`):
+  wrapped
+- Parses neither way: left as written, so the error shown is about the user's
+  own code
+- Parses both ways (a bare expression, valid as a pattern and as a statement):
+  `_awkrepl_looks_like_statement` decides. A pattern-like start (`{`, `!`, `/`,
+  `(`, `$`, a number or string literal, `-`, or `NR`/`NF`/`FNR`/`FILENAME`), or
+  a comparison/match operator (`==`, `!=`, `<`, `>`, `~`) anywhere in the
+  source outside string literals, means a pattern: left alone (`!/re/`, `$NF > 3`, `!seen[$1]++`,
+  `length($0) > 5`). Otherwise (it starts with a name: an assignment, a
+  function call such as `printa(arr)`, `i++`, `FS = ","`) it's a statement:
+  wrapped
 
 ### 4. Cleanup on Exit
 
-Two tmux hooks for resource cleanup. The `[0]`/`[1]` are indices into the
-`pane-exited` hook array (not pane numbers), so when **any** pane exits both
-run, in order:
-- `pane-exited[0]`: run the `$cleanup` script (removes all seven temp files)
-- `pane-exited[1]`: kill the entire window
+There are no tmux hooks. Pane 0 runs the generated `$editpane` wrapper
+(`${TMPDIR:-/tmp}/awkrepl-edit-XXXXXX`), which runs `$EDITOR ~/.repl.awk`. When
+the editor exits, or the wrapper gets SIGHUP/SIGTERM (e.g. the window is
+killed), it runs the `$cleanup` script (removes all eight temp files) and then
+`tmux kill-window -t "$TMUX_PANE"`, which closes only the REPL's own window,
+even when awkrepl runs inside an existing tmux session. Panes 1 and 2 run
+`echo … | entr -c …; tmux kill-window -t "$TMUX_PANE"`, so if either `entr`
+exits the REPL's window closes too (and the wrapper's SIGHUP trap cleans up).
 
-Backstop: because the hooks are unreliable on some tmux builds, when awkrepl
-started a new tmux session (not nested; `$TMUX` unset) it also removes the temp
-files itself once `tmux new-session` returns **and** `tmux has-session` shows the
-named session (`awkrepl-<pid>`) is gone. A detach (`C-b d`) also makes
-`tmux new-session` return, but the session is still alive, so its files are
-kept and you can reattach. In the nested (`tmux new-window`) case cleanup is left
-to the hook.
+Backstop: for the rare case the wrapper can't clean up (e.g. it was SIGKILLed),
+when awkrepl started a new tmux session (not nested; `$TMUX` unset) it also
+removes the temp files itself once `tmux new-session` returns **and**
+`tmux has-session` shows the named session (`awkrepl-<pid>`) is gone. A detach
+(`C-b d`) also makes `tmux new-session` return, but the session is still alive,
+so its files are kept and you can reattach. In the nested (`tmux new-window`)
+case cleanup is left to the wrapper.
 
 ---
 

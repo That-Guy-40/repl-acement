@@ -12,7 +12,7 @@ cd "$TESTS_DIR/../.." || exit 1
 source "$AWKREPL"
 
 trap 'rm -f "${REPL_SRC:-}" "${REPL_DATA:-}" "${REPL_ARGS:-}" \
-    "${REPL_HELPERS:-}" "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}"' EXIT
+    "${REPL_HELPERS:-}" "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}" "${REPL_EDITPANE:-}"' EXIT
 
 _awkrepl_setup "$EXAMPLES"
 

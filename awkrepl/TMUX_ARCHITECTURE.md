@@ -46,20 +46,19 @@ awkrepl creates a **three-pane tmux window** (in a new tmux session, or as a new
 ### Command Structure (in `awkrepl()`)
 
 ```bash
-local session="awkrepl-$$"                                   # Step A
+local close='; tmux kill-window -t "$TMUX_PANE"'
+local session="awkrepl-$$"                                     # Step A
 local -a launch=(new-session -s "$session")
 if [[ -n "${TMUX:-}" ]]; then launch=(new-window); fi
-tmux "${launch[@]}" -n 'awkrepl'                              \
-  "${EDITOR:-nano}" "$replfile" \;                             \   # Step B
+tmux "${launch[@]}" -n 'awkrepl'                               \
+  "$REPL_Q_EDITPANE" \;                                        \   # Step B
   split-window    -c "$PWD"                                    \   # Step C
-    "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER" \;      \   # Step D
+    "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER$close" \;  \   # Step D
   split-window -h -c "$PWD"                                    \   # Step E
-    "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER" \;        \   # Step F
+    "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER$close" \;    \   # Step F
   select-pane -t 1 \;                                          \   # Step G
   select-pane -t 2 \;                                          \   # Step H
-  select-pane -t 0 \;                                          \   # Step I
-  set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;   \   # Step J
-  set-hook 'pane-exited[1]' kill-window                            # Step K
+  select-pane -t 0                                                 # Step I
 ```
 
 (Step comments added for this document; they are not in the script.)
@@ -83,15 +82,16 @@ tmux "${launch[@]}" -n 'awkrepl'
 
 #### Step B: Create Pane 0 (Editor)
 ```bash
-"${EDITOR:-nano}" "$replfile"
+"$REPL_Q_EDITPANE"
 ```
-- First pane (pane 0) opens the editor with `~/.repl.awk` (created with `touch` if missing)
-- Uses `$EDITOR` or defaults to `nano`
+- First pane (pane 0) runs the generated `$editpane` wrapper script (`${TMPDIR:-/tmp}/awkrepl-edit-XXXXXX`), which opens the editor with `~/.repl.awk` (created with `touch` if missing)
+- Uses `$EDITOR` or defaults to `nano` (fixed when the wrapper is generated)
+- When the editor exits, the wrapper removes the temp files and closes this window (see Cleanup Mechanism)
 - This pane initially fills the window; after Step C it occupies the **top ~50%**
 
 #### Step C: Split Top/Bottom (Pane 1)
 ```bash
-split-window -c "$PWD" "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER"
+split-window -c "$PWD" "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER$close"
 ```
 - Splits pane 0 into top and bottom halves (`split-window` defaults to `-v`)
 - Creates pane 1 below at ~50% height; pane 1 becomes the active pane
@@ -99,49 +99,50 @@ split-window -c "$PWD" "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER"
 
 #### Step D: entr #1 - Runner (Pane 1)
 ```bash
-echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER
+echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER; tmux kill-window -t "$TMUX_PANE"
 ```
 - **Watches**: `$replfile` = `$HOME/.repl.awk`
 - **Runs once at startup**, then again on each change:
   - Clear screen (`-c`)
   - Execute the `$runner` script (by absolute path)
 - `$runner` executes: `_awkrepl_divide` + `_repl_parse_args` + `gawk`
+- If `entr` exits, `tmux kill-window -t "$TMUX_PANE"` closes this REPL's window (`$TMUX_PANE` is expanded by the pane's shell, so it names this pane)
 
 #### Step E: Split Left/Right (Pane 2)
 ```bash
-split-window -h -c "$PWD" "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER"
+split-window -h -c "$PWD" "echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER$close"
 ```
 - Splits the active pane (pane 1) side by side (`-h` flag)
 - Creates pane 2 to the right at ~50% width
 
 #### Step F: entr #2 - Formatter (Pane 2)
 ```bash
-echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER
+echo $REPL_Q_SRC | entr -c $REPL_Q_FORMATTER; tmux kill-window -t "$TMUX_PANE"
 ```
 - **Watches**: `$src` = temp file (`${TMPDIR:-/tmp}/awkrepl-src-XXXXXX`)
 - **Runs once at startup**, then again on each change:
   - Clear screen (`-c`)
   - Execute the `$formatter` script (by absolute path)
 - `$formatter` executes: `sleep 1`, then `_awkrepl_pretty_print`
+- If `entr` exits, this REPL's window is closed, as in Step D
 
 #### Steps G-I: Pane Selection
 ```bash
 select-pane -t 1 \;  # Select pane 1 (runner)
 select-pane -t 2 \;  # Select pane 2 (formatter)
-select-pane -t 0 \;  # Select pane 0 (editor) ← focus ends here
+select-pane -t 0     # Select pane 0 (editor) ← focus ends here
 ```
 - The last command leaves focus on the editor (pane 0), so the user can start typing immediately after awkrepl starts
 - Side effect of the sequence: pane 2 becomes tmux's "last pane"
 
-#### Steps J-K: Cleanup Hooks
-```bash
-set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;
-set-hook 'pane-exited[1]' kill-window
-```
-- These are **session** hooks (no `-p`/`-w`/`-t`), and `[0]`/`[1]` are **indices in the `pane-exited` hook array, not pane numbers**
-- Whenever **any** pane in the session exits, tmux runs both entries in order: the `$cleanup` script (`run-shell`), then `kill-window` (on the session's current window)
-- In practice: quitting the editor (or an entr pane dying) deletes the temp files and closes the awkrepl window
-- **Note**: the script's own comment says these hooks are unreliable on some tmux builds, which is why `awkrepl()` also has a backstop `rm -f` (see Cleanup Mechanism)
+#### No Cleanup Hooks
+
+awkrepl sets no tmux hooks. Earlier versions used `set-hook 'pane-exited[0]'`
+/ `'pane-exited[1]'`, but tmux resolves those against the session's current
+window whichever pane exited, so when awkrepl was nested in your own tmux
+session any pane exiting anywhere ran its cleanup and killed a window. Each
+pane now closes its own window instead, via `$TMUX_PANE` (see Cleanup
+Mechanism).
 
 ---
 
@@ -186,7 +187,8 @@ echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
-# (embeds _sed_in_place, _trim_blanks, _awkrepl_divide, _repl_parse_args via declare -f)
+# (embeds _sed_in_place, _trim_blanks, _awkrepl_parses, _awkrepl_looks_like_statement,
+#  _awkrepl_divide, _repl_parse_args via declare -f)
 _awkrepl_divide ~/.repl.awk $src $data $args
 _gawk_args=()
 while IFS= read -r -d '' _a; do _gawk_args+=( "$_a" ); done < <(_repl_parse_args $args)
@@ -196,7 +198,10 @@ gawk "${_gawk_args[@]}" -f $helpers -f $src $data   # AWK execution
 ```
 
 `_repl_parse_args` uses `xargs` to split the `#ARGS` text into NUL-separated
-tokens, honoring shell quotes but performing no globbing or expansion. The two
+tokens, honoring shell quotes but performing no globbing or expansion. On an
+unmatched quote (e.g. `it's`) it prints `warning: #ARGS has an unmatched quote;
+splitting it on whitespace instead` to stderr (shown in pane 1) and splits the
+line on whitespace, keeping the quote characters as typed. The two
 `echo` header lines are wrapped in `tput setaf 0` / `tput sgr0` (evaluated when
 the script is generated).
 
@@ -269,7 +274,9 @@ Without the sleep, the formatter could read `$src` while the runner is still rew
 │     ├─ Extract #ARGS line(s) → $args                 │
 │     ├─ Split at #DATA → $src / $data                 │
 │     ├─ Clean source (remove headers/comments)        │
-│     ├─ Auto-wrap in { } or END { } if needed         │
+│     ├─ Auto-wrap in { } or END { } if it parses only │
+│     │  wrapped, or both ways and looks like a        │
+│     │  statement (checked with gawk)                 │
 │     └─ Rewrite $src (cleaned)  ────────┐             │
 │                                        │             │
 │   _repl_parse_args $args → array       │             │
@@ -348,40 +355,66 @@ These helpers are included in every AWK execution via `-f $helpers` (before `-f 
 
 ## Cleanup Mechanism
 
-### Trigger 1: Pane Exit Hooks
+### Trigger 1: The Editor Pane's Wrapper (`$editpane`)
 
-```bash
-set-hook 'pane-exited[0]' "run-shell $REPL_Q_CLEANUP" \;
-set-hook 'pane-exited[1]' kill-window
-```
-
-Both hook entries run, in order, whenever any pane in the session exits:
-
-**`pane-exited[0]`** runs the generated `$cleanup` script:
+Pane 0 runs this generated script rather than the editor itself:
 ```bash
 #!/usr/bin/env bash
-rm -f $src $data $args $runner $formatter $helpers $cleanup   # %q-quoted paths
+_editor=
+_done() {
+    trap - HUP TERM
+    [[ -n "$_editor" ]] && kill "$_editor" 2>/dev/null
+    $cleanup                                   # %q-quoted path
+    [[ -n "${TMUX_PANE:-}" ]] && tmux kill-window -t "$TMUX_PANE" 2>/dev/null
+    exit 0
+}
+trap _done HUP TERM
+trap '' INT QUIT
+$EDITOR ~/.repl.awk <&0 &                      # $EDITOR as typed (may carry flags); %q-quoted path
+_editor=$!
+wait "$_editor"
+_editor=
+_done
 ```
 
-**`pane-exited[1]`**:
+`$EDITOR` is run by the shell, as git does, so it may carry flags such as
+`code -w`. The editor runs as a child that the wrapper waits on, rather than
+in the foreground: bash defers a trap until a foreground child exits, and a
+killed window's editor may never exit, so the cleanup would never run. `<&0`
+keeps the pane's terminal as the editor's input (a background command would
+otherwise get `/dev/null`).
+
+When the editor exits, or the wrapper gets SIGHUP/SIGTERM (e.g. the window is
+killed), it stops the editor if it's still running and runs the generated
+`$cleanup` script:
 ```bash
-kill-window  # Close the (current) tmux window
+#!/usr/bin/env bash
+rm -f $src $data $args $runner $formatter $helpers $editpane $cleanup   # %q-quoted paths
 ```
+and then `tmux kill-window -t "$TMUX_PANE"`, which closes the window that
+contains its own pane, so it never touches other windows when awkrepl runs
+inside an existing tmux session.
 
-### Trigger 2: Backstop in `awkrepl()`
+### Trigger 2: An entr Pane Exits
 
-Because the hooks are unreliable on some tmux builds, `awkrepl()` removes the
-temp files itself after `tmux new-session` returns, **only when not nested in
-tmux** (`$TMUX` unset) **and only once its named session is gone**.
-`tmux new-session` also returns when the client merely detaches (`C-b d`); the
-detached session still needs its files, so they are left alone and you can
-reattach later. When nested, `tmux new-window` returns immediately while the
-window is still live, so cleanup is left to the hook.
+Panes 1 and 2 run `echo … | entr -c …; tmux kill-window -t "$TMUX_PANE"`, so if
+either `entr` exits, the REPL's window is closed too; the editor pane's wrapper
+then gets SIGHUP and removes the temp files.
+
+### Trigger 3: Backstop in `awkrepl()`
+
+For the rare case the wrapper can't clean up (e.g. its process was SIGKILLed),
+`awkrepl()` removes the temp files itself after `tmux new-session` returns,
+**only when not nested in tmux** (`$TMUX` unset) **and only once its named
+session is gone**. `tmux new-session` also returns when the client merely
+detaches (`C-b d`); the detached session still needs its files, so they are
+left alone and you can reattach later. When nested, `tmux new-window` returns
+immediately while the window is still live, so cleanup is left to the wrapper.
 
 ```bash
 if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
     rm -f "$REPL_SRC" "$REPL_DATA" "$REPL_ARGS" "$REPL_RUNNER" \
-          "$REPL_FORMATTER" "$REPL_CLEANUP" "${REPL_HELPERS:-}"
+          "$REPL_FORMATTER" "$REPL_CLEANUP" "$REPL_EDITPANE" "${REPL_HELPERS:-}"
 fi
 ```
 
@@ -398,8 +431,8 @@ fi
 | `split-window` | Create top/bottom and side-by-side panes |
 | `-c $PWD` | Set working directory for pane |
 | `select-pane` | Change active pane |
-| `set-hook` | Register event handlers |
-| `run-shell` | Execute external commands from hooks |
+| `kill-window -t "$TMUX_PANE"` | Close the REPL's own window (from the editor wrapper or an entr pane) |
+| `$TMUX_PANE` variable | Pane ID set by tmux in each pane; identifies the REPL's window |
 | `$TMUX` variable | Detect if already in tmux session |
 
 ---
@@ -411,7 +444,6 @@ replfile="$HOME/.repl.awk"   # User's AWK file (fixed; not configurable)
 TMPDIR=${TMPDIR:-/tmp}       # Directory for awkrepl-* temp files
 EDITOR=${EDITOR:-nano}       # Text editor
 TRACE=1                      # (optional) 'set -x' inside awkrepl()
-DEBUG=1                      # (optional) run the auto-wrap perl check under 'perl -d'
 ```
 
 ---
@@ -434,11 +466,11 @@ DEBUG=1                      # (optional) run the auto-wrap perl check under 'pe
    - No polling loops in awkrepl; entr uses kernel file events
 
 4. **Self-contained scripts**:
-   - `_awkrepl_setup` generates `$runner`/`$formatter`/`$cleanup` and uses `declare -f` to embed the functions they need
-   - Runtime still requires external tools: tmux, entr, gawk, perl, sed (bat/batcat optional)
+   - `_awkrepl_setup` generates `$runner`/`$formatter`/`$cleanup`/`$editpane` and uses `declare -f` to embed the functions they need
+   - Runtime still requires external tools: tmux, entr, gawk, sed, xargs (bat/batcat optional)
 
 5. **Cleanup**:
-   - tmux hooks delete temp files on pane exit, plus a backstop `rm -f` in `awkrepl()` when not nested in tmux and the session has ended (not on a detach)
+   - The editor pane's wrapper deletes the temp files and closes only its own window when the editor exits (or the window is killed); an entr pane exiting also closes the window. Plus a backstop `rm -f` in `awkrepl()` when not nested in tmux and the session has ended (not on a detach)
 
 ### Data Access Flow
 
@@ -446,7 +478,7 @@ DEBUG=1                      # (optional) run the auto-wrap perl check under 'pe
 User → editor (pane 0) → save
       → entr (pane 1) → runner → gawk → output (pane 1)
       → entr (pane 2) → formatter → pretty (pane 2)
-      → cleanup (pane exit hook; backstop rm when not nested and the session is gone)
+      → editor exits → cleanup + kill-window (pane 0 wrapper; backstop rm when not nested and the session is gone)
 ```
 
 This creates a **reactive development loop** where every save automatically triggers both code execution and formatting feedback.

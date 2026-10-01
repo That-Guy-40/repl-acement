@@ -15,7 +15,15 @@ source file that starts with `#ARGS`, anything on the line after that is
 provided as command-line arguments to `jq` (such as `-r` for raw string
 output). Arguments are split like a shell would split them, so quotes are
 honored and a quoted argument may contain spaces, but nothing is expanded (no
-globs, variables, or command substitution).
+globs, variables, or command substitution). If the line has an unmatched quote
+(say, `it's`), a warning is shown in the output pane and the line is split on
+whitespace instead, with the quote characters kept as typed.
+
+Both headers are case-insensitive and may take a colon (`# data:`,
+`#args: -r`). `#DATA` must be alone on its line, and `#ARGS` (or `#ARG`,
+`#ARGUMENT`, `#ARGUMENTS`) must be followed by nothing or by options, the first
+of which starts with `-` (`#ARGS -r`, `#ARGS:-c`). Any other comment, such as
+`# Database records` or `# Args are cool`, is just a comment.
 
 If there is no `#DATA` section, `jq` runs with `--null-input` (`-n`) so the
 filter is evaluated against `null` rather than blocking on stdin — useful for
@@ -49,6 +57,9 @@ make run
 # or
 docker run -it --rm jqrepl
 ```
+
+To push your build to Docker Hub, run `make publish DOCKER_HUB_USER=you`
+(tagged `you/jqrepl`).
 
 The [`examples.jq`](examples.jq) from this repository is copied to
 `~/.repl.jq` in the Docker container, to provide you with some working

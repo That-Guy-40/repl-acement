@@ -52,4 +52,22 @@ assert_equals "whitespace-only yields no tokens"      "0" "${#PARSED[@]}"
 parse_into ''
 assert_equals "empty file yields no tokens"           "0" "${#PARSED[@]}"
 
+
+# --- an unmatched quote (e.g. "it's") falls back to splitting on whitespace,
+#     with a warning, instead of silently dropping every argument ---
+parse_into "-v msg=it's" 2>/dev/null
+assert_equals "unmatched quote: the arguments are not dropped" "2" "${#PARSED[@]}"
+assert_equals "unmatched quote: the apostrophe is kept"        "msg=it's" "${PARSED[1]:-}"
+parse_into '-v "x=a b' 2>/dev/null
+assert_equals "unclosed double quote: split on whitespace"    "3" "${#PARSED[@]}"
+qf=$(mktemp); printf '%s\n' "-v msg=it's" > "$qf"
+qerr=$(_repl_parse_args "$qf" 2>&1 >/dev/null); rm -f "$qf"
+if [[ $qerr == *"unmatched quote"* ]]; then
+    pass "unmatched quote: a warning is printed"
+else
+    fail "unmatched quote: no warning printed" "stderr: $qerr"
+fi
+parse_into '-n *.tmp' 2>/dev/null
+assert_equals "still no globbing in a well-quoted line"       "*.tmp" "${PARSED[1]:-}"
+
 summary

@@ -16,7 +16,15 @@ starts with `#ARGS`, anything on the line after that is provided as
 command-line arguments to `sed` (such as `-n` to suppress automatic printing).
 Arguments are split like a shell would split them, so quotes are honored and a
 quoted argument may contain spaces, but nothing is expanded (no globs,
-variables, or command substitution).
+variables, or command substitution). If the line has an unmatched quote (say,
+`it's`), a warning is shown in the output pane and the line is split on
+whitespace instead, with the quote characters kept as typed.
+
+Both headers are case-insensitive and may take a colon (`# data:`,
+`#args: -n`). `#DATA` must be alone on its line, and `#ARGS` (or `#ARG`,
+`#ARGUMENT`, `#ARGUMENTS`) must be followed by nothing or by options, the first
+of which starts with `-` (`#ARGS -n`, `#ARGS:-E`). Any other comment, such as
+`# Database dump` or `# Args are cool`, is just a comment.
 
 Unlike `awkrepl` (the AWK version on which this is based), sed operates on
 every line of input by default, so no automatic wrapping of your code is

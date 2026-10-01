@@ -12,7 +12,7 @@ cd "$TESTS_DIR/../.." || exit 1
 source "$JQREPL"
 
 trap 'rm -f "${REPL_SRC:-}" "${REPL_DATA:-}" "${REPL_ARGS:-}" \
-    "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}"' EXIT
+    "${REPL_RUNNER:-}" "${REPL_FORMATTER:-}" "${REPL_CLEANUP:-}" "${REPL_EDITPANE:-}"' EXIT
 
 _jqrepl_setup "$EXAMPLES"
 
