@@ -34,14 +34,14 @@ sedrepl mirrors the architecture of awkrepl but is tailored for sed's line-by-li
 
 ## Internal Dependencies (BASH Functions)
 
-| Function | Purpose | Exported (`export -f`) | Embedded (`declare -f`) in |
-|----------|---------|----------|----------|
-| `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes | `$runner` |
-| `_sedrepl_pretty_print()` | Syntax-check and display sed script | ✅ Yes | `$formatter` |
-| `_sedrepl_divide()` | Split input file into source/data/args components (`#DATA` alone on its line; `#ARGS`/`#ARG`/`#ARGUMENT(S)` followed by nothing or by options starting with `-`; case-insensitive, optional colon) | ✅ Yes | `$runner` |
-| `_repl_parse_args()` | Split the args file into NUL-separated tokens via `xargs` (quotes honored, no glob/variable expansion); on an unmatched quote, warns on stderr and splits on whitespace, keeping quote characters literally | ✅ Yes | `$runner` |
-| `_sedrepl_setup()` | Create temp files under `${TMPDIR:-/tmp}/sedrepl-*` and generate the runner/formatter/cleanup/editor-pane scripts (seven temp files: src, data, args, run, fmt, cleanup, edit); sets `REPL_*` globals | No | — |
-| `sedrepl()` | Main entry point - calls `_sedrepl_setup()`, sets up tmux environment | No | — |
+| Function | Purpose | Embedded (`declare -f`) in |
+|----------|---------|----------|
+| `_sed_in_place()` | Cross-platform `sed -i` wrapper | `$runner` |
+| `_sedrepl_pretty_print()` | Syntax-check and display sed script | `$formatter` |
+| `_sedrepl_divide()` | Split input file at the first `#DATA` into source and data, then extract `#ARGS` from the source part only (`sed -n -e "s/$argshdr/\3/p" "$src" > "$args"`), so an `#ARGS` line after `#DATA` is an ordinary data row (`#DATA` alone on its line; `#ARGS`/`#ARG`/`#ARGUMENT(S)` followed by nothing or by options starting with `-`; case-insensitive, optional colon) | `$runner` |
+| `_repl_parse_args()` | Split the args file into NUL-separated tokens via `xargs` (quotes honored, no glob/variable expansion); on an unmatched quote, warns on stderr and splits on whitespace, keeping quote characters literally | `$runner` |
+| `_sedrepl_setup()` | Create temp files under `${TMPDIR:-/tmp}/sedrepl-*` and generate the runner/formatter/cleanup/editor-pane scripts (seven temp files: src, data, args, run, fmt, cleanup, edit); sets `REPL_*` globals | — |
+| `sedrepl()` | Main entry point - calls `_sedrepl_setup()`, sets up tmux environment | — |
 
 ### Function Call Graph
 
@@ -70,8 +70,8 @@ sedrepl() [ENTRY POINT]
        session (sedrepl-<pid>) is gone; a detach leaves it running
 ```
 
-All four helper functions are also exported with `export -f`, but the
-generated scripts are self-contained via `declare -f`.
+Nothing is exported with `export -f`: each generated script embeds the
+functions it needs via `declare -f`, so it is self-contained.
 
 ---
 
@@ -92,9 +92,10 @@ generated scripts are self-contained via `declare -f`.
 - **Triggers**: File change events on `~/.repl.sed`
 - **Operations**:
   - Clears screen before execution (`-c` flag)
-  - Splits input file into source/data/args
+  - Splits input file into source/data/args (`#ARGS` is read from the
+    source part only; after `#DATA` it is data)
   - Parses `#ARGS` with `_repl_parse_args()` into an array
-  - Prints info lines (`tput setaf 0`) for working directory and command
+  - Prints dimmed info lines (`tput dim`) for working directory and command
   - Displays the sed script (`bat -l awk` / `batcat -l awk`, or `cat`)
   - Executes: `sed "${_sed_args[@]}" -f $src $data`
 
@@ -128,7 +129,8 @@ entr detects change (pane 1)
         │
         ▼
 $runner executes:
-    ├─ _sedrepl_divide() splits input
+    ├─ _sedrepl_divide() splits input at #DATA, then extracts #ARGS
+    │                     from the source part
     ├─ _repl_parse_args() reads #ARGS
     ├─ prints header + script
     └─ sed "${_sed_args[@]}" -f $src $data

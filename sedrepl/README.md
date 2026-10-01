@@ -11,9 +11,10 @@ defaults to `nano`), with the file `~/.repl.sed` open for editing.
 
 Any lines after `#DATA` at the end of the file are supplied as input to your
 script, for quick testing on sample inputs. (With no `#DATA` section, sed reads
-an empty input and prints nothing.) If you have a line in your source file that
-starts with `#ARGS`, anything on the line after that is provided as
-command-line arguments to `sed` (such as `-n` to suppress automatic printing).
+an empty input and prints nothing.) If the program section (everything before
+`#DATA`) has a line that starts with `#ARGS`, the options after it on that
+line (the first of which must start with `-`) are provided as command-line
+arguments to `sed` (such as `-n` to suppress automatic printing).
 Arguments are split like a shell would split them, so quotes are honored and a
 quoted argument may contain spaces, but nothing is expanded (no globs,
 variables, or command substitution). If the line has an unmatched quote (say,
@@ -93,8 +94,8 @@ chr8	50	75
 ### `#ARGS` and `#DATA` together
 
 Use both `#ARGS` and `#DATA` together, with `#ARGS` before `#DATA` (an `#ARGS`
-line placed after `#DATA` is still used for arguments, but is also fed to sed
-as a line of input):
+line placed after `#DATA` is not used for arguments; it is just another line
+of input for sed):
 
 ```sed
 #ARGS -n
@@ -141,4 +142,4 @@ MIT.
 [2]: https://en.wikipedia.org/wiki/Sed
 [entr]: http://eradman.com/entrproject/
 [bat]: https://github.com/sharkdp/bat
-[issues]: https://github.com/ernstki/awkrepl/issues
+[issues]: https://github.com/That-Guy-40/repl-acement/issues

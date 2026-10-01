@@ -8,6 +8,7 @@
 ##
 ##  Requirements:
 ##    - GNU awk, as 'gawk'
+##    - sed (GNU sed or BSD sed; used to split the REPL file)
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
 ##    - xargs (used to parse '#ARGS' lines)
@@ -164,8 +165,9 @@ _awkrepl_divide() {
 # _repl_parse_args FILE — print the #ARGS tokens NUL-separated, honoring shell
 # quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
 # command expansion. xargs only splits and unquotes; it never expands, so a
-# literal '*' stays '*'. Read the result with:
-#   args=(); while IFS= read -r -d '' a; do args+=("$a"); done < <(_repl_parse_args "$f")
+# literal '*' stays '*'.
+# On an unmatched quote it warns on stderr (shown in the runner pane) and
+# splits on whitespace instead, keeping the quote characters literally.
 _repl_parse_args() {
     local f=${1:?missing args file}
     local -a w
@@ -202,8 +204,6 @@ _awkrepl_setup() {
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
-    # (in GNU sed) takes the rest of the expression, spaces included.
     local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup q_editpane
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")

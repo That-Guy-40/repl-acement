@@ -8,6 +8,7 @@
 ##  Requirements:
 ##    - miller (mlr) ≥ 6 - https://miller.readthedocs.io/ (JSONL auto-detection
 ##      uses --jsonl, which Miller 5 lacks)
+##    - sed (GNU sed or BSD sed; used to split the REPL file)
 ##    - tmux ≥ 2
 ##    - entr - http://eradman.com/entrproject/
 ##    - xargs (findutils; used to parse #ARGS)

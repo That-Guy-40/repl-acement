@@ -15,18 +15,19 @@ to your program, for quick testing on sample inputs. The `#DATA` header must be
 alone on its line (any case, optionally followed by a colon), so a comment like
 `# Database…` or `# data comes from…` is just a comment.
 
-If you have a line in your source file that starts with `#ARGS` (or `#ARG`,
-`#ARGUMENT`, `#ARGUMENTS`, in any case, optionally followed by a colon),
-anything on the line after that is passed to `gawk` as command-line options,
-_ahead of_ the `-f` for your script, so use it for options like `-v name=value`
-or `-F,` (a bare word there is not delivered to `ARGV`; `gawk` would take it as
-program text). The header must be followed by nothing or by options, the first
-of which starts with `-` (`#ARGS -v x=1`, `#args: -F,`, `#ARGS:-n`); otherwise,
-as with `# Args are cool`, the line is just a comment. The line is split with
-shell-style quoting, so `#ARGS -v "x=a b"` is one `-v` with the value `x=a b`;
-globs and `$variables` are not expanded. If a quote is unmatched (e.g.
-`#ARGS -v msg=it's`), a warning is printed in the output pane and the line is
-split on whitespace instead, with the quote characters kept as typed.
+If you have a line in your program (before any `#DATA` line) that starts with
+`#ARGS` (or `#ARG`, `#ARGUMENT`, `#ARGUMENTS`, in any case, optionally followed
+by a colon), anything on the line after that is passed to `gawk` as
+command-line options, _ahead of_ the `-f` for your script, so use it for
+options like `-v name=value` or `-F,` (a bare word there is not delivered to
+`ARGV`; `gawk` would take it as program text). The header must be followed by
+nothing or by options, the first of which starts with `-` (`#ARGS -v x=1`,
+`#args: -F,`, `#ARGS:-n`); otherwise, as with `# Args are cool`, the line is
+just a comment (and after `#DATA` it's just another line of data). The line is
+split with shell-style quoting, so `#ARGS -v "x=a b"` is one `-v` with the
+value `x=a b`; globs and `$variables` are not expanded. If a quote is unmatched
+(e.g. `#ARGS -v msg=it's`), a warning is printed in the output pane and the
+line is split on whitespace instead, with the quote characters kept as typed.
 
 Comment lines (starting with `#`) and blank lines are stripped from your source
 before it's run.
@@ -70,7 +71,7 @@ Requirements
 ------------
 
 * Docker
-* _—or—_ Bash, tmux, [entr][], GNU Awk (as `gawk`), and `xargs`
+* _—or—_ Bash, tmux, [entr][], GNU Awk (as `gawk`), `sed`, and `xargs`
     * also [bat][] (as `bat` or `batcat`), if you want your pretty-printed AWK
       source to also be syntax-highlighted
 
@@ -175,5 +176,5 @@ MIT.
 [jove]: https://www.emacswiki.org/emacs/Jove
 [slim]: https://hub.docker.com/_/debian
 [hub]: https://hub.docker.com/repository/docker/ernstki/awkrepl
-[issues]: https://github.com/ernstki/awkrepl/issues
+[issues]: https://github.com/That-Guy-40/repl-acement/issues
 [upstream]: https://github.com/ernstki/awkrepl

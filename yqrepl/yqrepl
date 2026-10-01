@@ -7,6 +7,7 @@
 ##
 ##  Requirements:
 ##    - yq ≥ 4 (Mike Farah's Go implementation, https://github.com/mikefarah/yq)
+##    - sed (GNU sed or BSD sed; used to split the REPL file)
 ##    - tmux ≥ 2
 ##    - entr - http://eradman.com/entrproject/
 ##    - xargs (findutils; used to parse #ARGS)
