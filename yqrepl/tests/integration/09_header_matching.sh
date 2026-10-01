@@ -57,4 +57,24 @@ assert_file_not_contains "bare #ARGS is removed from the source" "#ARGS" "$src"
 divide_lines 'PROGRAM_LINE' '# data is below' 'not data'
 assert_empty "'# data is below' does not start the data section" "$data"
 
+# --- '#DATA' may be the very first line (a file that is only data) ---
+# (a '1,/re/' sed range used to miss a header on line 1 and send every data
+#  row into the program as well)
+divide_lines '#DATA' 'row1' 'row2'
+assert_equals "#DATA on line 1: the program is empty" "" "$(tr -d '[:space:]' < "$src")"
+assert_equals "#DATA on line 1: every row is data" "row1
+row2" "$(cat "$data")"
+
+divide_lines '#data:' 'row1'
+assert_equals "'#data:' on line 1: the program is empty" "" "$(tr -d '[:space:]' < "$src")"
+assert_equals "'#data:' on line 1: the row is data" "row1" "$(cat "$data")"
+
+divide_lines '#DATA' 'row1' '#DATA' 'row2'
+assert_equals "#DATA on line 1 and again later: the program is empty" "" "$(tr -d '[:space:]' < "$src")"
+assert_equals "#DATA on line 1 and again later: the rows are data once each" "row1
+row2" "$(cat "$data")"
+
+divide_lines '' '#DATA' 'row1'
+assert_equals "#DATA after a blank first line: the row is data" "row1" "$(cat "$data")"
+
 summary

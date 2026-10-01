@@ -21,7 +21,10 @@ REPL except awkrepl, the source as well.
 All six share the same file conventions:
 
 - Lines after a `#DATA` line are supplied as input to the tool. `#DATA` must
-  be alone on its line (optionally followed by a colon and/or whitespace)
+  be alone on its line (optionally followed by a colon and/or whitespace). It
+  may be the very first line, for a file that is only data; the program is
+  then empty. Only the first `#DATA` line splits the file; any later one is
+  dropped from the data.
 - A `#ARGS` line passes the options after it as command-line flags, e.g.
   `#ARGS -n` or `#args: --csv`. `#ARG`, `#ARGUMENT` and `#ARGUMENTS` work too.
   The header must be followed by nothing or by options whose first one starts

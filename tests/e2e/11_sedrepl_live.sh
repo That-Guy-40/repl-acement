@@ -62,4 +62,19 @@ else
 fi
 assert_screen_not_contains se "drop that" "#ARGS -n suppresses non-matching lines"
 
+# --- a file that is only data ('#DATA' on line 1): an empty sed script just
+#     passes the rows through (the rows used to be run as the sed script too)
+repl_edit se <<'EOF'
+#DATA
+only-data-row-one
+only-data-row-two
+EOF
+if repl_wait se 'only-data-row-two' 15; then
+    pass "#DATA on line 1: the rows pass through as data"
+else
+    fail "#DATA on line 1: the rows never appeared" "$(repl_screen se)"
+fi
+repl_settle se 800 >/dev/null
+assert_screen_not_contains se "sed: " "#DATA on line 1: no sed error (the rows are not run as a script)"
+
 summary
