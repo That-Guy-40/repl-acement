@@ -15,12 +15,17 @@ if ! command -v make > /dev/null 2>&1; then
     exit 0
 fi
 
-help=$(make -s -C "$DIR" help 2>&1); rc=$?
-assert_equals "make help exits 0" "0" "$rc"
-if [[ $help == *"make publish"* && $help == *"make test"* ]]; then
-    pass "make help lists the targets"
+# `make help` formats the target list with perl (the REPL itself may not need it)
+if command -v perl > /dev/null 2>&1; then
+    help=$(make -s -C "$DIR" help 2>&1); rc=$?
+    assert_equals "make help exits 0" "0" "$rc"
+    if [[ $help == *"make publish"* && $help == *"make test"* ]]; then
+        pass "make help lists the targets"
+    else
+        fail "make help does not list the targets" "$help"
+    fi
 else
-    fail "make help does not list the targets" "$help"
+    echo "  SKIP: make help (perl not installed)"
 fi
 
 fake=$(mktemp -d); log="$fake/calls"

@@ -135,4 +135,31 @@ printf '{ print $1\n' > "$replfile"
 _awkrepl_divide "$replfile" "$src" "$data" "$args"
 assert_equals "unparseable code is left as written (no wrapping)" '{ print $1' "$(cat "$src")"
 
+# --- a bare expression that reads as a statement is still wrapped, even though
+#     it would also parse as a pattern (e.g. the printa() helper idiom) ---
+wrapped_as() {  # DESC PROGRAM DATA OPENER EXPECTED-OUTPUT-SUBSTRING
+    local desc=$1 prog=$2 rows=$3 opener=$4 want=$5 out
+    : > "$src"; : > "$data"; : > "$args"
+    if [[ -n $rows ]]; then
+        printf '%s\n\n#DATA\n%s\n' "$prog" "$rows" > "$replfile"
+    else
+        printf '%s\n' "$prog" > "$replfile"
+    fi
+    _awkrepl_divide "$replfile" "$src" "$data" "$args"
+    assert_equals "$desc: wrapped in '$opener'" "$opener" "$(head -1 "$src")"
+    out=$(gawk -f "$helpers" -f "$src" "$data" 2>&1)
+    if [[ $out == *"$want"* ]]; then
+        pass "$desc: output"
+    else
+        fail "$desc: output" "wanted '$want' in: $out"
+    fi
+}
+helpers=$(mktemp); echo "$AWKHELPERS" > "$helpers"
+wrapped_as "printa() helper idiom, no #DATA" 'n = split("a b c", arr); printa(arr)' '' 'END {' 'noname[2]=b'
+wrapped_as "bare assignment, no #DATA"       'x = 6 * 7'                            '' 'END {' ''
+wrapped_as "counter, with #DATA"             'n++'                                  $'a\nb' '{'  ''
+wrapped_as "function call, with #DATA"       'printf("<%s>\n", $1)'                 $'a\nb' '{'  '<a>'
+wrapped_as "'<' or '>' inside a string"      's = "<td>" $1 "</td>"'                $'a\nb' '{'  ''
+rm -f "$helpers"
+
 summary

@@ -52,13 +52,19 @@ bananas,5,0.50
 - `#ARGS` lines inject extra main `mlr` flags, placed before `put` (e.g.
   `#ARGS --tsv` for tab-separated data, or `#ARGS --icsv --ojson`). They are
   split like a shell command line: quotes are honored, nothing is expanded.
+  If the line has an unmatched quote (say, `it's`), a warning is shown in
+  the output pane and the line is split on whitespace instead, with the
+  quote characters kept as typed.
 - When there is no `#ARGS`, the format is auto-detected from the first data
   line: a line starting with `{` uses `--jsonl`, one containing a comma uses
   `--csv`, and anything else `--nidx`. Any `#ARGS` turns auto-detection off
   entirely, so include a format flag (`#ARGS --ojson` alone would read the
   data as Miller's default DKVP).
-- A comment line that begins with `# data` or `# arg` (any case) is taken
-  as a `#DATA` / `#ARGS` header, so avoid starting comments that way.
+- Headers are case-insensitive and may take a colon. `#DATA` must be alone
+  on its line; `#ARGS` (or `#ARG`, `#ARGUMENT`, `#ARGUMENTS`) must be
+  followed by nothing or by options, the first of which starts with `-`
+  (e.g. `#ARGS --tsv`, `#args: --icsv --ojson`). Any other comment, such as `# Database records`
+  or `# Args are cool`, is just a comment.
 
 Running with Docker
 -------------------
@@ -68,6 +74,9 @@ Build the image locally and run it (no prebuilt image is published):
 ```
 make build && make run
 ```
+
+To push your build to Docker Hub, run `make publish DOCKER_HUB_USER=you`
+(tagged `you/mlrrepl`).
 
 Tests
 -----

@@ -78,6 +78,8 @@ _yqrepl_is_mikefarah() {
 # quotes (so a value may contain spaces) but WITHOUT globbing or any variable/
 # command expansion. xargs only splits and unquotes; it never expands, so a
 # literal '*' stays '*'.
+# On an unmatched quote it warns on stderr (shown in the runner pane) and
+# splits on whitespace instead, keeping the quote characters literally.
 _repl_parse_args() {
     local f=${1:?missing args file}
     local -a w
@@ -116,7 +118,7 @@ _yqrepl_setup() {
     # shell-safe (printf '%q') versions of all paths for embedding in generated
     # scripts and tmux commands — prevents word-splitting, glob expansion, and
     # single-quote injection when paths contain spaces or special characters.
-    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup q_editpane q_editor
+    local q_replfile q_src q_data q_args q_runner q_formatter q_cleanup q_editpane
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
     q_data=$(printf '%q' "$data")
@@ -125,7 +127,6 @@ _yqrepl_setup() {
     q_formatter=$(printf '%q' "$formatter")
     q_cleanup=$(printf '%q' "$cleanup")
     q_editpane=$(printf '%q' "$editpane")
-    q_editor=$(printf '%q' "${EDITOR:-nano}")
 
     # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
     # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
@@ -186,17 +187,28 @@ CLEANUP
     # never touches other windows when the REPL runs inside an existing tmux
     # session. (tmux 'pane-exited' hooks can't be scoped like that: tmux
     # resolves them against the session's current window, whichever pane
-    # exited.)
+    # exited.) $EDITOR is run by the shell, as git does, so it may carry
+    # flags (e.g. 'code -w' or 'emacsclient -t'). The editor runs as a child
+    # the wrapper waits on, so a hangup (the window killed) is handled at
+    # once: bash defers a trap until a foreground child exits, and the
+    # killed window's editor might never exit. '<&0' keeps the pane's
+    # terminal as its input (a background command would get /dev/null).
     cat > "$editpane" <<EDITPANE
 #!/usr/bin/env bash
+_editor=
 _done() {
     trap - HUP TERM
+    [[ -n "\$_editor" ]] && kill "\$_editor" 2>/dev/null
     $q_cleanup
-    tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
+    [[ -n "\${TMUX_PANE:-}" ]] && tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
     exit 0
 }
 trap _done HUP TERM
-$q_editor $q_replfile
+trap '' INT QUIT
+${EDITOR:-nano} $q_replfile <&0 &
+_editor=\$!
+wait "\$_editor"
+_editor=
 _done
 EDITPANE
 

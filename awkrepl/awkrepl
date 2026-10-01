@@ -8,7 +8,6 @@
 ##
 ##  Requirements:
 ##    - GNU awk, as 'gawk'
-##    - Perl
 ##    - tmux ≥ 2 (I think)
 ##    - entr - http://eradman.com/entrproject/
 ##    - xargs (used to parse '#ARGS' lines)
@@ -100,7 +99,6 @@ _awkrepl_pretty_print() {
     fi
 } # _awkrepl_pretty_print
 
-# divide input file $1 into source ($2), data ($3), and args ($4) files
 # _awkrepl_parses GAWK-PROGRAM-ARGS... — true if gawk can parse the program
 # (e.g. `-f file` or `-e text`). --pretty-print parses without running it, so
 # BEGIN blocks and getline never execute here.
@@ -108,6 +106,23 @@ _awkrepl_parses() {
     gawk --pretty-print=/dev/null "$@" >/dev/null 2>&1
 }
 
+# _awkrepl_looks_like_statement FILE — for source that parses both as written
+# and wrapped (a bare expression is valid both as a pattern and as a
+# statement), guess which was meant from how it starts. A pattern-like start
+# ('{', '!', '/', '(', '$', a literal, NR/NF/FNR/FILENAME) means a pattern; so
+# does any comparison or match operator. Anything else that starts with a
+# name (an assignment, a function call such as printa(arr), i++) is taken as
+# a statement.
+_awkrepl_looks_like_statement() {
+    local first pat='^[{!/($0-9"-]'
+    first=$(sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q;}' "$1")
+    [[ $first =~ $pat ]] && return 1
+    [[ $first =~ ^(NR|NF|FNR|FILENAME)([^A-Za-z0-9_]|$) ]] && return 1
+    # look for operators outside string literals (so s = "<td>" $1 is a statement)
+    ! sed -E 's/"([^"\\]|\\.)*"//g' "$1" | grep -qE '==|!=|<|>|~'
+}
+
+# divide input file $1 into source ($2), data ($3), and args ($4) files
 _awkrepl_divide() {
     local in=${1:?missing input file argument}
     local src=${2:?missing source output file argument}
@@ -141,21 +156,24 @@ _awkrepl_divide() {
     # remove comments and blank lines from source (see #6)
     _sed_in_place -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$src"
 
-    # Auto-wrap a bare program such as 'print $1' so it runs. gawk decides:
-    # if the source already parses as AWK (rules, patterns such as '!/re/' or
-    # '$NF > 3', function definitions, BEGIN/END, …) leave it alone. Otherwise
-    # wrap the whole source in '{ … }' when there's #DATA, or in 'END { … }'
-    # when there isn't, and keep that only if the wrapped program parses. If
-    # neither parses, leave it as written, so the error shown is about the
-    # user's own code.
-    _awkrepl_parses -f "$src" && return 0
-
-    local opener='{' wrapped
+    # Auto-wrap a bare program such as 'print $1' or 'printa(arr)' in
+    # '{ … }' when there's #DATA, or in 'END { … }' when there isn't. gawk
+    # checks the whole program both ways (it only parses, never runs it):
+    #   - parses only as written (rules with actions, function definitions,
+    #     BEGIN/END, …): leave it alone
+    #   - parses only wrapped (statements such as 'print $1'): wrap it
+    #   - parses neither way: leave it, so the error is about the user's code
+    #   - parses both ways (a bare expression): wrap it if it looks like a
+    #     statement rather than a pattern such as '!/re/' or '$NF > 3'
+    local opener='{' wrapped as_written=0 as_wrapped=0
     [[ -s "$data" ]] || opener='END {'
     wrapped=$(printf '%s\n' "$opener"; cat "$src"; printf '}\n')
-    if _awkrepl_parses -e "$wrapped"; then
+    _awkrepl_parses -f "$src"     && as_written=1
+    _awkrepl_parses -e "$wrapped" && as_wrapped=1
+    if (( as_wrapped )) && { (( ! as_written )) || _awkrepl_looks_like_statement "$src"; }; then
         printf '%s\n' "$wrapped" > "$src"
     fi
+    return 0
 } # _awkrepl_divide
 
 # _repl_parse_args FILE — print the #ARGS tokens NUL-separated, honoring shell
@@ -185,6 +203,7 @@ export -f _sed_in_place
 export -f _awkrepl_divide
 export -f _awkrepl_pretty_print
 export -f _awkrepl_parses
+export -f _awkrepl_looks_like_statement
 export -f _repl_parse_args
 
 _awkrepl_setup() {
@@ -207,7 +226,7 @@ _awkrepl_setup() {
     # single-quote injection when paths contain spaces or special characters.
     # Note: _awkrepl_divide passes the raw paths to sed's 'w filename', which
     # (in GNU sed) takes the rest of the expression, spaces included.
-    local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup q_editpane q_editor
+    local q_replfile q_src q_data q_args q_helpers q_runner q_formatter q_cleanup q_editpane
     q_replfile=$(printf '%q' "$replfile")
     q_src=$(printf '%q' "$src")
     q_data=$(printf '%q' "$data")
@@ -217,14 +236,13 @@ _awkrepl_setup() {
     q_formatter=$(printf '%q' "$formatter")
     q_cleanup=$(printf '%q' "$cleanup")
     q_editpane=$(printf '%q' "$editpane")
-    q_editor=$(printf '%q' "${EDITOR:-nano}")
 
     # Heredoc delimiter is unquoted so $(declare -f ...) and $(tput ...) expand
     # NOW (generation time). \$VAR and \${ARRAY[@]} are deferred to run time.
     cat > "$runner" <<RUNNER
 #!/usr/bin/env bash
 set -uo pipefail
-$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_divide _repl_parse_args)
+$(declare -f _sed_in_place _trim_blanks _awkrepl_parses _awkrepl_looks_like_statement _awkrepl_divide _repl_parse_args)
 _awkrepl_divide $q_replfile $q_src $q_data $q_args
 _gawk_args=()
 while IFS= read -r -d '' _a; do _gawk_args+=( "\$_a" ); done < <(_repl_parse_args $q_args)
@@ -252,17 +270,28 @@ CLEANUP
     # never touches other windows when the REPL runs inside an existing tmux
     # session. (tmux 'pane-exited' hooks can't be scoped like that: tmux
     # resolves them against the session's current window, whichever pane
-    # exited.)
+    # exited.) $EDITOR is run by the shell, as git does, so it may carry
+    # flags (e.g. 'code -w' or 'emacsclient -t'). The editor runs as a child
+    # the wrapper waits on, so a hangup (the window killed) is handled at
+    # once: bash defers a trap until a foreground child exits, and the
+    # killed window's editor might never exit. '<&0' keeps the pane's
+    # terminal as its input (a background command would get /dev/null).
     cat > "$editpane" <<EDITPANE
 #!/usr/bin/env bash
+_editor=
 _done() {
     trap - HUP TERM
+    [[ -n "\$_editor" ]] && kill "\$_editor" 2>/dev/null
     $q_cleanup
-    tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
+    [[ -n "\${TMUX_PANE:-}" ]] && tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
     exit 0
 }
 trap _done HUP TERM
-$q_editor $q_replfile
+trap '' INT QUIT
+${EDITOR:-nano} $q_replfile <&0 &
+_editor=\$!
+wait "\$_editor"
+_editor=
 _done
 EDITPANE
 

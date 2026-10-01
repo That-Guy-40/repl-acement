@@ -12,7 +12,8 @@
 ##      all survive, and a save must still re-run the tool;
 ##    - no pane-exited hooks may be left on the user's session;
 ##    - quitting the REPL's editor closes only the REPL's window and removes
-##      its temp files.
+##      its temp files; so does killing the REPL window from tmux, or one of
+##      its entr panes exiting.
 ##
 ##  Regression test: the REPLs used to install session-wide 'pane-exited'
 ##  hooks (cleanup + kill-window). tmux resolves those against the session's
@@ -49,6 +50,19 @@ pane_shows()  { H capture-pane -p -t "host:$1" 2>/dev/null | grep -qF -- "$2"; }
 scratch()     { find "$W/tmp.$1" -maxdepth 1 -name "$1-*" 2>/dev/null | wc -l; }
 no_scratch()  { [[ $(scratch "$1") -eq 0 ]]; }
 
+# launch_nested TOOL REPL BASE — start REPL from a pane inside the host session
+# ($TMUX is set there), so it opens as a new window; that launcher pane then
+# exits by itself. Succeeds once the REPL's output pane shows M1-x.
+launch_nested() {
+    local tool=$1 repl=$2 base=$3 home="$W/home.$1"
+    mkdir -p "$home" "$W/tmp.$repl"
+    repl_sample "$tool" 1 > "$home/$base"
+    H new-window -d -n "launch-$tool" \
+        "env HOME=$(printf '%q' "$home") EDITOR=$(printf '%q' "$W/keepedit") TMPDIR=$(printf '%q' "$W/tmp.$repl") PATH=$(printf '%q' "$PATH") $(printf '%q' "$REPO/$repl/$repl")"
+    wait_for 15 pane_shows "$repl.1" 'M1-x' || return 1
+    wait_for 5 no_window "launch-$tool"          # the launcher pane has exited
+}
+
 check_tool() {
     local tool=$1 repl=$2 base=$3 need=$4 home="$W/home.$1" pid
 
@@ -57,20 +71,11 @@ check_tool() {
         echo "  SKIP: $repl (yq on PATH is not Mike Farah's Go yq)"; return
     fi
 
-    mkdir -p "$home" "$W/tmp.$repl"
-    repl_sample "$tool" 1 > "$home/$base"
-
-    # launch from a pane inside the host session ($TMUX is set there), so the
-    # REPL opens as a new window; the launcher pane then exits by itself
-    H new-window -d -n "launch-$tool" \
-        "env HOME=$(printf '%q' "$home") EDITOR=$(printf '%q' "$W/keepedit") TMPDIR=$(printf '%q' "$W/tmp.$repl") PATH=$(printf '%q' "$PATH") $(printf '%q' "$REPO/$repl/$repl")"
-
-    if ! wait_for 15 pane_shows "$repl.1" 'M1-x'; then
+    if ! launch_nested "$tool" "$repl" "$base"; then
         fail "$repl: nested REPL window never showed output" \
              "windows: $(H list-windows -t host -F '#{window_name}' | tr '\n' ' ')"
         return
     fi
-    wait_for 5 no_window "launch-$tool"          # the launcher pane has exited
 
     # another, unrelated pane in the user's session exits
     H new-window -d -n "other-$tool" 'sleep 0.2'
@@ -125,6 +130,41 @@ check_tool() {
         pass "$repl: quitting leaves the user's own window open"
     else
         fail "$repl: quitting killed the user's own window"
+    fi
+
+    # --- the REPL window is killed from tmux (e.g. C-b &): the editor pane's
+    #     wrapper gets SIGHUP and still removes the temp files ---
+    if launch_nested "$tool" "$repl" "$base"; then
+        H kill-window -t "host:$repl"
+        if wait_for 5 no_scratch "$repl"; then
+            pass "$repl: killing the REPL window removes the temp files"
+        else
+            fail "$repl: temp files left after the window was killed" "$(scratch "$repl") left"
+        fi
+        has_window mine && pass "$repl: killing the REPL window leaves the user's window" \
+                        || fail "$repl: killing the REPL window killed the user's window"
+    else
+        fail "$repl: relaunch for the kill-window check failed"
+    fi
+
+    # --- the runner pane's entr exits: the REPL window closes and is cleaned up ---
+    if launch_nested "$tool" "$repl" "$base"; then
+        pid=$(H display-message -p -t "host:$repl.1" '#{pane_pid}')
+        pkill -TERM -P "$pid" 2>/dev/null                 # entr, under the pane's shell
+        if wait_for 10 no_window "$repl"; then
+            pass "$repl: an entr pane exiting closes the REPL window"
+        else
+            fail "$repl: REPL window still open after its entr exited"
+        fi
+        if wait_for 5 no_scratch "$repl"; then
+            pass "$repl: …and removes the temp files"
+        else
+            fail "$repl: temp files left after entr exited" "$(scratch "$repl") left"
+        fi
+        has_window mine && pass "$repl: …and leaves the user's window" \
+                        || fail "$repl: an entr pane exiting killed the user's window"
+    else
+        fail "$repl: relaunch for the entr-exit check failed"
     fi
 }
 

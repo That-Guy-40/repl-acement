@@ -87,7 +87,8 @@ _rp_init() {
     [[ -e "$_RP_KEEPEDIT" ]] && return 0
     mkdir -p "$_RP_WORK" "$_RP_INNER_TMPDIR" "$_RP_REPL_TMPDIR" || return 1
     # an $EDITOR that ignores its file argument and never exits, so the REPL's
-    # editor pane stays open (its exit would fire the cleanup/kill-window hook)
+    # editor pane stays open (when the editor exits, the pane's wrapper
+    # removes the temp files and closes the REPL's window)
     printf '#!/usr/bin/env bash\nexec sleep 2147483647\n' > "$_RP_KEEPEDIT"
     chmod +x "$_RP_KEEPEDIT"
 }

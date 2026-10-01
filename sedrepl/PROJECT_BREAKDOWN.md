@@ -38,9 +38,9 @@ sedrepl mirrors the architecture of awkrepl but is tailored for sed's line-by-li
 |----------|---------|----------|----------|
 | `_sed_in_place()` | Cross-platform `sed -i` wrapper | ✅ Yes | `$runner` |
 | `_sedrepl_pretty_print()` | Syntax-check and display sed script | ✅ Yes | `$formatter` |
-| `_sedrepl_divide()` | Split input file into source/data/args components | ✅ Yes | `$runner` |
-| `_repl_parse_args()` | Split the args file into NUL-separated tokens via `xargs` (quotes honored, no glob/variable expansion) | ✅ Yes | `$runner` |
-| `_sedrepl_setup()` | Create temp files under `${TMPDIR:-/tmp}/sedrepl-*` and generate the runner/formatter/cleanup scripts; sets `REPL_*` globals | No | — |
+| `_sedrepl_divide()` | Split input file into source/data/args components (`#DATA` alone on its line; `#ARGS`/`#ARG`/`#ARGUMENT(S)` followed by nothing or by options starting with `-`; case-insensitive, optional colon) | ✅ Yes | `$runner` |
+| `_repl_parse_args()` | Split the args file into NUL-separated tokens via `xargs` (quotes honored, no glob/variable expansion); on an unmatched quote, warns on stderr and splits on whitespace, keeping quote characters literally | ✅ Yes | `$runner` |
+| `_sedrepl_setup()` | Create temp files under `${TMPDIR:-/tmp}/sedrepl-*` and generate the runner/formatter/cleanup/editor-pane scripts (seven temp files: src, data, args, run, fmt, cleanup, edit); sets `REPL_*` globals | No | — |
 | `sedrepl()` | Main entry point - calls `_sedrepl_setup()`, sets up tmux environment | No | — |
 
 ### Function Call Graph
@@ -53,10 +53,17 @@ sedrepl() [ENTRY POINT]
     │   │              → _sedrepl_divide() → _repl_parse_args() → runs sed
     │   ├─ $formatter (embeds _sedrepl_pretty_print)
     │   │              → sleep 1 → _sedrepl_pretty_print()
-    │   └─ $cleanup   → removes all temp files
+    │   ├─ $cleanup   → removes all temp files
+    │   └─ $editpane  → runs $EDITOR ~/.repl.sed; when the editor exits (or on
+    │                   SIGHUP/SIGTERM) runs $cleanup, then
+    │                   'tmux kill-window -t $TMUX_PANE' (its own window only)
     │
-    ├─ tmux: editor pane, runner pane, formatter pane;
-    │        'pane-exited' hooks run $cleanup / kill the window
+    ├─ tmux: new session 'sedrepl-<pid>' (or 'new-window' if nested in tmux)
+    │        pane 0: $editpane
+    │        pane 1: echo ~/.repl.sed | entr -c $runner; tmux kill-window …
+    │        pane 2: echo $src | entr -c $formatter; tmux kill-window …
+    │        (if either entr exits, the window closes; pane 0's wrapper then
+    │         cleans up). No tmux hooks are used.
     │
     └─ Backstop cleanup: if not nested in tmux ($TMUX unset), removes the
        temp files itself once 'tmux new-session' returns and the named
@@ -71,7 +78,9 @@ generated scripts are self-contained via `declare -f`.
 ## Interface at Each Level
 
 ### Level 1: User Interface (Tmux Pane 0)
-- **Component**: `$EDITOR ~/.repl.sed` (defaults to `nano`)
+- **Component**: `$editpane` wrapper running `$EDITOR ~/.repl.sed` (defaults
+  to `nano`); on editor exit it removes the temp files and closes the REPL's
+  window
 - **User actions**: Edit sed script
 - **File path**: `$HOME/.repl.sed`
 - **Features**: 
@@ -79,7 +88,7 @@ generated scripts are self-contained via `declare -f`.
   - Supports `#ARGS` section for sed command-line flags
 
 ### Level 2: Runner Interface (Tmux Pane 1)
-- **Component**: `echo ~/.repl.sed | entr -c $runner`
+- **Component**: `echo ~/.repl.sed | entr -c $runner; tmux kill-window -t "$TMUX_PANE"`
 - **Triggers**: File change events on `~/.repl.sed`
 - **Operations**:
   - Clears screen before execution (`-c` flag)
@@ -90,7 +99,7 @@ generated scripts are self-contained via `declare -f`.
   - Executes: `sed "${_sed_args[@]}" -f $src $data`
 
 ### Level 3: Formatter Interface (Tmux Pane 2)
-- **Component**: `echo $src | entr -c $formatter`
+- **Component**: `echo $src | entr -c $formatter; tmux kill-window -t "$TMUX_PANE"`
 - **Triggers**: File change events on temp `$src` file (created by runner)
 - **Operations**:
   - Waits 1 second for runner to finish (race condition prevention)
@@ -203,4 +212,4 @@ sedrepl provides a REPL-like environment for sed development where:
 - **One save** triggers **two reactions** (execution and formatting)
 - **No polling** - uses kernel file events via entr
 - **Self-contained** - scripts embed functions via `declare -f`
-- **Clean exit** - temp files deleted automatically (tmux `pane-exited` hook, plus a backstop `rm` when not nested in tmux and the session has ended)
+- **Clean exit** - temp files deleted automatically (by the editor pane's wrapper when the editor exits or the window is killed, plus a backstop `rm` when not nested in tmux and the session has ended); only the REPL's own window is closed, so it is safe inside an existing tmux session

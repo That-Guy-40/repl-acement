@@ -13,7 +13,7 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  tmux window: awkrepl                                         │  │
 │  │  ┌─────────────────────────────────────────────────────────┐  │  │
 │  │  │   PANE 0 (Editor, top)                                  │  │  │
-│  │  │   editor process: $EDITOR ~/.repl.awk                   │  │  │
+│  │  │   $editpane wrapper → $EDITOR ~/.repl.awk               │  │  │
 │  │  ├────────────────────────────┬────────────────────────────┤  │  │
 │  │  │   PANE 1 (Runner,          │   PANE 2 (Formatter,       │  │  │
 │  │  │           bottom-left)     │           bottom-right)    │  │  │
@@ -35,6 +35,7 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │                 │   │  - fmt: formatter shell script          │  │
 │  │                 │   │  - helpers: AWK library                 │  │
 │  │                 │   │  - cleanup: cleanup shell script        │  │
+│  │                 │   │  - edit: editor-pane wrapper script     │  │
 │  └─────────────────┘   └─────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                               │
@@ -80,6 +81,10 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  │  │ _awkrepl_pretty_print │  │ _repl_parse_args │        │  │  │
 │  │  │  └───────────────────────┘  └──────────────────┘        │  │  │
 │  │  │                                                         │  │  │
+│  │  │  ┌─────────────────┐  ┌───────────────────────────────┐ │  │  │
+│  │  │  │ _awkrepl_parses │  │ _awkrepl_looks_like_statement │ │  │  │
+│  │  │  └─────────────────┘  └───────────────────────────────┘ │  │  │
+│  │  │                                                         │  │  │
 │  │  │  ┌────────────────┐  ┌─────────┐                        │  │  │
 │  │  │  │ _awkrepl_setup │  │ awkrepl │                        │  │  │
 │  │  │  └────────────────┘  └─────────┘                        │  │  │
@@ -87,9 +92,11 @@ This document contains visual representations of the awkrepl architecture, data 
 │  └───────────────────────────────────────────────────────────────┘  │
 │                              │                                      │
 │  export -f: _sed_in_place, _awkrepl_divide,                         │
-│             _awkrepl_pretty_print, _repl_parse_args                 │
+│             _awkrepl_pretty_print, _awkrepl_parses,                 │
+│             _awkrepl_looks_like_statement, _repl_parse_args         │
 │  declare -f (embedded in generated scripts):                        │
-│    $runner:    _sed_in_place, _trim_blanks, _awkrepl_divide,        │
+│    $runner:    _sed_in_place, _trim_blanks, _awkrepl_parses,        │
+│                _awkrepl_looks_like_statement, _awkrepl_divide,      │
 │                _repl_parse_args                                     │
 │    $formatter: _awkrepl_pretty_print                                │
 │                              │                                      │
@@ -99,6 +106,9 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  - _trim_blanks():          strip leading/trailing blank lines│  │
 │  │  - _awkrepl_pretty_print(): pretty-print, optional bat/batcat │  │
 │  │  - _awkrepl_divide():       split file into src/data/args     │  │
+│  │  - _awkrepl_parses():       gawk --pretty-print parse check   │  │
+│  │  - _awkrepl_looks_like_statement(): bare expression is        │  │
+│  │                             a statement (wrap) or pattern?    │  │
 │  │  - _repl_parse_args():      #ARGS → NUL-separated tokens      │  │
 │  │  - _awkrepl_setup():        temp files + generated scripts;   │  │
 │  │                             sets REPL_* / REPL_Q_* globals    │  │
@@ -116,10 +126,11 @@ This document contains visual representations of the awkrepl architecture, data 
 │                              │                                      │
 │  ┌───────────────────────────┴───────────────────────────────────┐  │
 │  │                   External Commands                           │  │
-│  │  - tmux:         terminal multiplexer                         │  │
-│  │  - gawk:         AWK interpreter and pretty-printer           │  │
+│  │  - tmux:         terminal multiplexer (kill-window via        │  │
+│  │                  $TMUX_PANE closes the REPL's own window)     │  │
+│  │  - gawk:         AWK interpreter, pretty-printer, and         │  │
+│  │                  auto-wrap parse check                        │  │
 │  │  - entr:         file change watcher                          │  │
-│  │  - perl:         auto-wrap pattern detection                  │  │
 │  │  - sed:          text processing                              │  │
 │  │  - xargs:        #ARGS tokenizing (quotes, no globbing)       │  │
 │  │  - tac / tail -r: line reversal in _trim_blanks               │  │
@@ -221,10 +232,11 @@ This document contains visual representations of the awkrepl architecture, data 
 │     ┌───────────────────────────────────────────────────────────┐   │
 │     │  - touch ~/.repl.awk if missing                           │   │
 │     │  - _awkrepl_setup ~/.repl.awk                             │   │
-│     │      - mktemp 7 files in ${TMPDIR:-/tmp}/awkrepl-*        │   │
+│     │      - mktemp 8 files in ${TMPDIR:-/tmp}/awkrepl-*        │   │
 │     │      - Write AWKHELPERS to helpers file                   │   │
-│     │      - Generate $runner, $formatter, $cleanup scripts     │   │
-│     │      - chmod a+x runner, formatter, cleanup               │   │
+│     │      - Generate $runner, $formatter, $cleanup, and        │   │
+│     │        $editpane (editor wrapper) scripts                 │   │
+│     │      - chmod a+x runner, formatter, cleanup, editpane     │   │
 │     │      - Set REPL_* and %q-quoted REPL_Q_* globals          │   │
 │     │  - Launch tmux (new session, or new window if nested)     │   │
 │     │  - When not nested: after tmux exits, rm -f temp files    │   │
@@ -252,7 +264,10 @@ This document contains visual representations of the awkrepl architecture, data 
 │     │                                                               │
 │     ├─ _sed_in_place()  [remove comment and blank lines]            │
 │     │                                                               │
-│     └─ Perl pattern check → _sed_in_place() [auto-wrap if needed]   │
+│     └─ _awkrepl_parses() as written and wrapped in { } / END { }    │
+│        - only as written, or neither: leave as written              │
+│        - only wrapped: wrap                                         │
+│        - both: wrap if _awkrepl_looks_like_statement()              │
 │     │                                                               │
 │     ▼                                                               │
 │  _repl_parse_args $args → _gawk_args                                │
@@ -285,16 +300,19 @@ This document contains visual representations of the awkrepl architecture, data 
 │  Output to pane 2 (formatted code)                                  │
 └─────────────────────────────────────────────────────────────────────┘
                     │
-                    ▼ (a pane exits, e.g. the editor)
+                    ▼ (the editor exits, or an entr pane exits)
 ┌─────────────────────────────────────────────────────────────────────┐
 │                   CLEANUP ON EXIT                                   │
-│  tmux session hooks: pane-exited[0], pane-exited[1]                 │
-│  ([0]/[1] are hook-array slots; both run when ANY pane exits)       │
+│  Pane 0 runs the $editpane wrapper (no tmux hooks):                 │
 │     │                                                               │
-│     ▼                                                               │
-│  [0] run-shell $cleanup                                             │
-│        rm -f $src $data $args $runner $formatter $helpers $cleanup  │
-│  [1] kill-window                                                    │
+│     ▼ editor exits, or wrapper gets SIGHUP/SIGTERM                  │
+│  $cleanup                                                           │
+│    rm -f $src $data $args $runner $formatter $helpers               │
+│          $editpane $cleanup                                         │
+│  tmux kill-window -t "$TMUX_PANE"  (its own window only)            │
+│     │                                                               │
+│  An entr pane exiting runs the same kill-window; the                │
+│  wrapper then gets SIGHUP and runs $cleanup                         │
 │     │                                                               │
 │     ▼                                                               │
 │  Backstop (not nested in tmux): once 'tmux new-session' returns     │
@@ -434,6 +452,8 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  $runner    - AWK execution script                            │  │
 │  │  $formatter - Pretty-print script                             │  │
 │  │  $cleanup   - Cleanup script                                  │  │
+│  │  $editpane  - Editor-pane wrapper (editor, then cleanup +     │  │
+│  │               kill-window)                                    │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                               │
@@ -463,6 +483,7 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  - fmt     (formatter script)                                 │  │
 │  │  - helpers (AWK library)                                      │  │
 │  │  - cleanup (cleanup script)                                   │  │
+│  │  - edit    (editor-pane wrapper script)                       │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -480,25 +501,26 @@ This document contains visual representations of the awkrepl architecture, data 
 │         ▼                                                           │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  Setup Phase (_awkrepl_setup)                                 │  │
-│  │  - Create temp files (7) in ${TMPDIR:-/tmp}                   │  │
+│  │  - Create temp files (8) in ${TMPDIR:-/tmp}                   │  │
 │  │  - Write AWKHELPERS                                           │  │
 │  │  - Generate runner script                                     │  │
 │  │  - Generate formatter script                                  │  │
 │  │  - Generate cleanup script                                    │  │
+│  │  - Generate editor-pane wrapper script                        │  │
 │  │  - chmod scripts executable                                   │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │         │                                                           │
 │         ▼                                                           │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  tmux Session (or nested window) Started                      │  │
-│  │  - Pane 0: Editor                                             │  │
+│  │  - Pane 0: $editpane wrapper → editor                         │  │
 │  │  - Pane 1: entr watch ~/.repl.awk (runs $runner once)         │  │
 │  │  - Pane 2: entr watch $src (runs $formatter once)             │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │         │                                                           │
 │         ▼ (User saves ~/.repl.awk)                                  │
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │  Execution Loop (runs until a pane exits)                     │  │
+│  │  Execution Loop (runs until the editor or an entr exits)      │  │
 │  │                                                               │  │
 │  │  ┌─────────────────────────────────────────────────────────┐  │  │
 │  │  │ 1. File save detected (entr #1)                         │  │  │
@@ -528,11 +550,11 @@ This document contains visual representations of the awkrepl architecture, data 
 │  │  └─────────────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │         │                                                           │
-│         ▼ (Editor pane exits — any pane exit fires the hooks)       │
+│         ▼ (editor exits, or an entr pane closes the window)         │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  Cleanup Phase                                                │  │
-│  │  $cleanup runs (tmux hook pane-exited[0]): rm -f temp files   │  │
-│  │  kill-window (tmux hook pane-exited[1])                       │  │
+│  │  $editpane wrapper runs $cleanup: rm -f temp files            │  │
+│  │  then tmux kill-window -t "$TMUX_PANE" (own window only)      │  │
 │  │  Backstop when not nested: awkrepl() rm -f's temp files       │  │
 │  │  once 'tmux new-session' returns and the session is gone      │  │
 │  │  (not on a detach: the detached session keeps its files)      │  │
@@ -575,7 +597,8 @@ Runner → writes $src → Formatter watches $src → reads $src
 
 ### 4. Cleanup on Exit
 ```
-Pane exit (e.g. editor) → tmux hooks → cleanup script + kill-window → rm temp files
+Editor exits (or window killed → SIGHUP) → $editpane wrapper → $cleanup (rm temp files) + kill-window -t "$TMUX_PANE"
+entr pane exits → kill-window -t "$TMUX_PANE" → wrapper gets SIGHUP → $cleanup
 Not nested in tmux: 'tmux new-session' returns and the named session is gone → awkrepl() backstop rm -f
 Detach (C-b d): 'tmux new-session' returns but the session lives on → no rm; reattach later
 ```
@@ -586,4 +609,4 @@ This architecture provides a responsive, interactive development environment whe
 - **One save** triggers **two independent reactions** (execution and formatting)
 - **No polling** - uses kernel file events via `entr`
 - **Self-contained scripts** - generated scripts embed the functions they need via `declare -f`
-- **Clean exit** - temp files deleted by the tmux hook, with a backstop `rm -f` when not nested in tmux and the session has really ended (a detach leaves it running)
+- **Clean exit** - temp files deleted by the editor pane's wrapper, which closes only the REPL's own window, with a backstop `rm -f` when not nested in tmux and the session has really ended (a detach leaves it running)
