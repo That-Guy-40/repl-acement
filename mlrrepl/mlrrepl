@@ -68,6 +68,15 @@ _mlrrepl_divide() {
     # remove any further '#DATA' lines from the data file
     _sed_in_place -e "/$datahdr/d" "$data"
 
+    # drop blank lines at the start and end of the data: a blank line after
+    # '#DATA', or one an editor leaves at the end of the file, is a one-field
+    # row to Miller's CSV reader ('header/data length mismatch'). Blank lines
+    # in the middle are kept (with --csvlite they separate schema blocks).
+    # Leading: delete up to the first non-blank line. Trailing: collect a run
+    # of blank lines and delete it if it reaches end of file.
+    _sed_in_place -e '/[^[:space:]]/,$!d' "$data"
+    _sed_in_place -e :a -e '/^[[:space:]]*$/{$d' -e 'N' -e 'ba' -e '}' "$data"
+
     # remove '#DATA' and '#ARGS' headers from source code
     _sed_in_place -e "/$datahdr/d" -e "/$argshdr/d" "$src"
 } # _mlrrepl_divide

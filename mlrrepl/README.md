@@ -47,7 +47,12 @@ bananas,5,0.50
 ```
 
 - Everything above `#DATA` is the Miller DSL (passed via `mlr put -f`).
-- Everything below `#DATA` is the input data.
+- Everything below `#DATA` is the input data. Blank lines at its start and
+  end are dropped before it reaches `mlr` (a blank line after `#DATA`, or
+  the one your editor leaves at the end of the file, would otherwise be a
+  one-field row to Miller's CSV reader and fail with `header/data length
+  mismatch`); blank lines in the middle are kept, since `--csvlite` uses
+  them to separate schema blocks.
 - Without `#DATA`, mlrrepl prints a hint — Miller always needs input.
 - `#ARGS` lines above `#DATA` inject extra main `mlr` flags, placed before
   `put` (e.g. `#ARGS --tsv` for tab-separated data, or `#ARGS --icsv
@@ -58,8 +63,7 @@ bananas,5,0.50
   the output pane and the line is split on whitespace instead, with the
   quote characters kept as typed.
 - When `#ARGS` supplies no options, the format is auto-detected from the
-  first non-blank data line (so a blank line after `#DATA` is fine; the data
-  itself is passed to `mlr` unchanged): a line starting with `{` uses
+  first non-blank data line: a line starting with `{` uses
   `--jsonl`, one starting with `[` (a JSON array) uses `--json`, one
   containing a comma uses `--csv`, and anything else `--nidx`. Any option in
   `#ARGS` turns auto-detection off entirely (a bare `#ARGS` header does not),
