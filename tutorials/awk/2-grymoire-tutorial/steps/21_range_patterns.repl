@@ -1,0 +1,24 @@
+#> tool: awkrepl
+#> wait: 5: deploy.sh
+#> pause: 30
+#> must: 2: notes.txt
+#> must: 4: src
+#> not: 6: secrets.env
+#> source: /deploy/
+# 21. The pattern forms, including ranges
+# You have seen /regex/, comparisons, BEGIN and END. The last form is a range:
+# /start/,/end/ matches from a line matching start through the next line matching
+# end, inclusive. Here that is notes.txt through deploy.sh.
+# Try: change the end pattern to /backup/.
+/notes/,/deploy/ { print NR ": " $9 }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

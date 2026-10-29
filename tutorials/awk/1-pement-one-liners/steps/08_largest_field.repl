@@ -1,0 +1,27 @@
+#> tool: awkrepl
+#> wait: 22 Mary
+#> pause: 40
+#> must: 22 Mary    5.50  22
+#> not: 20 Mark
+#> source: maxline
+# 8. Find the largest value and the line that holds it. Pement:
+#   awk '$1 > max {max=$1; maxline=$0}; END{ print max, maxline}'
+# Here on field 3 (hours). Pattern and action in one rule: when a bigger value
+# comes by, remember it and the whole line. Unset 'max' compares as 0.
+# Try: $3 < min won't work from an unset min; fix it with NR == 1 || $3 < min.
+$3 > max { max = $3; maxline = $0 }
+END { print max, maxline }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

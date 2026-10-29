@@ -1,0 +1,32 @@
+#> tool: awkrepl
+#> wait: before Mary:
+#> pause: 45
+#> must: before Mary: Mark    5.00  20
+#> must: last two: Kathy   4.00  10
+#> must: Mark    5.00  20
+#> not: before Mary: Mary
+#> not: last two: Susie
+#> source: "last two: "
+# 18. Lines by position: the line before a match, and the last two lines. Pement:
+#   awk '/regex/{print x};{x=$0}'              the line before the regex
+#   awk '{y=x "\n" $0; x=$0};END{print y}'      the last two lines (tail -2)
+# Both keep the previous line in a variable. Order matters: the print-before
+# rule must run before x is overwritten.
+# Try: the line AFTER a match is  /Mary/{getline; print}
+/Mary/ { print "before Mary: " x }
+{ y = x "\n" $0; x = $0 }
+END { print "last two: " y }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

@@ -1,0 +1,24 @@
+#> tool: awkrepl
+#> wait: len=
+#> pause: 40
+#> must: The quick brown fox      len=19 words=4 first=the index(o)=13
+#> must: Awk is fun               len=10 words=3 first=awk index(o)=0
+#> must: sprintf: [  3.1] [003] [abc  ]
+#> not: first=The
+#> source: toupper
+# 15. String functions, part 1: length, substr, index, split, toupper, sprintf
+# The sheet: length "Returns the length of the string s", substr(s, i, n) "Returns
+# the at most n-character substring of s starting at i" (1-based), index(s, t)
+# "Returns the index of the string t in the string s, or 0 if t is not present",
+# split "Splits the string s into the array a", sprintf "returns the resulting string".
+# Try: make it capitalize every word: loop i=1..n over w[] with toupper(substr(w[i],1,1)).
+{
+    n = split($0, w, " ")
+    cap = toupper(substr($0, 1, 1)) substr($0, 2)
+    printf "%-24s len=%d words=%d first=%s index(o)=%d\n", cap, length($0), n, w[1], index($0, "o")
+}
+END { print "sprintf: [" sprintf("%5.1f", 3.14159) "] [" sprintf("%03d", 3) "] [" sprintf("%-5s", "abc") "]" }
+
+#DATA
+the quick brown fox
+awk is fun

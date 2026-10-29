@@ -1,0 +1,27 @@
+#> tool: awkrepl
+#> wait: Alice has 6 words
+#> pause: 30
+#> must: Bob has 7 words
+#> must: ---
+#> not: Bob has 6 words
+#> source: "words"
+# 11. RS and ORS: records need not be lines
+# RS is the record separator. RS = "" is "paragraph mode": blank lines separate
+# records and newlines inside a record act like spaces, so each address is one record.
+# ORS is what print ends each record with; here a line of dashes.
+# Try: print $2 as well, to see that fields cross the original line breaks.
+BEGIN { RS = ""; ORS = "\n---\n" }
+{ print $1, "has", NF, "words" }
+
+#DATA
+Alice Ng
+12 Elm St
+Springfield
+
+Bob Ruiz
+9 Oak Avenue North
+Shelbyville
+
+Carol Ito
+77 Pine Rd
+Capital City

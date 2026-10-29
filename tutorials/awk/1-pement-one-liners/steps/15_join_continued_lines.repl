@@ -1,0 +1,18 @@
+#> tool: awkrepl
+#> wait: alpha beta
+#> pause: 40
+#> must: alpha beta
+#> must: gamma
+#> not: alpha \
+#> source: getline
+# 15. Join a line that ends in a backslash with the next. Pement:
+#   awk '/\\$/ {sub(/\\$/,""); getline t; print $0 t; next}; 1'
+# getline t reads the NEXT line into t without touching $0; next skips the
+# remaining rules for this line. Pement notes it can't chain two such lines.
+# Try: add a fourth data line "delta \" followed by "epsilon".
+/\\$/ { sub(/\\$/, ""); getline t; print $0 t; next }; 1
+
+#DATA
+alpha \
+beta
+gamma

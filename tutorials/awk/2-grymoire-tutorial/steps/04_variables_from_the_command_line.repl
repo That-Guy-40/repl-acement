@@ -1,0 +1,25 @@
+#> tool: awkrepl
+#> wait: report.pdf 48213
+#> pause: 30
+#> must: # command:  gawk -v limit=5000
+#> must: photo.jpg 204800
+#> not: notes.txt
+#> source: limit
+# 4. Variables from the command line: -v name=value
+# awk -v limit=5000 sets a variable before the program starts, so one script can be
+# reused with different settings. In awkrepl the #ARGS line is the command line.
+# A pattern that is a comparison prints the matching lines.
+# Try: change 5000 to 50000 in the #ARGS line.
+#ARGS -v limit=5000
+$5 > limit { print $9, $5 }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

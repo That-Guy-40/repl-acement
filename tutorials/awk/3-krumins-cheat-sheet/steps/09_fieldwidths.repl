@@ -1,0 +1,20 @@
+#> tool: awkrepl
+#> wait: 2026-01-05
+#> pause: 30
+#> must: 2026-01-05 ALICE   120.50
+#> must: 2026-02-29 DAVE      7.00
+#> not: 20260105
+#> source: FIELDWIDTHS
+# 9. FIELDWIDTHS: fixed-width columns without a separator (gawk)
+# The sheet: FIELDWIDTHS is "A white-space separated list of field widths". Set it
+# and gawk stops looking for FS: each field is a fixed number of characters,
+# the way mainframe exports and old reports are laid out.
+# Here each line is yyyymmdd (4 2 2), a 6-character name, and a 7-character amount.
+# Try: change "4 2 2 6 7" to "8 6 7" and print $1 to see the date whole again.
+BEGIN { FIELDWIDTHS = "4 2 2 6 7" }
+{ printf "%s-%s-%s %-6s %7.2f\n", $1, $2, $3, $4, $5 }
+
+#DATA
+20260105ALICE  120.5
+20260117BOB     42
+20260229DAVE    7

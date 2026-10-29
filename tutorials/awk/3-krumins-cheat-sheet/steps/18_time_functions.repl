@@ -1,0 +1,21 @@
+#> tool: awkrepl
+#> wait: strftime
+#> pause: 40
+#> must: strftime of 1700000000 (UTC): 2023-11-14 22:13 Tuesday
+#> must: mktime: 2024-02-29 minus 2024-02-28 = 86400 seconds, 1 day
+#> must: systime() is after that timestamp: 1
+#> not: 1970-01-01
+#> source: strftime
+# 18. Time functions (gawk): strftime, mktime, systime
+# The sheet: strftime "Formats timestamp according to the format", mktime(datespec)
+# "Turns datespec into a time stamp" ("YYYY MM DD HH MM SS"), systime "Returns the
+# current time of day as the number of seconds since the Epoch".
+# The third strftime argument, 1, asks for UTC so the answer is the same everywhere.
+# Try: format with "%j" (day of year) or "%s" (back to seconds) and see what you get.
+BEGIN {
+    t = 1700000000
+    print "strftime of " t " (UTC): " strftime("%Y-%m-%d %H:%M %A", t, 1)
+    d = mktime("2024 02 29 12 00 00") - mktime("2024 02 28 12 00 00")
+    print "mktime: 2024-02-29 minus 2024-02-28 = " d " seconds, " d / 86400 " day"
+    print "systime() is after that timestamp: " (systime() > t)
+}

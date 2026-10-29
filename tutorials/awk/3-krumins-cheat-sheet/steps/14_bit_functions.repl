@@ -1,0 +1,20 @@
+#> tool: awkrepl
+#> wait: and(12,10)
+#> pause: 40
+#> must: and(12,10)=8   or(12,10)=14   xor(12,10)=6
+#> must: lshift(1,4)=16   rshift(32,2)=8   compl(0) is a big number: 9007199254740991
+#> must: 12 = 1100   10 = 1010   and = 1000
+#> not: and(12,10)=22
+#> source: lshift
+# 14. Bit manipulation functions (gawk): and, or, xor, lshift, rshift, compl
+# The sheet: and(v1, v2) "Return the bitwise AND of the values", lshift(val, count)
+# "Return the value of val, shifted left by count bits", compl(val) "Return the
+# bitwise complement of val". A small user-defined function renders binary so you
+# can see 1100 AND 1010 = 1000. compl works on 53-bit values in gawk, hence the size.
+# Try: change 12 and 10 to 5 and 3 and predict the four results before saving.
+function bits(n,    s) { s = ""; do { s = (n % 2) s; n = int(n / 2) } while (n > 0); return s }
+BEGIN {
+    printf "and(12,10)=%d   or(12,10)=%d   xor(12,10)=%d\n", and(12, 10), or(12, 10), xor(12, 10)
+    printf "lshift(1,4)=%d   rshift(32,2)=%d   compl(0) is a big number: %d\n", lshift(1, 4), rshift(32, 2), compl(0)
+    printf "12 = %s   10 = %s   and = %s\n", bits(12), bits(10), bits(and(12, 10))
+}

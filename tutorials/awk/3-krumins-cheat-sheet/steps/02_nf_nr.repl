@@ -1,0 +1,23 @@
+#> tool: awkrepl
+#> wait: fields, last =
+#> pause: 30
+#> must: 1: 4 fields, last = 2026-01-05
+#> must: 4: 3 fields, last = marketing
+#> must: 6: 1 fields, last = end
+#> not: 0 fields
+#> source: fields, last
+# 2. NF and NR: the number of fields, and the record count so far
+# The sheet: NF is "The Number of Fields in the current input record", NR "The
+# total Number of input Records seen so far". Both change on every line.
+# Using NF alone as the pattern skips blank lines: 0 fields is false. Line 3 is
+# blank here, so it is counted by NR but never printed.
+# Try: remove the 'NF' pattern and watch "0 fields, last =" appear for line 3.
+NF { print NR ": " NF " fields, last = " $NF }
+
+#DATA
+alice 42 engineering 2026-01-05
+bob 17 marketing 2026-01-05
+
+carol 88 marketing
+dave 5 support 2026-01-06 remote
+end

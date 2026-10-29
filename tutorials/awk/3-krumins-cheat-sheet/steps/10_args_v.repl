@@ -1,0 +1,21 @@
+#> tool: awkrepl
+#> wait: with rate
+#> pause: 30
+#> must: # command:  gawk -v rate=1.25 -F,
+#> must: widget    12.50
+#> must: gizmo     31.25
+#> must: total     43.75 with rate 1.25
+#> not: widget    10.00
+#> source: rate
+# 10. -v and -F from the command line: the sheet's "command line argument summary"
+# The sheet lists gawk's options; the two you use daily are -F (set FS) and
+# -v var=value (set a variable before BEGIN runs). In awkrepl an '#ARGS' line
+# passes them, and the '# command:' line above the output shows them in place.
+# Try: change rate=1.25 to rate=2 on the #ARGS line and save.
+#ARGS -v rate=1.25 -F,
+{ printf "%-8s %6.2f\n", $1, $2 * rate; total += $2 * rate }
+END { printf "%-8s %6.2f with rate %s\n", "total", total, rate }
+
+#DATA
+widget,10
+gizmo,25

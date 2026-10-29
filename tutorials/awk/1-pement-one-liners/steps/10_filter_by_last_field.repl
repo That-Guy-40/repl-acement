@@ -1,0 +1,27 @@
+#> tool: awkrepl
+#> wait: Susie   4.25  18
+#> pause: 30
+#> must: Mark    5.00  20
+#> must: Mary    5.50  22
+#> not: Dan     3.75  0
+#> not: Kathy   4.00  10
+#> source: $NF > 15
+# 10. Print lines whose last field is over 15. Pement: awk '$NF > 4'
+# A comparison is a pattern; no action means print. Blank lines have $NF = ""
+# which is not a number, so they compare as strings and don't pass.
+# Try: NF > 2 prints every non-blank line (they all have 3 fields).
+$NF > 15
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

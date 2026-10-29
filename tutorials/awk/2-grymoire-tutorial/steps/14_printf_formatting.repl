@@ -1,0 +1,24 @@
+#> tool: awkrepl
+#> wait: 0.3 MiB total
+#> pause: 30
+#> must: notes.txt        1204 alice
+#> must: secrets.env       512 bob
+#> not: 0.267
+#> source: %-12s
+# 14. printf: columns that line up
+# %s a string, %d an integer, %f a float. A number before the letter is the minimum
+# width; a minus sign left-justifies; .1 is the precision. printf adds no newline.
+# Try: change %-12s to %12s and see the names move to the right.
+NF == 9 { printf "%-12s %8d %s\n", $9, $5, $3; total += $5 }
+END     { printf "%5.1f MiB total\n", total / 1048576 }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

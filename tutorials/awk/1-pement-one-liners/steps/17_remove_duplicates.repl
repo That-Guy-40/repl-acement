@@ -1,0 +1,30 @@
+#> tool: awkrepl
+#> wait: distinct lines
+#> pause: 45
+#> must: 7 distinct lines
+#> must: Susie   4.25  18
+#> not: 12 distinct lines
+#> not: 8 distinct lines
+#> source: a[$0]++
+# 17. Remove duplicate lines, consecutive or not. Pement: awk '! a[$0]++'
+# a[$0]++ is 0 the first time a line is seen (so !0 is true: print) and 1 or
+# more after that. The array a ends up holding every distinct line, so END can
+# count them: seven, including the empty one. (For consecutive duplicates only,
+# the sheet has  awk 'a !~ $0; {a=$0}'  which keeps just one Susie too.)
+# Try: dedupe on the name only with  ! a[$1]++
+! a[$0]++
+END { print length(a) " distinct lines" }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait: Beth appears 2 times
+#> pause: 30
+#> must: Beth appears 2 times
+#> not: Beth appears 0 times
+#> source: appears
+# 7. Count the lines that contain "Beth". Pement: awk '/Beth/{n++}; END {print n+0}'
+# A regex pattern selects lines; n++ counts them. n+0 turns an unset n into 0
+# instead of printing an empty string when there are no matches.
+# Try: change the regex to /Mar/ (matches Mark and Mary) and predict the count.
+/Beth/ { n++ }
+END { print "Beth appears " n+0 " times" }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

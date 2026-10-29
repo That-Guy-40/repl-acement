@@ -1,0 +1,28 @@
+#> tool: awkrepl
+#> wait: Mark    5.00  20
+#> pause: 40
+#> must: Beth    4.00  0
+#> must: Susie   4.25  18
+#> not: gawk:
+#> source: print ""
+# 1. Double-space a file. Pement: awk '1;{print ""}'
+# Two rules, no patterns. '1' is a pattern that is always true with the default
+# action (print the line); the second rule prints an empty line after it.
+# The data is a tiny pay ledger: name, hourly rate, hours. It has blank lines
+# and duplicate lines on purpose; later one-liners will deal with them.
+# Try: change 1 to NF so lines that are already blank aren't doubled.
+1;{print ""}
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

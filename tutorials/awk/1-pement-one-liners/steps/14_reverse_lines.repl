@@ -1,0 +1,19 @@
+#> tool: awkrepl
+#> wait: 3 third
+#> pause: 40
+#> must: 3 third
+#> must: 1 first
+#> not: 4 fourth
+#> source: a[j--]
+# 14. Reverse the order of lines, like tac. Pement:
+#   awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }'
+# Every line goes into array a under 0, 1, 2 ...; END walks it backwards.
+# Watch the output: "3 third" comes out first.
+# Try: print NR lines first with  print i " lines"  at the start of END.
+{ a[i++] = $0 }
+END { for (j = i - 1; j >= 0;) print a[j--] }
+
+#DATA
+1 first
+2 second
+3 third

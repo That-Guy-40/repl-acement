@@ -1,0 +1,29 @@
+#> tool: awkrepl
+#> wait: 27.5
+#> pause: 45
+#> must: 22.25
+#> must: 161.75 total
+#> not: 27.50
+#> source: " total"
+# 5. Sum the fields of each line, and the grand total. Pement:
+#   awk '{s=0; for (i=1; i<=NF; i++) s=s+$i; print s}'
+#   awk '{for (i=1; i<=NF; i++) s=s+$i}; END{print s}'
+# A name is not a number, so it adds 0: each line's sum is rate + hours.
+# The per-line 's' is reset; the END 't' is not. Blank lines sum to 0.
+# Try: start i at 2 to skip the name explicitly.
+{ s = 0; for (i = 1; i <= NF; i++) s = s + $i; print s; t += s }
+END { print t " total" }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

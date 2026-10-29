@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait: found dave: backup.sh
+#> pause: 30
+#> must: checking notes.txt
+#> must: done, stopped at line 8
+#> not: checking todo.md
+#> source: "checking"
+# 15. next and exit: controlling the flow between lines
+# next skips the remaining rules for this line and reads the next one.
+# exit stops reading altogether, then still runs END. todo.md is never checked.
+# Try: remove the exit and see every file get checked.
+/^total/ { next }
+$3 == "dave" { print "found dave:", $9; exit }
+{ print "checking", $9 }
+END { print "done, stopped at line", NR }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

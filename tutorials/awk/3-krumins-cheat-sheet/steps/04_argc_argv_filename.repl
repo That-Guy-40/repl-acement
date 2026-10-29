@@ -1,0 +1,21 @@
+#> tool: awkrepl
+#> wait: ARGC=
+#> pause: 35
+#> must: ARGC=2 ARGV[0]=gawk ARGV[1] is the data file
+#> must: FNR=3 NR=3 FILENAME is set
+#> not: no FILENAME
+#> source: ARGC
+# 4. ARGC, ARGV, FILENAME and FNR: what awk knows about its command line
+# The sheet: ARGC is "The number of command line arguments", ARGV the "Array of
+# command line arguments", FILENAME "The name of the current input file", and FNR
+# the record number within that file (NR keeps counting across files).
+# awkrepl runs gawk on one data file, so ARGC is 2: ARGV[0] is "gawk", ARGV[1]
+# is the temp file holding everything below #DATA. FNR equals NR with one file.
+# Try: print ARGV[1] itself to see where awkrepl keeps the data.
+BEGIN { print "ARGC=" ARGC, "ARGV[0]=" ARGV[0], (ARGV[1] != "" ? "ARGV[1] is the data file" : "no ARGV[1]") }
+{ print "FNR=" FNR, "NR=" NR, (FILENAME != "" ? "FILENAME is set" : "no FILENAME") }
+
+#DATA
+one
+two
+three

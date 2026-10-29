@@ -89,6 +89,18 @@ alone.
 [yq-mf]: https://github.com/mikefarah/yq
 
 
+Demo and tutorials
+------------------
+
+- [`demo/`](demo/): a self-running 15-minute fraud-triage demo that plays
+  one dataset through all six REPLs (`demo/play.sh`), verified pane by
+  pane with `demo/verify.sh`.
+- [`tutorials/awk/`](tutorials/awk/): three step-by-step AWK tutorials
+  that run inside `awkrepl`, built on Pement's one-liners, the Grymoire
+  tutorial's outline and Krumins' cheat sheet. F5 advances; between steps
+  the editor is yours. Each is verified the same way as the demo.
+
+
 Requirements
 ------------
 

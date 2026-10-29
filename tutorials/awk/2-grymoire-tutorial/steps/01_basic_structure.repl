@@ -1,0 +1,24 @@
+#> tool: awkrepl
+#> wait: file: notes.txt
+#> pause: 30
+#> must: file: deploy.sh
+#> must: file: todo.md
+#> not: 48213
+#> source: "file:"
+# 1. Basic structure: pattern { action }, once per line
+# An awk program is a list of rules. Each rule is a pattern and an action in braces.
+# No pattern means "every line". awk splits each line into fields: $1, $2, ... $9 here.
+# Our data is a directory listing: the file name is the 9th field.
+# Try: change $9 to $5 to print sizes instead, then save.
+{ print "file:", $9 }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

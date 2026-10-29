@@ -1,0 +1,19 @@
+#> tool: awkrepl
+#> wait: [RT=
+#> pause: 35
+#> must: 1: red [RT=;] ~ 2: green [RT=;] ~ 3: blue [RT=\n] ~ 4: last [RT=\n] ~
+#> not: 1: red;green;blue
+#> source: RT
+# 3. RS, ORS and RT: records are not always lines
+# The sheet: RS is the "Record Separator, a newline by default", ORS the output one,
+# and RT (gawk) is "The record terminator", the text that actually matched RS.
+# With RS set to a regex, "red;green;blue" becomes three records, and ORS " ~ "
+# joins everything onto one output line. RT shows which separator ended each one.
+# Try: set RS = "\n" again (the default) and see the line come back as one record.
+BEGIN { RS = "[;\n]"; ORS = " ~ " }
+{ print NR ": " $0 " [RT=" (RT == "\n" ? "\\n" : RT) "]" }
+END { printf "\n" }
+
+#DATA
+red;green;blue
+last

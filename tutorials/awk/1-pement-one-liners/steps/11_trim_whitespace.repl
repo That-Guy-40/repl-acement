@@ -1,0 +1,18 @@
+#> tool: awkrepl
+#> wait: [Beth 4.00 0]
+#> pause: 40
+#> must: [Beth 4.00 0]
+#> must: [Dan 3.75 0]
+#> not: [  Beth
+#> not: [Dan     3.75
+#> source: $1 = $1
+# 11. Strip leading, trailing AND inner whitespace. Pement: awk '{$1=$1;print}'
+# Assigning a field to itself forces awk to rebuild $0 from the fields, joined
+# by OFS (a single space). The brackets show where the line starts and ends.
+# Try: gsub(/^[ \t]+|[ \t]+$/, "") trims the ends but keeps the inner spacing.
+{ $1 = $1; print "[" $0 "]" }
+
+#DATA
+  Beth    4.00  0
+Dan     3.75  0
+	Kathy	4.00	10

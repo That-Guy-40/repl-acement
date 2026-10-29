@@ -1,0 +1,28 @@
+#> tool: awkrepl
+#> wait: dave 7788
+#> pause: 30
+#> must: alice 210100
+#> must: bob 48725
+#> must: carol 13541
+#> not: staff
+#> source: bytes
+# 12. Associative arrays: totals by name
+# bytes[$3] += $5 keeps one running total per owner, keyed by the owner's name.
+# No declaration, no sizing: a new key appears the first time you use it.
+# The END loop walks every key. The order is up to awk, which is why reports sort
+# or, as here, ask gawk for alphabetical order with PROCINFO["sorted_in"].
+# Try: key on $4 (the group) instead.
+BEGIN { PROCINFO["sorted_in"] = "@ind_str_asc" }
+NF == 9 { bytes[$3] += $5 }
+END { for (owner in bytes) print owner, bytes[owner] }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

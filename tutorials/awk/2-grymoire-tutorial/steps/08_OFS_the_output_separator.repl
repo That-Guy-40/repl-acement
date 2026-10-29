@@ -1,0 +1,22 @@
+#> tool: awkrepl
+#> wait: alice | Alice Ng
+#> pause: 30
+#> must: bob | Bob Ruiz
+#> must: carol:x:1003
+#> not: alice Alice Ng
+#> source: OFS
+# 8. OFS: what print puts between the things you give it
+# print a, b joins its arguments with OFS, a single space by default. Set OFS and the
+# commas in print follow it. Assigning to any field ($1 = $1) rebuilds $0 with OFS,
+# which is the classic way to change a file's separator in one go.
+# Try: set OFS = "\t" and look at the alignment.
+BEGIN { FS = ":"; OFS = " | " }
+{ print $1, $5 }
+$1 == "carol" { print $0 }
+
+#DATA
+root:x:0:0:root:/root:/bin/bash
+alice:x:1001:1001:Alice Ng:/home/alice:/bin/bash
+bob:x:1002:1001:Bob Ruiz:/home/bob:/bin/zsh
+carol:x:1003:1002:Carol Ito:/home/carol:/bin/bash
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin

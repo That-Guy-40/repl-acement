@@ -1,0 +1,24 @@
+#> tool: awkrepl
+#> wait: 1: 280
+#> pause: 30
+#> must: # command:  gawk  -f
+#> must: 9: todo.md
+#> not: entries done
+#> source: NR ": "
+# 3. How this program actually runs: gawk -f FILE
+# On the command line you would write awk '{ ... }' file. For anything longer you put
+# the program in a file and run awk -f prog.awk data. That is exactly what awkrepl does:
+# look at the dimmed "# command:" line in the output pane, with -f and the data file.
+# Try: add a BEGIN block with a heading and see that nothing else changes.
+{ print NR ": " $NF }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

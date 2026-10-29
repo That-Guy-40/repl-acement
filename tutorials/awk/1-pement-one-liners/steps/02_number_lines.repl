@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait:     5 : Mark
+#> pause: 40
+#> must:     1 : Beth    4.00  0
+#> must:    12 : Mark    5.00  20
+#> not:     5 : Dan
+#> source: printf
+# 2. Number every line, right-aligned. Pement: awk '{printf("%5d : %s\n", NR,$0)}'
+# NR is the record (line) number. printf with %5d pads the number to five columns.
+# awkrepl wraps this bare statement in { } for you: look at the source pane.
+# Try: use FNR instead of NR (same here: one file), or "%-5d" to left-align.
+printf("%5d : %s\n", NR, $0)
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

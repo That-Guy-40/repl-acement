@@ -1,0 +1,28 @@
+#> tool: awkrepl
+#> wait: notes.txt 1.2K
+#> pause: 30
+#> must: secrets.env 512B
+#> must: photo.jpg 200.0K
+#> not: secrets.env 0.5K
+#> source: human
+# 20. Your own functions
+# function name(params) { ... return value } can go anywhere outside a rule.
+# Parameters are local; anything else is global, so extra "parameters" are the
+# usual trick for local variables (that is what the gap before kb is for).
+# Try: add a branch for >= 1048576 that returns megabytes.
+function human(bytes,    kb) {
+    kb = bytes / 1024
+    return bytes >= 1024 ? sprintf("%.1fK", kb) : bytes "B"
+}
+NF == 9 { print $9, human($5) }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

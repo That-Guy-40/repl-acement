@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait: fields:
+#> pause: 30
+#> must: 3 fields: Beth    4.00  0, last = 0
+#> must: 0 fields: , last =
+#> not: 4 fields
+#> source: fields: 
+# 9. The number of fields, and the last one. Pement: awk '{ print NF ":" $0 }'
+# and awk '{ print $NF }'. $NF is "the field whose number is NF": the last one.
+# On a blank line NF is 0 and $0 is empty, so $NF is $0: empty.
+# Try: print $(NF-1), the second-to-last field (and see what a blank line does).
+{ print NF " fields: " $0 ", last = " $NF }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

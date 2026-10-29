@@ -1,0 +1,25 @@
+#> tool: awkrepl
+#> wait: gensub:
+#> pause: 40
+#> must: sub: the dog sat on the mat   gsub: the cAt sAt on the mAt (3 a's)
+#> must: gensub: jr at example, ops at corp
+#> must: strtonum("0x1F") = 31   strtonum("017") = 15   but "0x1F" + 0 = 0
+#> not: the dog sat on the mAt
+#> source: gensub
+# 16. String functions, part 2: sub, gsub, gensub, strtonum
+# The sheet: sub(r, s, t) "Just like gsub(), but only the first matching substring is
+# replaced"; gsub returns how many it replaced and edits its target in place, so
+# work on copies to keep $0. gensub (gawk) "returns the modified string" instead and
+# knows \\1 \\2 backreferences. strtonum (gawk) reads hex and octal; plain + does not.
+# Try: swap the gensub replacement to "\\1@\\2" to put the addresses back.
+NR == 1 {
+    s = $0; sub(/cat/, "dog", s)
+    g = $0; n = gsub(/a/, "A", g)
+    print "sub: " s "   gsub: " g " (" n " a's)"
+}
+NR == 2 { print "gensub: " gensub(/([a-z]+)@([a-z]+)/, "\\1 at \\2", "g") }
+END { print "strtonum(\"0x1F\") = " strtonum("0x1F") "   strtonum(\"017\") = " strtonum("017") "   but \"0x1F\" + 0 = " ("0x1F" + 0) }
+
+#DATA
+the cat sat on the mat
+jr@example, ops@corp

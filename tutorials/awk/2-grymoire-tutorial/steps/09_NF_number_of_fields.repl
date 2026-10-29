@@ -1,0 +1,23 @@
+#> tool: awkrepl
+#> wait: 2: 280
+#> pause: 30
+#> must: 9: notes.txt
+#> must: 9: photo.jpg
+#> not: 9: 280
+#> source: NF ": "
+# 9. NF: how many fields this line has, and $NF the last one
+# NF changes line by line. The "total 280" line that ls prints has 2 fields, every
+# real entry 9. $NF is "the field whose number is NF": the last one, whatever NF is.
+# Try: print $(NF-1) to get the time column.
+{ print NF ": " $NF }
+
+#DATA
+total 280
+-rw-r--r--  1 alice staff   1204 Mar  3 09:12 notes.txt
+-rw-r--r--  1 bob   staff  48213 Mar  4 17:45 report.pdf
+drwxr-xr-x  2 alice staff   4096 Mar  1 08:00 src
+-rwxr-xr-x  1 carol admin  10240 Feb 28 23:59 deploy.sh
+-rw-------  1 bob   staff    512 Mar  5 06:30 secrets.env
+-rw-r--r--  1 alice staff 204800 Mar  2 12:00 photo.jpg
+-rwxr-xr-x  1 dave  admin   7788 Mar  6 14:20 backup.sh
+-rw-r--r--  1 carol staff   3301 Mar  6 15:02 todo.md

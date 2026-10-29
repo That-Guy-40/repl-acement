@@ -1,0 +1,25 @@
+#> tool: awkrepl
+#> wait: 12 lines
+#> pause: 30
+#> must: 12 lines
+#> not: 10 lines
+#> source: " lines"
+# 4. Count lines, like wc -l. Pement: awk 'END{print NR}'
+# END runs once after the last line; by then NR holds the total.
+# (Blank lines count: wc -l counts newlines, and so does NR.)
+# Try: print NR without END and watch it count up instead.
+END { print NR " lines" }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

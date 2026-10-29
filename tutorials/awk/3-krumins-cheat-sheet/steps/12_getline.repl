@@ -1,0 +1,29 @@
+#> tool: awkrepl
+#> wait: read ahead in BEGIN
+#> pause: 40
+#> must: 5 lines read ahead in BEGIN with getline var < file
+#> must: comment skipped, now on: beta
+#> must: 1: alpha
+#> must: 4: gamma
+#> not: 2: # a comment
+#> source: getline
+# 12. getline: four ways to pull the next record yourself
+# The sheet: plain 'getline' sets "$0 from next input record; set NF, NR, FNR";
+# 'getline var < file' sets "var from next record of file" and touches nothing else.
+# BEGIN reads the whole data file ahead of time through ARGV[1]; the main rule
+# uses bare getline to step over a comment line (NR advances, so the numbers jump).
+# Try: replace 'getline' with 'next' in the comment rule and compare the numbering.
+BEGIN {
+    while ((getline line < ARGV[1]) > 0) n++
+    close(ARGV[1])
+    print n " lines read ahead in BEGIN with getline var < file"
+}
+/^#/ { getline; print "comment skipped, now on: " $0; next }
+{ print NR ": " $0 }
+
+#DATA
+alpha
+# a comment
+beta
+gamma
+delta

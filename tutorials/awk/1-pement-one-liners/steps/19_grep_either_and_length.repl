@@ -1,0 +1,31 @@
+#> tool: awkrepl
+#> wait: long: Kathy
+#> pause: 45
+#> must: either: Dan     3.75  0
+#> must: either: Beth    4.00  0
+#> must: long: Mary    5.50  22
+#> not: either: Mark
+#> not: long: Dan
+#> source: length
+# 19. Several regexes, and length. Pement:
+#   awk '/AAA/; /BBB/; /CCC/'     lines matching ANY of them (a line matching
+#                                 two is printed twice); /AAA.*BBB/ is "both"
+#   awk 'length > 64'             lines of 65 characters or more
+# length with no argument is the length of $0. Our lines are 15 or 16 long.
+# Try: /Beth|Dan/ prints the same lines, once each.
+/Beth/ { print "either: " $0 }; /Dan/ { print "either: " $0 }
+length > 15 { print "long: " $0 }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

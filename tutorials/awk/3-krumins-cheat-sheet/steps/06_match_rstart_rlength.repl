@@ -1,0 +1,22 @@
+#> tool: awkrepl
+#> wait: RSTART=
+#> pause: 35
+#> must: RSTART=7 RLENGTH=4 -> 4521   (order-4521 shipped)
+#> must: RSTART=4 RLENGTH=2 -> 17   (id 17 refunded)
+#> not: RSTART=0
+#> source: RSTART
+# 6. match(), RSTART and RLENGTH: where did the regex hit?
+# The sheet: RSTART is "The index of the first character matched by match()",
+# RLENGTH "The length of the string matched by match()". match() returns RSTART
+# too, so it works as a pattern: lines with no digits are skipped (RSTART would be 0).
+# substr(s, RSTART, RLENGTH) is the idiom that pulls the matched text out.
+# Try: change the regex to /[a-z]+-/ and watch RSTART and RLENGTH move.
+match($0, /[0-9]+/) {
+    print "RSTART=" RSTART, "RLENGTH=" RLENGTH, "->", substr($0, RSTART, RLENGTH) "   (" $0 ")"
+}
+
+#DATA
+order-4521 shipped
+id 17 refunded
+no digits here
+ticket #308 closed

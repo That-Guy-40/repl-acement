@@ -1,0 +1,23 @@
+#> tool: awkrepl
+#> wait: root | /bin/bash
+#> pause: 30
+#> must: root | /bin/bash
+#> must: daemon | /usr/sbin/nologin
+#> must: # command:  gawk -F:
+#> not: root:x:0:0
+#> source: OFS
+# 1. FS and OFS: how a line is split, and how it is glued back
+# The sheet: FS is the "Input Field Separator, a space by default"; OFS the output one.
+# Here the data is colon-separated, so '#ARGS -F:' sets FS from the command line
+# (look at the '# command:' line above the output), and OFS puts " | " between
+# the fields that print writes out. $NF is the last field, whatever NF is.
+# Try: change OFS to "\t", or print $1, $3 to see the numeric user id instead.
+#ARGS -F:
+BEGIN { OFS = " | " }
+{ print $1, $NF }
+
+#DATA
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+jr:x:1000:1000:JR,,,:/home/jr:/bin/zsh
+analyst:x:1001:1001::/home/analyst:/bin/bash

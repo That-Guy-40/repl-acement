@@ -1,0 +1,30 @@
+#> tool: awkrepl
+#> wait: asorti
+#> pause: 40
+#> must: asorti (by key): banana=1 cherry=2 fig=3 pear=1
+#> must: asort (by value): 1 1 2 3
+#> must: PROCINFO["sorted_in"] by value, descending: fig=3 cherry=2
+#> not: fig=3 pear=1 banana=1 cherry=2
+#> source: asorti
+# 17. asort and asorti (gawk): sorting arrays, by value or by key
+# The sheet: asort(s, d) "Returns the number of elements in the source array s"
+# after sorting its values into d; asorti does the same with the indices (keys).
+# Plain for-in order is unspecified, so these are how you get a deterministic report.
+# PROCINFO["sorted_in"] is the other way: it changes for-in's order globally.
+# Try: use "@val_num_asc" in PROCINFO["sorted_in"] for ascending by value.
+{ count[$1]++ }
+END {
+    n = asorti(count, keys);  printf "asorti (by key): "; for (i = 1; i <= n; i++) printf "%s=%d ", keys[i], count[keys[i]]; print ""
+    n = asort(count, vals);   printf "asort (by value): "; for (i = 1; i <= n; i++) printf "%d ", vals[i]; print ""
+    PROCINFO["sorted_in"] = "@val_num_desc"
+    printf "PROCINFO[\"sorted_in\"] by value, descending: "; for (k in count) printf "%s=%d ", k, count[k]; print ""
+}
+
+#DATA
+fig
+cherry
+banana
+fig
+pear
+cherry
+fig

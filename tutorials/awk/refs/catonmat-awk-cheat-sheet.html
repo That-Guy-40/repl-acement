@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+
+    <title>Awk, Nawk and GNU Awk Cheat Sheet</title>
+
+    <link href="https://catonmat.net/awk-nawk-and-gawk-cheat-sheet" rel="canonical">
+    <link rel="alternate" type="application/rss+xml" href="https://catonmat.net/feed">
+
+    <meta property="og:title" content="Awk, Nawk and GNU Awk Cheat Sheet">
+    <meta property="og:description" content="I love cheat sheets! I have at least 30 in front of me at the moment scattered throughout my desk – CSS cheat sheet, Awk cheat sheet, keyboard shortcuts cheat sheet for vt100/ansi screen terminal emulator, Emacs and Vim, then Ethernet, IP and TCP header layout cheat sheets, and many, many others. I have created about...">
+    <meta property="og:url" content="https://catonmat.net/awk-nawk-and-gawk-cheat-sheet">
+        <meta property="og:image" content="https://catonmat.net/images/catonmat-preview-image.png">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@catonmat">
+    <meta name="twitter:title" content="Awk, Nawk and GNU Awk Cheat Sheet">
+    <meta name="twitter:description" content="I love cheat sheets! I have at least 30 in front of me at the moment scattered throughout my desk – CSS cheat sheet, Awk cheat sheet, keyboard shortcuts cheat sheet for vt100/ansi screen terminal emulator, Emacs and Vim, then Ethernet, IP and TCP header layout cheat sheets, and many, many others. I have created about...">
+    <meta name="twitter:creator" content="@pkrumins">
+
+        <meta name="twitter:image:src" content="https://catonmat.net/images/catonmat-preview-image.png">
+    
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="icon" href="/favicon.png">
+
+    <script src="/js/catonmat.js?v=51b01d"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="/js/sale.js?v=51b01d"></script>
+    
+
+    <link rel="stylesheet" href="/css/normalize.css?v=51b01d">
+    <link rel="stylesheet" href="/css/stylesheet.css?v=51b01d">
+    <link rel="stylesheet" href="/css/sale.css?v=51b01d">
+    
+</head>
+<body>
+    <div class="site-page">
+        <header class="site-header">
+            <div class="logo">
+                <a href="/"><img src="/images/catonmat-logo-clean.png"></a>
+            </div>
+            <div class="navigation">
+                
+
+                    
+    <nav>
+        <ul>
+            
+        <li ><a href="/archive">archive</a></li>
+    
+            
+        <li ><a href="/books">books</a></li>
+    
+            
+        <li ><a href="/tools">tools</a></li>
+    
+            
+        <li ><a href="/projects">projects</a></li>
+    
+                        
+        <li ><a href="/about">about</a></li>
+    
+        </ul>
+    </nav>
+
+            </div>
+        </header>
+
+        
+    <section class="site-articles">
+        <article>
+            
+                <h1>
+    <a href="/awk-nawk-and-gawk-cheat-sheet">Awk, Nawk and GNU Awk Cheat Sheet</a>
+</h1>
+            
+            
+                <div class="last-updated">Last updated 
+    5 weeks ago
+</div>
+            
+            <div class="article-body">
+                
+    <p><img src="https://catonmat.net/wp-content/uploads/2007/07/cheat-sheet.jpg" alt="awk cheat sheet" class="post-icon" align="left">I love cheat sheets! I have at least 30 in front of me at the moment scattered throughout my desk – CSS cheat sheet, Awk cheat sheet, keyboard shortcuts cheat sheet for vt100/ansi screen terminal emulator, Emacs and Vim, then Ethernet, IP and TCP header layout cheat sheets, and many, many others.</p>
+<p>I have created about 15 out of these 30 and in my future posts I'll make them available for download. These cheat sheets have certainly made me a better developer and I'm super excited that I can share them here on my blog so that you can become a better developer, too.</p>
+<p>Someone might say that looking up the information in a <code>man</code> or <code>info</code> page, manual or Google is equivalent to looking it up on a cheat sheet, if not better. I disagree.</p>
+<p>First of all it is usually, but not always, takes more time to find where in the documentation the particular thing is located but in the cheat sheet you have it right in front of you. For example, suppose you were C programmer and forgot how to print a floating point number, you'd type `<a href="http://linux.die.net/man/3/printf" title="man page of printf">man 3 printf</a>' and quickly find the answer. That's fine - it's as fast or even faster than looking something up in a cheat sheet but that's just because you knew exactly what you were looking for! But let's look at Joe Random who just began learning gawk programming language and at the moment wants to replace a part of a string with another string. He'd probably already have the manual open and would start going through it looking for string functions. It would take him a good minute or so before he finds the correct place and reads how the function works. Now, if he had a cheat sheet, like the one I created here, he'd have all the string functions in front of him and he would quickly locate that it is gsub or gensub. He'd find not only that but also all the other string functions and next time he has a problem he might remember the right function subconsciously.</p>
+<p>What I want to emphasize is that the cheat sheets are not for NOT remembering things and just looking them up hundreds of thousands of times and never actually learning them but are FOR remembering and learning new things faster. </p>
+<p>It is also interesting to find what technologies you have not used for a while because the cheat sheets pile up in most recently.</p>
+<p>I made this cheat sheet in Microsoft Word because I am not that good with TeX, particularly formatting data so it looked nice.</p>
+<p>So the awk cheat sheet is available in .doc and .pdf. I will usually post the cheat sheets in these two formats.</p>
+<p>This cheat sheet contains:</p>
+<ul>
+  <li>Predefined Variable Summary, which lists all the predefined variables and which awk versions (original awk, nawk or gawk) have it built in,</li>
+  <li>GNU awk's command line argument summary,</li>
+  <li>I/O statements,</li>
+  <li>Numeric functions,</li>
+  <li>Bit manipulation functions,</li>
+  <li>I18n (internationalization) functions,</li>
+  <li>String functions, and finally,</li>
+  <li>Time functions.</li>
+</ul>
+<p>Let me know if you notice any inaccuracies, mistakes or see that I have left something out.</p>
+<h3>Download AWK Cheat-Sheet</h3>
+<ul>
+  <li>PDF document: <a href="https://catonmat.net/ftp/awk.cheat.sheet.pdf" title="awk cheat sheet (.pdf)">awk.cheat.sheet.pdf</a></li>
+  <li>Plain text (.txt): <a href="https://catonmat.net/ftp/awk.cheat.sheet.txt" title="awk cheat sheet (.txt)">awk.cheat.sheet.txt</a></li>
+  <li>MS Word (.doc): <a href="https://catonmat.net/ftp/awk.cheat.sheet.doc" title="awk cheat sheet (.doc)">awk.cheat.sheet.doc</a></li>
+</ul>
+<p>See you next time!</p>
+
+            </div>
+        </article>
+    </section>
+    
+        <div class="more">
+            
+    <a href="/archive">Read more articles →</a>
+
+        </div>
+    
+    <div class="catonmat-news-box">
+        <div class="catonmat-news-text">
+            
+    Thanks for reading my post. If you enjoyed it and would like to receive my posts automatically, you can subscribe to new posts via <a href="/feed">rss feed</a> or email.
+
+        </div>
+        <div class="catonmat-news-email">
+            <input type="text" name="email" placeholder="Your email">
+            <button>Subscribe</button>
+        </div>
+        <div class="catonmat-news-email-error" hidden></div>
+        <div class="catonmat-news-email-success" hidden></div>
+    </div>
+            <div class="article-navigation">
+            <div class="go back">
+                                    <a href="/downloading-youtube-videos-with-gawk">Downloading YouTube Videos with GNU Awk</a>
+                            </div>
+            <div class="go forward">
+                                    <a href="/downloading-youtube-videos-with-a-perl-one-liner">Downloading YouTube Videos with a Perl One-Liner</a>
+                            </div>
+        </div>
+    
+
+        <footer class="site-footer">
+            <div class="virtual-browser">
+                <a href="/try-a-virtual-browser-for-free">Try a Virtual Browser – For Free!</a>
+            </div>
+            <div class="jelly-stains">
+                <img src="/images/this-space-reserved-for-jelly-stains.png" alt="">
+            </div>
+                        <div class="secret-message">
+                Secret message: Use coupon code <span class="jellyling">JELLYLING</span> to get a discount at my company Browserling!
+            </div>
+                    </footer>
+    </div>
+<div id="blackFridayOverlay">
+  <div class="bf-modal">
+    <button class="bf-close" id="bfClose">✕</button>
+
+    <div class="bf-icon"><svg fill="#ffffff" width="72px" height="72px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16.948 20.2a1 1 0 0 1-.465-.115l-4.472-2.352-4.471 2.348a1 1 0 0 1-1.451-1.054l.854-4.979-3.619-3.527a1 1 0 0 1 .554-1.706l5-.727 2.237-4.531A1 1 0 0 1 12.011 3a1 1 0 0 1 .9.558l2.236 4.53 5 .727a1 1 0 0 1 .554 1.706l-3.621 3.526.854 4.98a1 1 0 0 1-.986 1.173zM6.171 10.5l2.544 2.479a1 1 0 0 1 .285.888l-.6 3.5 3.144-1.653a.993.993 0 0 1 .931 0l3.144 1.653-.6-3.5a1 1 0 0 1 .288-.885l2.544-2.482-3.515-.511a1 1 0 0 1-.752-.547l-1.573-3.183-1.573 3.186a1 1 0 0 1-.752.547z"/>
+</svg></path></svg></div>
+
+    <div class="bf-percent">New Plans & Pricing!</div>
+    <div class="bf-title">See the new options</div>
+
+    <hr class="bf-divider">
+
+    <div class="bf-countdown-label">Sale ends in</div>
+    <div class="bf-countdown" id="bfCountdown">12:00:00</div>
+
+    <hr class="bf-divider">
+
+    <button class="bf-button" id="bfDetailsBtn">View Details<span>➜</span></button>
+  </div>
+</div>
+
+    
+
+<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=3189873;
+var sc_invisible=1;
+var sc_security="dc7255a7";
+</script>
+<script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+
+<!-- End of StatCounter Code -->
+</body>
+</html>

@@ -1,0 +1,21 @@
+#> tool: awkrepl
+#> wait: int(-3.9)
+#> pause: 40
+#> must: int(-3.9) = -3   sqrt(2) = 1.4142   exp(1) = 2.7183
+#> must: log(10) = 2.3026   atan2(0,-1) = 3.14159 (pi)   sin(pi/2) = 1.0
+#> must: srand(1); rand() -> a number in [0,1)   srand() returns the old seed: 1
+#> not: ???
+#> source: atan2
+# 13. Numeric functions: int, sqrt, exp, log, sin, cos, atan2, rand, srand
+# The sheet: int "Truncates to integer" (toward zero, so int(-3.9) is -3, not -4),
+# atan2(y, x) "Returns the arctangent of y/x in radians" (atan2(0,-1) is pi),
+# rand "Returns a random number N, between 0 and 1", srand "Uses expr as a new seed".
+# srand(1) makes rand() repeatable, and srand() hands back the previous seed.
+# Try: print int(3.9) and int("12abc") to see truncation and string-to-number.
+BEGIN {
+    printf "int(-3.9) = %d   sqrt(2) = %.4f   exp(1) = %.4f\n", int(-3.9), sqrt(2), exp(1)
+    pi = atan2(0, -1)
+    printf "log(10) = %.4f   atan2(0,-1) = %.5f (pi)   sin(pi/2) = %.1f\n", log(10), pi, sin(pi / 2)
+    srand(1); r = rand()
+    print "srand(1); rand() -> " (r >= 0 && r < 1 ? "a number in [0,1)" : "???") "   srand() returns the old seed: " srand(2)
+}

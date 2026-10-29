@@ -1,0 +1,22 @@
+#> tool: awkrepl
+#> wait: CONVFMT
+#> pause: 35
+#> must: default: 3.14159
+#> must: OFMT=%.2f: 3.14
+#> must: CONVFMT=%.3f: 3.142
+#> must: integers ignore both: 42
+#> not: 3.14159265
+#> source: CONVFMT
+# 7. OFMT and CONVFMT: how numbers turn into text
+# The sheet: OFMT is "The default output format for numbers" (used by print), and
+# CONVFMT "is used to convert numbers to strings" (used when you glue a number to
+# a string, as in pi ""). Both default to "%.6g". Integers are never affected.
+# There is no #DATA here, so awkrepl runs this once; BEGIN needs no input at all.
+# Try: set OFMT = "%.0f" and see pi print as 3.
+BEGIN {
+    pi = 3.14159265
+    print "default:", pi
+    OFMT = "%.2f";    print "OFMT=%.2f:", pi
+    CONVFMT = "%.3f"; s = pi ""; print "CONVFMT=%.3f:", s
+    print "integers ignore both:", 42
+}

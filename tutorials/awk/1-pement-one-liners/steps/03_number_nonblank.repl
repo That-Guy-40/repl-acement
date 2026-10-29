@@ -1,0 +1,27 @@
+#> tool: awkrepl
+#> wait: 10 :Mark
+#> pause: 40
+#> must: 1 :Beth    4.00  0
+#> must: 4 :Mark    5.00  20
+#> not: 11 :
+#> source: ++a
+# 3. Number only the non-blank lines. Pement: awk 'NF{$0=++a " :" $0};{print}'
+# NF is the number of fields; a blank line has 0, which is false as a pattern.
+# ++a increments our own counter before use. Assigning to $0 rewrites the line.
+# Twelve lines, ten of them non-blank, so the numbers stop at 10.
+# Try: swap the order of the two rules and see why that breaks it.
+NF{$0=++a " :" $0};{print}
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

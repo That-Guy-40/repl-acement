@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait: lines match /hello/
+#> pause: 35
+#> must: PATH in ENVIRON: 1   NO_SUCH_VAR in ENVIRON: 0
+#> must: 3 lines match /hello/ ignoring case, 1 does not
+#> not: 1 lines match /hello/
+#> source: IGNORECASE
+# 8. ENVIRON and IGNORECASE: the environment, and case-blind regexes (gawk)
+# The sheet: ENVIRON is "An array containing the values of the current environment"
+# and IGNORECASE "Controls the case-sensitivity of all regular expression and string
+# operations". Both are gawk extensions (the sheet's AWK/NAWK columns say '-').
+# With IGNORECASE = 1 the pattern /hello/ matches Hello and HELLO as well.
+# Try: set IGNORECASE = 0 and the count drops to 1.
+BEGIN {
+    IGNORECASE = 1
+    print "PATH in ENVIRON: " ("PATH" in ENVIRON) "   NO_SUCH_VAR in ENVIRON: " ("NO_SUCH_VAR" in ENVIRON)
+}
+/hello/ { yes++ }
+!/hello/ { no++ }
+END { print yes " lines match /hello/ ignoring case, " no " does not" }
+
+#DATA
+Hello there
+hello again
+HELLO WORLD
+goodbye

@@ -1,0 +1,25 @@
+#> tool: awkrepl
+#> wait: SUBSEP is
+#> pause: 40
+#> must: SUBSEP is 1 character long (\034)
+#> must: east widgets 20
+#> must: west gadgets 7
+#> not: east widgets 12
+#> source: SUBSEP
+# 5. SUBSEP: how awk fakes two-dimensional arrays
+# The sheet: SUBSEP is "The character used to separate multiple subscripts in array
+# elements". sales[$1, $2] really uses one string key: $1 SUBSEP $2. split() on
+# SUBSEP gets the parts back. PROCINFO["sorted_in"] (gawk) makes for-in orderly.
+# Try: change the key to sales[$2, $1] and see the output grouped by product.
+BEGIN { PROCINFO["sorted_in"] = "@ind_str_asc"; print "SUBSEP is " length(SUBSEP) " character long (\\034)" }
+{ sales[$1, $2] += $3 }
+END {
+    for (k in sales) { split(k, part, SUBSEP); print part[1], part[2], sales[k] }
+}
+
+#DATA
+east widgets 12
+west gadgets 3
+east widgets 8
+east gadgets 5
+west gadgets 4

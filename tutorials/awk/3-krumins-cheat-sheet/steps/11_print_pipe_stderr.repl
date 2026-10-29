@@ -1,0 +1,25 @@
+#> tool: awkrepl
+#> wait: sorted by sort(1)
+#> pause: 35
+#> must: -- 4 names sorted by sort(1); printed after close()
+#> must: this line went to /dev/stderr
+#> not: sh: 
+#> source: sort
+# 11. print to a pipe or to stderr, and close()
+# The sheet's I/O statements: 'print ... | command' "Writes on a pipe", and
+# close(file) closes a "file, pipe or co-process". The pipe to sort stays open
+# across all lines; close("sort") makes sort finish and flush, so the END line
+# really comes after the sorted names. "/dev/stderr" is a file name awk knows.
+# Try: delete the close("sort") line; the END line now prints before the names.
+{ print $1 | "sort" }
+END {
+    close("sort")
+    print "-- " NR " names sorted by sort(1); printed after close()"
+    print "this line went to /dev/stderr" > "/dev/stderr"
+}
+
+#DATA
+pear
+apple
+fig
+cherry

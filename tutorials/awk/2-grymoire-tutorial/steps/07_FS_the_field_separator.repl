@@ -1,0 +1,21 @@
+#> tool: awkrepl
+#> wait: alice -> /bin/bash
+#> pause: 30
+#> must: nobody -> /usr/sbin/nologin
+#> must: root -> /bin/bash
+#> not: x:1001
+#> source: "->"
+# 7. FS: telling awk where fields end
+# By default fields are split on runs of spaces and tabs. A passwd file uses colons,
+# so set FS = ":" in BEGIN (or pass -F: on the command line). Then $1 is the login
+# and $7 the shell.
+# Try: print $5 (the full name) instead of $7.
+BEGIN { FS = ":" }
+{ print $1, "->", $7 }
+
+#DATA
+root:x:0:0:root:/root:/bin/bash
+alice:x:1001:1001:Alice Ng:/home/alice:/bin/bash
+bob:x:1002:1001:Bob Ruiz:/home/bob:/bin/zsh
+carol:x:1003:1002:Carol Ito:/home/carol:/bin/bash
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin

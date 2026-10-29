@@ -1,0 +1,33 @@
+#> tool: awkrepl
+#> wait: range: Mary
+#> pause: 45
+#> must: range: Mark    5.00  20
+#> must: range: Susie   4.25  18
+#> must: 10 non-blank lines
+#> not: range: Dan
+#> not: range: Beth
+#> not: 12 non-blank lines
+#> source: "range: "
+# 20. Ranges, and dropping blank lines. Pement:
+#   awk 'NR==8,NR==12'      lines 8 to 12       awk '/Iowa/,/Montana/'  between regexes
+#   awk '/regex/,0'         from regex to end    awk NF                  no blank lines
+# A range pattern is two patterns with a comma: on from the first, off after the
+# second. NF alone is the whole 'delete blank lines' program.
+# Try: /Mark/,/Susie/ and work out why it prints more than you expect.
+NR == 5, NR == 7 { print "range: " $0 }
+NF { n++ }
+END { print n " non-blank lines" }
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

@@ -1,0 +1,19 @@
+#> tool: awkrepl
+#> wait: 5 random numbers, all below 1
+#> pause: 30
+#> must: int: 7 -7
+#> must: sqrt(144) = 12, 2^10 = 1024, 17 % 5 = 2
+#> not: int: 7 -8
+#> source: srand
+# 16. Numeric functions: int, sqrt, rand
+# int() truncates toward zero (not floor). sqrt, exp, log, sin, cos are there too.
+# rand() gives 0 <= x < 1; srand(seed) makes the sequence repeatable, srand() alone
+# seeds from the clock. There is no data here, so everything runs in BEGIN.
+# Try: print int(rand() * 6) + 1 five times for dice rolls.
+BEGIN {
+    srand(1)
+    print "int:", int(7.9), int(-7.9)
+    print "sqrt(144) = " sqrt(144) ", 2^10 = " 2 ^ 10 ", 17 % 5 = " 17 % 5
+    for (i = 1; i <= 5; i++) if (rand() < 1) n++
+    print n, "random numbers, all below 1"
+}

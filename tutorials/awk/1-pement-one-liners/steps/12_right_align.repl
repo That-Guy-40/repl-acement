@@ -1,0 +1,26 @@
+#> tool: awkrepl
+#> wait:                Beth    4.00  0
+#> pause: 30
+#> must:                Beth    4.00  0
+#> must:               Kathy   4.00  10
+#> not: Beth    4.00  0               |
+#> source: "%30s
+# 12. Right-align every line in a 30-column width. Pement: awk '{printf "%79s\n", $0}'
+# %30s pads a string on the left to 30 columns. The one-liner uses 79, the
+# classic terminal width; 30 fits our pane. (Blank lines become 30 spaces.)
+# Try: centre instead: l=length(); s=int((30-l)/2); printf "%"(s+l)"s\n", $0
+printf "%30s\n", $0
+
+#DATA
+Beth    4.00  0
+Dan     3.75  0
+Kathy   4.00  10
+
+Mark    5.00  20
+Mary    5.50  22
+Susie   4.25  18
+Susie   4.25  18
+Beth    4.00  0
+
+Kathy   4.00  10
+Mark    5.00  20

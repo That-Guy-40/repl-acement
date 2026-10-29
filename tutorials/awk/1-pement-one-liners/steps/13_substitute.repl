@@ -1,0 +1,19 @@
+#> tool: awkrepl
+#> wait: the red door
+#> pause: 40
+#> must: the red door and the red ring
+#> must: a puce coat stays puce
+#> not: scarlet door
+#> source: gsub
+# 13. Find and replace, on selected lines only. Pement:
+#   awk '{gsub(/scarlet|ruby|puce/, "red"); print}'       every line
+#   awk '/baz/{gsub(/foo/, "bar")};{print}'                only lines with baz
+# gsub replaces all matches in $0 (sub replaces the first). Here only lines
+# that mention "door" are recoloured; the coat keeps its colour.
+# Try: drop the /door/ pattern and watch the coat turn red too.
+/door/ { gsub(/scarlet|ruby|puce/, "red") }; { print }
+
+#DATA
+the scarlet door and the ruby ring
+a puce coat stays puce
+one more ruby door
