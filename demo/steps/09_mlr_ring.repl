@@ -1,0 +1,23 @@
+#> tool: mlrrepl
+#> wait: 4 cards ->
+#> pause: 55
+#> must: dev-c0ffee: 4 cards -> 5105105105105100, 4000056655665556, 5200828282828210, 4012888888881881
+#> not: dev-fam01
+#> not: T1027
+#> not: mismatch
+#> source: joink
+# 9. The reveal. One device, how many cards? A family tablet has two; this one has four,
+# and the structuring card is one of them. That's not a cardholder, that's a mule.
+#ARGS --icsv --opprint
+filter false;
+@cards[$device][$card] = 1;
+end {
+    for (dev, cards in @cards) {
+        if (length(cards) >= 3) {
+            print dev . ": " . length(cards) . " cards -> " . joink(cards, ", ");
+        }
+    }
+}
+
+#DATA
+@CSV@

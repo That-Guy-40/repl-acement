@@ -1,0 +1,18 @@
+#> tool: perlrepl
+#> wait: GIFTCARDS.IO (2026-10-03T19:08:12Z)
+#> pause: 45
+#> must: 4716220011893344  5 txns in 10 min at NETFLIX (2026-10-03T02:16:27Z)
+#> must: 5399830050000102  5 txns in 10 min at GIFTCARDS.IO (2026-10-03T19:08:12Z)
+#> must: # command:  perl -n -a -F,
+#> not: 4532015112830366
+#> source: sliding
+# 7. Velocity: a sliding ten-minute window per card. #ARGS -a -F, gives autosplit, so the
+# fields are already in @F. Two cards trip it: the 2 AM probe and a gift-card drain.
+#ARGS -a -F,
+next unless $F[1] =~ /T(\d\d):(\d\d)/;  my $t = $1 * 60 + $2;
+push @{ $w{$F[2]} }, $t;
+shift @{ $w{$F[2]} } while $w{$F[2]}[0] < $t - 10;
+print "$F[2]  5 txns in 10 min at $F[4] ($F[1])\n" if @{ $w{$F[2]} } == 5;
+
+#DATA
+@CSV@

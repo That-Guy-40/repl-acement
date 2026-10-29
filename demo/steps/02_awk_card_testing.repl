@@ -1,0 +1,18 @@
+#> tool: awkrepl
+#> wait: micro-charges
+#> pause: 50
+#> must: 4716220011893344  6 micro-charges, last at 2026-10-03T02:17:04Z
+#> not: 4916338506082832
+#> not: STARBUCKS
+#> source: micro-charges
+# 2. Card testing: a stolen number gets "pinged" with $1 charges before the real hit.
+# Count the sub-$2 charges per card. One such charge is a song; four or more is a probe.
+#ARGS -F,
+$4 < 2 { n[$3]++; last[$3] = $2 }
+END {
+    for (c in n) if (n[c] >= 4)
+        printf "%s  %d micro-charges, last at %s\n", c, n[c], last[c]
+}
+
+#DATA
+@CSV@

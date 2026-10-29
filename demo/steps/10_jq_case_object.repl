@@ -1,0 +1,20 @@
+#> tool: jqrepl
+#> wait: "txns": 7
+#> pause: 50
+#> must: "device": "dev-c0ffee"
+#> must: "total": 12422
+#> must: "5105105105105100"
+#> must: # command:  jq -R -s
+#> not: dev-fam01
+#> source: group_by
+# 10. jq, straight off the CSV (-R raw lines, -s slurp): the case object for the ring.
+# Same data, now shaped for the case-management API. Seven transactions, $12,422 exposure.
+#ARGS -R -s
+split("\n")[1:] | map(select(length > 0) | split(",")
+  | {id: .[0], ts: .[1], card: .[2], amount: (.[3] | tonumber), country: .[6], device: .[8]})
+| group_by(.device) | map(select((map(.card) | unique | length) >= 3))
+| .[] | {device: .[0].device, cards: (map(.card) | unique),
+         total: (map(.amount) | add), txns: length}
+
+#DATA
+@CSV@

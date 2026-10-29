@@ -1,0 +1,20 @@
+#> tool: perlrepl
+#> wait: in 36 min
+#> pause: 50
+#> must: 4024007198964305: US -> NG in 36 min (LAGOSMART 820.00)
+#> must: # command:  perl -n
+#> not: 4485275742308327
+#> source: Impossible travel
+# 6. Impossible travel needs memory across lines. perlrepl sees a bare per-line script
+# and adds -n for you: check the command line below. New York to Lagos in 36 minutes.
+chomp; my ($id, $ts, $card, $amt, $m, $mcc, $cc, $ch, $dev) = split /,/;
+next if $id eq 'id';
+my ($h, $mi) = $ts =~ /T(\d\d):(\d\d)/;  my $min = $h * 60 + $mi;
+if ($seen{$card} && $cc ne $seen{$card}[0] && $min - $seen{$card}[1] < 120) {
+    printf "%s: %s -> %s in %d min (%s %.2f)\n",
+        $card, $seen{$card}[0], $cc, $min - $seen{$card}[1], $m, $amt;
+}
+$seen{$card} = [$cc, $min];
+
+#DATA
+@CSV@

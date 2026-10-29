@@ -1,0 +1,17 @@
+#> tool: awkrepl
+#> wait: LAGOSMART
+#> pause: 40
+#> must: T1009,2026-10-03T07:02:33Z,4485275742308327,512.30,DELTA
+#> must: T1034,2026-10-03T14:11:29Z,4916338506082832,749.99,BESTBUY
+#> must: 5105105105105100,2999.00,CRYPTOMART
+#> must: # command:  gawk -F,
+#> not: id,ts,card,amount
+#> not: STARBUCKS
+#> source: $4 > 500
+# 1. Saturday's card traffic, 62 transactions. First question: who spent over $500?
+# A bare pattern and no action, so awk prints the matching line. Two of these are fine.
+#ARGS -F,
+NR > 1 && $4 > 500
+
+#DATA
+@CSV@

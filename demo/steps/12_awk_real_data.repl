@@ -1,0 +1,22 @@
+#> tool: awkrepl
+#> needs: real
+#> wait: rows,
+#> pause: 45
+#> must: 284807 rows, 492 fraud (0.173%)
+#> must: mean amount: fraud 122.21 vs legit 88.29
+#> must: # command:  gawk -F, -v file=
+#> not: ERROR
+#> not: gawk:
+#> source: getline
+# 12. Same awk, real data: the public credit-card fraud set, 284,807 transactions on disk.
+# No #DATA this time: BEGIN pulls the file in with getline. Same muscle memory, any size.
+#ARGS -F, -v file=@REAL@
+BEGIN {
+    while ((getline line < file) > 0) {
+        if (++n == 1) continue
+        split(line, f, ",")
+        if (f[31] ~ /1/) { fraud++; famt += f[30] } else { legit++; lamt += f[30] }
+    }
+    printf "%d rows, %d fraud (%.3f%%)\n", n - 1, fraud, 100 * fraud / (n - 1)
+    printf "mean amount: fraud %.2f vs legit %.2f\n", famt / fraud, lamt / legit
+}

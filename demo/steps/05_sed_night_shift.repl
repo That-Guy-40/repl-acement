@@ -1,0 +1,15 @@
+#> tool: sedrepl
+#> wait: card-not-present
+#> pause: 35
+#> must: T1007,2026-10-03T02:31:45Z,4716220011893344,489.00,BESTBUY,5732,US,card-not-present
+#> must: T1001,2026-10-03T02:14:03Z,4716220011893344,0.99,STEAM
+#> not: T1008
+#> not: ,CNP,dev-9e11
+#> source: T0[0-5]
+# 5. Cleaning for the next tool: keep the small hours only (00:00-05:59) and spell out
+# the channel code the way the analysts' sheet wants it. The 2 AM probe stands alone.
+/T0[0-5]:/!d
+s/,CNP,/,card-not-present,/
+
+#DATA
+@CSV@

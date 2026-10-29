@@ -1,0 +1,18 @@
+#> tool: awkrepl
+#> wait: duplicate post
+#> pause: 45
+#> must: duplicate post: T1047 5553042241984105 23.40 UBER 4s after T1046
+#> not: T1050
+#> not: GIFTCARDS
+#> source: duplicate post
+# 3. Same card, same merchant, same amount, seconds apart: a double post, not two rides.
+# The seen[] idiom you already know, with a 60-second window so repeat buys don't trip it.
+#ARGS -F,
+{ t = substr($2,12,2)*3600 + substr($2,15,2)*60 + substr($2,18,2)
+  k = $3 SUBSEP $4 SUBSEP $5 }
+(k in last) && t - last[k] < 60 {
+    print "duplicate post:", $1, $3, $4, $5, t - last[k] "s after", prev[k] }
+{ last[k] = t; prev[k] = $1 }
+
+#DATA
+@CSV@

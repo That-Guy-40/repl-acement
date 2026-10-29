@@ -1,0 +1,21 @@
+#> tool: yqrepl
+#> needs: yq-mikefarah
+#> wait: exposure:
+#> pause: 40
+#> must: case: ring-dev-c0ffee
+#> must: exposure: 12422
+#> must: 5105105105105100
+#> must: txns: 7
+#> not: dev-fam01
+#> source: exposure
+# 11. yq reads the same CSV (-p csv) and writes the SOC ticket as YAML. Same question,
+# fourth grammar, no reformatting step in between. This goes straight into the queue.
+#ARGS -p csv -o yaml
+[.[] | select(.device == "dev-c0ffee")]
+| {"case": "ring-dev-c0ffee",
+   "cards": ([.[] | .card] | unique),
+   "exposure": (.[] as $t ireduce (0; . + $t.amount)),
+   "txns": length}
+
+#DATA
+@CSV@

@@ -1,0 +1,16 @@
+" demo/vimrc — minimal, predictable vim for the self-running demo.
+" Loaded with 'vim -u demo/vimrc' so the user's own config never interferes.
+set nocompatible
+filetype on
+syntax on
+set paste            " typed/pasted text goes in verbatim: no autoindent, no mappings
+set nowrap
+set number
+set laststatus=2
+set ruler
+set noswapfile
+set nobackup
+set nowritebackup
+set backupcopy=yes   " write in place, so entr sees every save
+set shortmess+=I
+set t_Co=256
