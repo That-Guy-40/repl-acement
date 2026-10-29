@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+
+    <title>Sed - UNIX Stream Editor - Cheat Sheet</title>
+
+    <link href="https://catonmat.net/sed-stream-editor-cheat-sheet" rel="canonical">
+    <link rel="alternate" type="application/rss+xml" href="https://catonmat.net/feed">
+
+    <meta property="og:title" content="Sed - UNIX Stream Editor - Cheat Sheet">
+    <meta property="og:description" content="Hi all! Here&#039;s the next cheat sheet I&#039;ve created - cheat sheet of sed, the Superman of stream editing. It has come handy 101 times for me because sed is not what I use daily and after some time of not using the sed commands tend to fade away from my mind and I have to review them quickly. This cheat sheet is ideal for...">
+    <meta property="og:url" content="https://catonmat.net/sed-stream-editor-cheat-sheet">
+        <meta property="og:image" content="https://catonmat.net/images/catonmat-preview-image.png">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@catonmat">
+    <meta name="twitter:title" content="Sed - UNIX Stream Editor - Cheat Sheet">
+    <meta name="twitter:description" content="Hi all! Here&#039;s the next cheat sheet I&#039;ve created - cheat sheet of sed, the Superman of stream editing. It has come handy 101 times for me because sed is not what I use daily and after some time of not using the sed commands tend to fade away from my mind and I have to review them quickly. This cheat sheet is ideal for...">
+    <meta name="twitter:creator" content="@pkrumins">
+
+        <meta name="twitter:image:src" content="https://catonmat.net/images/catonmat-preview-image.png">
+    
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="icon" href="/favicon.png">
+
+    <script src="/js/catonmat.js?v=51b01d"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="/js/sale.js?v=51b01d"></script>
+    
+
+    <link rel="stylesheet" href="/css/normalize.css?v=51b01d">
+    <link rel="stylesheet" href="/css/stylesheet.css?v=51b01d">
+    <link rel="stylesheet" href="/css/sale.css?v=51b01d">
+    
+</head>
+<body>
+    <div class="site-page">
+        <header class="site-header">
+            <div class="logo">
+                <a href="/"><img src="/images/catonmat-logo-clean.png"></a>
+            </div>
+            <div class="navigation">
+                
+
+                    
+    <nav>
+        <ul>
+            
+        <li ><a href="/archive">archive</a></li>
+    
+            
+        <li ><a href="/books">books</a></li>
+    
+            
+        <li ><a href="/tools">tools</a></li>
+    
+            
+        <li ><a href="/projects">projects</a></li>
+    
+                        
+        <li ><a href="/about">about</a></li>
+    
+        </ul>
+    </nav>
+
+            </div>
+        </header>
+
+        
+    <section class="site-articles">
+        <article>
+            
+                <h1>
+    <a href="/sed-stream-editor-cheat-sheet">Sed - UNIX Stream Editor - Cheat Sheet</a>
+</h1>
+            
+            
+                <div class="last-updated">Last updated 
+    7 weeks ago
+</div>
+            
+            <div class="article-body">
+                
+    <p><img src="https://catonmat.net/wp-content/uploads/2007/07/post-icon-sed.jpg" alt="sed as a superman, the unix stream editor" class="post-icon" align="left">Hi all! Here's the next cheat sheet I've created - cheat sheet of sed, the Superman of stream editing. It has come handy 101 times for me because sed is not what I use daily and after some time of not using the sed commands tend to fade away from my mind and I have to review them quickly. This cheat sheet is ideal for that.</p>
+<p>You can't really be a good hacker if you don't know this tool. I always love to think of various situations where knowing many, many different tools makes you the ultimate guru.<br />
+Suppose you had a situation where you were on a box which had some problems and the only tool available to you was sed, and you had to fix a configuration file problem really quickly or bad, bad things would happen. If you never knew sed, you'd be in deep trouble because it can't be learned from the <a href="http://linux.die.net/man/1/sed">man page</a>, because it only lists all the commands and you have no understanding how the commands work.</p>
+<p>When I first learned sed, I remember the joy when I understood how it worked, that it operated on input stream, output stream, pattern space and hold buffer. Once you know this, the rest can be understood from the man page, but before that, I doubt it.</p>
+<p>If you want to learn the sed editor I recommend this <a href="http://www.grymoire.com/Unix/Sed.html" title="sed, the stream editor, tutorial">wonderful tutorial</a> and <a href="/sed-stream-editor-cheat-sheet#sed-books">these books</a>.</p>
+<p>This sed cheat sheet contains:</p>
+<ul>
+  <li>command line summary</li>
+  <li>command description, if they take single address or pattern, or a range of addresses, and what they modify (input stream, output stream, pattern space or hold buffer)</li>
+  <li>command line argument summary</li>
+  <li>extensions</li>
+  <li>short summary of adderss range format</li>
+</ul>
+<h2>Download Sed Stream Editor Cheat Sheet</h2>
+<p>PDF document: <a href="https://catonmat.net/ftp/sed.stream.editor.cheat.sheet.pdf" title="sed stream editor cheat sheet (.pdf)">sed.stream.editor.cheat.sheet.pdf</a></p>
+<p>Plain text (.txt): <a href="https://catonmat.net/ftp/sed.stream.editor.cheat.sheet.txt" title="sed stream editor cheat sheet (.txt)">sed.stream.editor.cheat.sheet.txt</a></p>
+<p>MS Word (.doc): <a href="https://catonmat.net/ftp/sed.stream.editor.cheat.sheet.doc" title="sed stream editor cheat sheet (.doc)">sed.stream.editor.cheat.sheet.doc</a></p>
+<p>If you notice any inaccuracies, mistakes or see that I have left something out, please let me know. See you next time!</p>
+
+            </div>
+        </article>
+    </section>
+    
+        <div class="more">
+            
+    <a href="/archive">Read more articles →</a>
+
+        </div>
+    
+    <div class="catonmat-news-box">
+        <div class="catonmat-news-text">
+            
+    Thanks for reading my post. If you enjoyed it and would like to receive my posts automatically, you can subscribe to new posts via <a href="/feed">rss feed</a> or email.
+
+        </div>
+        <div class="catonmat-news-email">
+            <input type="text" name="email" placeholder="Your email">
+            <button>Subscribe</button>
+        </div>
+        <div class="catonmat-news-email-error" hidden></div>
+        <div class="catonmat-news-email-success" hidden></div>
+    </div>
+            <div class="article-navigation">
+            <div class="go back">
+                                    <a href="/converting-youtube-flvs-to-a-better-format-with-ffmpeg">Converting YouTube FLVs (Flash Videos) to a Better Format with ffmpeg</a>
+                            </div>
+            <div class="go forward">
+                                    <a href="/dpf-winamp-music-reporter">I Created a Winamp Music Reporter Plugin for Digital Point Forum</a>
+                            </div>
+        </div>
+    
+
+        <footer class="site-footer">
+            <div class="virtual-browser">
+                <a href="/try-a-virtual-browser-for-free">Try a Virtual Browser – For Free!</a>
+            </div>
+            <div class="jelly-stains">
+                <img src="/images/this-space-reserved-for-jelly-stains.png" alt="">
+            </div>
+                        <div class="secret-message">
+                Secret message: Use coupon code <span class="jellyling">JELLYLING</span> to get a discount at my company Browserling!
+            </div>
+                    </footer>
+    </div>
+<div id="blackFridayOverlay">
+  <div class="bf-modal">
+    <button class="bf-close" id="bfClose">✕</button>
+
+    <div class="bf-icon"><svg fill="#ffffff" width="72px" height="72px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16.948 20.2a1 1 0 0 1-.465-.115l-4.472-2.352-4.471 2.348a1 1 0 0 1-1.451-1.054l.854-4.979-3.619-3.527a1 1 0 0 1 .554-1.706l5-.727 2.237-4.531A1 1 0 0 1 12.011 3a1 1 0 0 1 .9.558l2.236 4.53 5 .727a1 1 0 0 1 .554 1.706l-3.621 3.526.854 4.98a1 1 0 0 1-.986 1.173zM6.171 10.5l2.544 2.479a1 1 0 0 1 .285.888l-.6 3.5 3.144-1.653a.993.993 0 0 1 .931 0l3.144 1.653-.6-3.5a1 1 0 0 1 .288-.885l2.544-2.482-3.515-.511a1 1 0 0 1-.752-.547l-1.573-3.183-1.573 3.186a1 1 0 0 1-.752.547z"/>
+</svg></path></svg></div>
+
+    <div class="bf-percent">New Plans & Pricing!</div>
+    <div class="bf-title">See the new options</div>
+
+    <hr class="bf-divider">
+
+    <div class="bf-countdown-label">Sale ends in</div>
+    <div class="bf-countdown" id="bfCountdown">12:00:00</div>
+
+    <hr class="bf-divider">
+
+    <button class="bf-button" id="bfDetailsBtn">View Details<span>➜</span></button>
+  </div>
+</div>
+
+    
+
+<!-- Start of StatCounter Code -->
+<script type="text/javascript">
+var sc_project=3189873;
+var sc_invisible=1;
+var sc_security="dc7255a7";
+</script>
+<script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+
+<!-- End of StatCounter Code -->
+</body>
+</html>

@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 45
+#> must: Kansas
+#> must: Montana
+#> must: # command:  sed  -f
+#> not: Alabama
+#> not: Iowa
+#> source: $!N;$!D
+# 16. The last two lines, like tail -2. Pement: sed '$!N;$!D'
+# N appends the next line; D deletes up to the first newline and restarts the
+# cycle without reading a new line. So the pattern space always holds two
+# lines, sliding down the file; on the last line neither runs and both are
+# printed. sed '$!d' keeps only the last line; sed '$d' deletes it.
+# Try: $!N;$!N;$!D;$!D  for the last three.
+$!N;$!D
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

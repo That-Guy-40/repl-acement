@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22
+#> pause: 40
+#> must: 1 APPLES 12
+#> must: 6 GRAPES 40
+#> must: 3 cherries 7 <- untouched
+#> not: APPLES 12 <-
+#> source: t
+# 12. t. Sheet: "t label" branches to the label if the last substitute modified the
+# pattern space. The first s/// upper-cases the fruit on lines with an a. t then
+# branches to the end only on those lines; the ones where s/// made no change fall
+# through and get the arrow. t is how sed loops: ":a;s/x/y/;ta" runs until s fails.
+# Try: replace t with "b": the arrow disappears everywhere, changed or not.
+s/\([a-z]*a[a-z]*\)/\U\1/
+t
+s/$/ <- untouched/
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

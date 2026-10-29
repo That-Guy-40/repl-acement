@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: Mongol dynasty
+#> pause: 45
+#> must: Note:  Kubla Khan (more properly Kublai Khan; 1216-1294)
+#> must: (Chingiz) Khan, and founder of the Mongol dynasty in China.
+#> must: A stately pleasure dome decree:
+#> not: No such file
+#> not: ERROR
+#> source: r tutorials/sed
+# 14. r <file>: append the contents of a file after the line. McMahon 3.3
+# The paper's example reads a note about Kubla Khan after the line that names
+# him. The path is relative to the work dir shown at the top of the output.
+# A file that cannot be opened is treated as empty, not as an error and with
+# no message: the second r below names a file that does not exist.
+# Try: change /Kubla/ to $ and the note lands after the last line.
+/Kubla/r tutorials/sed/1-mcmahon-paper/data/note1
+/sea/r tutorials/sed/1-mcmahon-paper/data/no-such-note
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

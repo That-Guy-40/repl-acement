@@ -1,0 +1,28 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 50
+#> must: Iowa
+#> must: Kansas
+#> must: Montana
+#> not: Alabama
+#> not: Texas
+#> source: x;/Iowa/!d
+# 20. Print the paragraph that contains a word. Pement: sed -e '/./{H;$!d;}' -e 'x;/AAA/!d;'
+# Paragraphs are separated by blank lines. Every non-blank line is appended
+# to the hold space (H) and deleted. At a blank line (or the last line) x
+# swaps the collected paragraph in; it is deleted unless it mentions Iowa.
+# The blank line itself is now in the hold space, ready to start the next one.
+# Try: /Iowa\|Ohio/!d  prints two of the three paragraphs.
+/./{H;$!d;}
+x;/Iowa/!d
+
+#DATA
+Alabama
+Alaska
+
+Iowa
+Kansas
+Montana
+
+Ohio
+Texas

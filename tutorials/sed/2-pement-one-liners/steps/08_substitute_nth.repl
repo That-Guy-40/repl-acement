@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: the cut sut on the mut
+#> pause: 45
+#> must: the cut sat on the mat
+#> must: the cat sut on the mat
+#> must: the cut sut on the mut
+#> not: the cat sat on the mat
+#> not: ERROR parsing
+#> source: s/a/u/2
+# 8. Substitute the first, the Nth, or every match. Pement:
+#   sed 's/foo/bar/'    sed 's/foo/bar/4'    sed 's/foo/bar/g'
+# s/// changes only the first match on a line. A number as the flag picks
+# that one match instead (here the 2nd "a"); g changes them all. Each line
+# number address below sends one copy of the sentence to one form: watch
+# which "a" turns into "u" on each line.
+# Try: 3s/a/u/2g  changes the 2nd match and every one after it.
+1s/a/u/
+2s/a/u/2
+3s/a/u/g
+
+#DATA
+the cat sat on the mat
+the cat sat on the mat
+the cat sat on the mat

@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: sunless sea.  :In Xanadu
+#> pause: 50
+#> must: In Xanadu did Kubla Khan  :In Xanadu
+#> must: A stately pleasure dome decree:  :In Xanadu
+#> must: Down to a sunless sea.  :In Xanadu
+#> not: :In Xanadu did
+#> source: 1x
+# 17. The hold area: h, H, g, G and x. McMahon 3.5, the paper's own example
+# h copies the pattern space into the hold area (H appends to it), g copies it
+# back (G appends, newline between), x swaps the two. Line 1: h saves it, s cuts
+# it to "In Xanadu", x swaps: the short form is held, the full line is back.
+# Every line: G appends the held text and s turns the newline into "  :".
+# Try: change G to g: every line becomes just the held text.
+1h
+1s/ did.*//
+1x
+G
+s/\n/  :/
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

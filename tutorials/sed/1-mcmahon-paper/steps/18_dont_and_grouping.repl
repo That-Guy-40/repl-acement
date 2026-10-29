@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: [no an]
+#> pause: 45
+#> must:    A stately pleasure dome decree:   [no an]
+#> must:    Down to a sunless sea.   [no an]
+#> must: In Xanadu did Kubla Khan
+#> not: ran   [no an]
+#> not: man   [no an]
+#> source: /an/!{
+# 18. ! means "don't", and { } groups commands under one address. McMahon 3.6
+# An address followed by ! applies the function to every line the address
+# does NOT select. { starts a group: all commands up to the matching } run
+# (or are skipped) together under the address of the {. Here the two lines
+# without "an" are indented and marked; the three that have it are untouched.
+# Try: remove the ! and the other three lines are the ones marked.
+/an/!{
+  s/^/   /
+  s/$/   [no an]/
+}
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

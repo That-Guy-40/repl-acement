@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: one-liners for sed
+#> pause: 50
+#> must: one-liners for sed
+#> must: # command:  sed  -f
+#> not: Subject: one
+#> not: From:
+#> not: Hello
+#> source: s///;q
+# 26. Pull one header out of a mail message. Pement: sed '/^Subject: */!d; s///;q'
+# Every line that does not begin with the header name is deleted. On the one
+# that does, s/// reuses the last pattern (an empty regex means "the regex
+# used most recently") and removes it; q then stops. The sheet also has the
+# whole header,  sed '/^$/q' , and the body,  sed '1,/^$/d'  (everything
+# up to the first blank line goes).
+# Try: 1,/^$/d  to see only the body.
+/^Subject: */!d; s///;q
+
+#DATA
+From: Eric Pement <pemente@example.org>
+To: sed-users
+Subject: one-liners for sed
+
+Hello all,
+the new version is up.

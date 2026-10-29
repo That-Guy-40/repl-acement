@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alabama
+#> must: Kansas
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: n;d
+# 3. Undo double-spacing. Pement: sed 'n;d'
+# n prints the current line and reads the next one into its place; d deletes
+# that one. So lines 1, 3, 5 ... are printed and 2, 4, 6 ... (the blank ones)
+# vanish. It assumes the even lines are the blank ones.
+# Try: swap it to  n;n;d  to delete every third line instead.
+n;d
+
+#DATA
+Alabama
+
+Alaska
+
+Iowa
+
+Kansas
+
+Montana

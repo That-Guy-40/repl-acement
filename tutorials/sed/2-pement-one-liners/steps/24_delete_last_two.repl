@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Iowa
+#> pause: 40
+#> must: Alabama
+#> must: Iowa
+#> must: # command:  sed  -f
+#> not: Kansas
+#> not: Montana
+#> source: N;$!P;$!D;$d
+# 24. Delete the last two lines. Pement: sed 'N;$!P;$!D;$d'
+# The same two-line window as tail -2 (step 16), run the other way round:
+# P prints the first line of the window and D slides it down, until the
+# window reaches the last line, where $d throws both lines away. sed '$d'
+# alone deletes just the last line; sed '1,10d' deletes the first ten.
+# Try: GNU's  0~2d  deletes every second line instead.
+N;$!P;$!D;$d
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

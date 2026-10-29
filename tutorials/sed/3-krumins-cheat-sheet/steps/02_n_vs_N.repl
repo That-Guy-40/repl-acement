@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: 7 kiwis 18 | 8 lemons 22
+#> pause: 40
+#> must: 1 apples 12 | 2 bananas 30
+#> must: 7 kiwis 18 | 8 lemons 22
+#> not: 2 bananas 30 | 3 cherries
+#> source: s/\n/ | /
+# 2. The input stream column. Sheet: "n" and "N" both read the next line; only N keeps both.
+# N appends the next input line to the pattern space with a newline between them,
+# so s/\n/ | / can join the pair. n would print the current line first and replace
+# it. In the table both have "+" under Input Stream; N also has "+" under Pattern Space.
+# Try: change N to n and the s/// finds no newline: every line prints on its own.
+N
+s/\n/ | /
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

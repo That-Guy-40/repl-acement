@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: # command:  sed -n -f
+#> pause: 45
+#> must: In Xanadu did Kubla Khan
+#> must: A stately pleasure dome decree:
+#> must: Through caverns measureless to man
+#> must: Down to a sunless sea.
+#> not: Where Alph
+#> source: \(an\).*\1
+# 6. The pieces of a pattern. McMahon 2.2, items 1 to 11
+# [AT] matches one character from the set, so /^[AT]/ selects lines that start
+# with A or T. \(an\) remembers what it matched, and \1 demands the same text
+# again later in the line: /\(an\).*\1/ selects line 1 alone. An empty pattern,
+# //, reuses the last one compiled; /\.$/ wants a period at the very end.
+# Try: change [AT] to [^AT]; then change \1 to \(an\) and see nothing change.
+#ARGS -n
+/^[AT]/p
+/\(an\).*\1/p
+/\.$/p
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

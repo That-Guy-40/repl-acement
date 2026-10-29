@@ -1,0 +1,29 @@
+#> tool: sedrepl
+#> wait: restock anything
+#> pause: 45
+#> must: 1 apples 12
+#> must: (note) figs and grapes are seasonal
+#> must: (note) restock anything under 10
+#> must: 8 lemons 22
+#> not: cherries
+#> source: note.txt
+# 15. r and R. Sheet: "r file" appends the file after the pattern; "R file" (GNU) appends
+# one line of it per match. Paths are relative to the work dir shown at the top.
+# The whole note comes after lemons; R takes a line from the note for apples and the
+# next for bananas. w and W write to a file; W writes only the first line of the space.
+# Try: change R to r and the note lands in full after apples and again after bananas.
+#ARGS -n
+/[0-9] [ab]/{p;R tutorials/sed/3-krumins-cheat-sheet/data/note.txt
+}
+$p
+$r tutorials/sed/3-krumins-cheat-sheet/data/note.txt
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

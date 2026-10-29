@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: sunless ocean
+#> pause: 40
+#> must: Down to a sunless ocean.
+#> must: Where Alph, the sacred river, ran
+#> not: sunless SEA
+#> not: sunless sea.
+#> source: s/SEA/ocean/
+# 3. Commands run in order; each one sees the output of the last. McMahon 1.2
+# The whole script is compiled before any input is read, then applied to each
+# line one command at a time. The first s turns "sea" into "SEA"; the second
+# s finds that "SEA" and makes it "ocean". Swap the two lines and the second
+# substitution has nothing to match: the line comes out as "SEA".
+# Try: swap the two s commands and save.
+s/sea/SEA/
+s/SEA/ocean/
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

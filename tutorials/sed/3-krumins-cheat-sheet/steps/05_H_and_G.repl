@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: grapes 40
+#> pause: 40
+#> must: , 1 apples 12, 2 bananas 30, 4 dates 16, 6 grapes 40
+#> not: cherries
+#> not: figs
+#> source: $!d
+# 5. H collects, x gets it back. Sheet: "H" appends to the hold buffer with a "\n" between.
+# Every line with an a is appended to the hold buffer; $!d throws all but the last
+# line away. On the last line x brings the collection into the pattern space and
+# the s///g turns each newline into ", ". The leading ", " is real: the hold buffer
+# was empty before the first H, and H still put a newline in front of apples.
+# Try: change the first line to "1h" and add "1!H": h overwrites instead of appending.
+/a/H
+$!d
+x
+s/\n/, /g
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

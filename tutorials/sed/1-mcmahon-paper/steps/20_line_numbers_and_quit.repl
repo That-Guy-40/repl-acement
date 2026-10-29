@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: Where Alph
+#> pause: 45
+#> must: In Xanadu did Kubla Khan
+#> must: Where Alph, the sacred river, ran
+#> must: 3
+#> not: measureless
+#> not: sunless
+#> source: 3q
+# 20. = writes the line number; q stops. McMahon 3.7
+# = writes the current line number on a line of its own, immediately. q writes
+# the current line (unless -n), flushes any appended text, and ends: nothing
+# after line 3 is even read, which is what makes "sed 10q" a cheap head.
+# The paper ends here; the sed you have has grown (GNU extensions: -E, -i, y,
+# first~step...). Tutorials 2 and 3 cover the one-liners and the cheat sheet.
+# Try: #ARGS -n with $= alone counts the lines, as wc -l does.
+=
+3q
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

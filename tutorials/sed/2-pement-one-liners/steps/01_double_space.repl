@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Kansas
+#> pause: 40
+#> must: Alabama
+#> must: Montana
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: G
+# 1. Double-space a file. Pement: sed G
+# G appends the hold space to the pattern space, with a newline between. The
+# hold space starts out empty, so every line gains an empty line after it.
+# The data is a short list of US states; later steps add blank lines and
+# duplicates to it on purpose.
+# Try: G;G triple-spaces (the sheet's next entry).
+G
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

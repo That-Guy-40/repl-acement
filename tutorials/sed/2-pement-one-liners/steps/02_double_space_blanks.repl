@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alaska
+#> must: Iowa
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: /^$/d;G
+# 2. Double-space a file that already has blank lines. Pement: sed '/^$/d;G'
+# Two commands separated by ';'. /^$/ is an address: a pattern that matches
+# empty lines, and d deletes them (and starts the next line at once, so G is
+# never reached for them). Every remaining line then gets exactly one blank
+# line after it, instead of the two that plain G would leave after a blank.
+# Try: remove the /^$/d and count the blank lines after Alaska.
+/^$/d;G
+
+#DATA
+Alabama
+Alaska
+
+Iowa
+Kansas
+Montana

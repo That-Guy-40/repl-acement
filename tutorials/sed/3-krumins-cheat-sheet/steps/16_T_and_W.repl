@@ -1,0 +1,29 @@
+#> tool: sedrepl
+#> wait: 7 kiwis 18
+#> pause: 45
+#> must: 1 apples 12
+#> must: 3 cherries 7 <- no a
+#> must: 7 kiwis 18 <- no a
+#> not: 2 bananas 30 <- no a
+#> not: 8 lemons 22
+#> source: W /dev/stdout
+# 16. T and W. Sheet extensions: "T label" branches if no s/// has succeeded since the
+# last line was read; "W file" writes the first line of the pattern space to file.
+# $!N pairs the lines; W shows the first of each pair (never lemons, always second).
+# Try: change T to t: the arrow now goes on the lines that DO have an a.
+#ARGS -n
+$!N
+W /dev/stdout
+s/^\([^a]*\)\n.*/\1/
+T
+s/$/ <- no a/p
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

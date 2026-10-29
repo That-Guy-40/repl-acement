@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22
+#> pause: 45
+#> must: --- inventory ---
+#> must: 5 figs 25
+#> must: (seasonal)
+#> must: 7 limes 18
+#> not: 7 kiwis 18
+#> source: 7 limes
+# 7. a, i and c. Sheet: "a" appends text after the pattern, "i" inserts before, "c" changes it.
+# Each takes a backslash, then its text on the next line. The text is queued and
+# written when the line is output; c also deletes the line it replaces (no kiwis).
+# Try: give c a range, 3,6c\ : four lines become one.
+1i\
+--- inventory ---
+/figs/a\
+(seasonal)
+/kiwis/c\
+7 limes 18
+
+#DATA
+1 apples 12
+5 figs 25
+7 kiwis 18
+8 lemons 22

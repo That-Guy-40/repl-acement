@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: sea*P.*
+#> pause: 45
+#> must: # command:  sed -n -f
+#> must: A stately pleasure dome decree*P:*
+#> must: Where Alph*P,* the sacred river*P,* ran
+#> must: Down to a sunless sea*P.*
+#> not: In Xanadu
+#> not: measureless
+#> source: *P&*
+# 11. & in the replacement, and the p flag. McMahon 3.2
+# [.,;?:] matches one punctuation character. In the replacement, & stands for
+# whatever the pattern matched, so each mark becomes *P<mark>*. The g flag
+# does it for every match on the line; the p flag prints the line only if a
+# substitution happened, which with -n means only the punctuated lines show.
+# Try: drop the g: only the first mark on each line is wrapped.
+#ARGS -n
+s/[.,;?:]/*P&*/gp
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

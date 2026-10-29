@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alabama
+#> must: Montana
+#> must: # command:  sed -n -f
+#> not: Iowa
+#> not: Ohio
+#> source: /^.\{6\}/p
+# 21. Only lines of N characters or more. Pement: sed -n '/^.\{65\}/p'
+# ^.\{65\} is "65 of any character, starting at the beginning of the line";
+# a line has to be at least that long to match. Here it is 6, so the four-
+# and five-letter states are dropped. The sheet's opposite,  /^.\{65\}/d ,
+# keeps only the short lines.
+# Try: anchor the end too with  /^.\{6\}$/p  to keep lines of exactly 6.
+#ARGS -n
+/^.\{6\}/p
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana
+Ohio
+Texas

@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: grApes 40
+#> pause: 45
+#> must: # command:  sed -n -f
+#> must: 2 bAnAnAs 30
+#> must: 6 grApes 40
+#> not: 3 cherries 7
+#> not: 2 bAnanas 30
+#> source: s/a/A/gw
+# 8. s with flags. Sheet: "s/regex/repl/" replaces occurrences of the regex with repl.
+# Without a flag only the first match on a line is replaced; g replaces them all;
+# a number replaces that occurrence only; p prints the line if a replacement was made;
+# w FILE writes it to FILE, here the terminal itself. With -n, w is the only output.
+# Try: change gw to 2w (second a only), then to pw to see p and w both fire.
+#ARGS -n
+s/a/A/gw /dev/stdout
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

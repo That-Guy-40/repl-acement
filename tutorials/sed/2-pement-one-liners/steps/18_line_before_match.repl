@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: Kansas
+#> pause: 45
+#> must: Kansas
+#> must: # command:  sed -n -f
+#> not: Alabama
+#> not: Ohio
+#> source: g;1!p
+# 18. The line before a match. Pement: sed -n '/regexp/{g;1!p;};h'
+# h copies every line into the hold space after the match test. When a line
+# matches, g fetches the previous line back and 1!p prints it (unless this
+# is line 1, which has no previous line). The line after a match is simpler:
+# sed -n '/regexp/{n;p;}'  prints the line n reads in.
+# Try: swap in the n;p form and the line after the match appears instead.
+#ARGS -n
+/Montana/{g;1!p;};h
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana
+Ohio

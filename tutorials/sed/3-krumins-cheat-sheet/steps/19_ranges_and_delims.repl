@@ -1,0 +1,29 @@
+#> tool: sedrepl
+#> wait: 7 kiwis 18
+#> pause: 45
+#> must: # command:  sed -n -f
+#> must: 3 cherries 7
+#> must: 4 dates 16
+#> must: 5 figs 25
+#> must: 7 kiwis 18
+#> not: 2 bananas 30
+#> not: 8 lemons 22
+#> source: \%kiwis%p
+# 19. /regex/ ranges and \cregexc. Sheet: "/regex/" matches lines matching regex; "\c"
+# lets any character c delimit it, for a regex that contains a slash itself.
+# A range from one regex to another is inclusive: cherries through figs. \%kiwis%
+# is the same address as /kiwis/, written with % so a / in the pattern needs no escaping.
+# Try: /cherries/,/nothing/p: an end address that never matches runs to the last line.
+#ARGS -n
+/cherries/,/figs/p
+\%kiwis%p
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

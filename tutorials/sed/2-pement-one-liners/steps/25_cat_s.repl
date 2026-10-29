@@ -1,0 +1,28 @@
+#> tool: sedrepl
+#> wait: Ohio
+#> pause: 45
+#> must: Alabama
+#> must: Ohio
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: /./,/^$/!d
+# 25. Squeeze runs of blank lines to one, like cat -s. Pement: sed '/./,/^$/!d'
+# The range runs from a non-blank line to the next blank line, inclusive;
+# !d deletes everything outside it, which is the second and later blank
+# lines of every run, and blank lines at the top of the file. To delete all
+# blank lines the sheet has  sed '/^$/d' ; leading ones only,  sed '/./,$!d'.
+# Try: /^$/d  and the two groups of states run together.
+/./,/^$/!d
+
+#DATA
+
+
+Alabama
+Alaska
+
+
+
+Iowa
+
+
+Ohio

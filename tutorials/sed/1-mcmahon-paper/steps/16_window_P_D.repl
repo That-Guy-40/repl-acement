@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: sunless sea.
+#> pause: 50
+#> must: In Xanadu did Kubla Khan
+#> must: A stately pleasure dome decree:
+#> must: Down to a sunless sea.
+#> not: Where Alph
+#> not: measureless
+#> source: /ran\nThrough/d
+# 16. P and D: a sliding two-line window. McMahon 3.4
+# P prints up to the first newline; D deletes up to it and restarts the script
+# without reading a new line if something is left. With $!N; P; D each cycle
+# holds a line and the one after it. The address /ran\nThrough/ only matches
+# when "ran" ends one line and "Through" starts the next: those two lines, as
+# a pair, are deleted. Lines 1, 2 and 5 pass through the window one at a time.
+# Try: change d to s/\n/ ... / and the pair is joined instead of deleted.
+$!N
+/ran\nThrough/d
+P
+D
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

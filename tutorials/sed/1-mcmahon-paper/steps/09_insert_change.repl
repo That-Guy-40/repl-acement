@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: elided
+#> pause: 45
+#> must: In Xanadu did Kubla Khan
+#> must:    [lines 2 to 4 elided]
+#> must: Down to a sunless sea.
+#> not: Where Alph
+#> not: pleasure dome
+#> source: 2,4c\
+# 9. i\ inserts before, c\ changes. McMahon 3.1
+# i\ is a\ but writes its text before the line. c\ deletes the selected lines
+# and writes its text once, even for a range: 2,4c\ replaces three lines with
+# one. Leading blanks in the text would vanish (sed ignores them in commands);
+# a backslash before the first blank keeps them, and does not appear itself.
+# Try: change 2,4c\ to 2,4i\ and the three lines come back after the text.
+2,4c\
+\   [lines 2 to 4 elided]
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

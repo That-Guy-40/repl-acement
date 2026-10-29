@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: 1,234,567
+#> pause: 45
+#> must: 1,234,567
+#> must: 12,345
+#> must: 999
+#> not: 1234567
+#> not: ERROR parsing
+#> source: \B[0-9]\{3\}\>
+# 14. Put commas in big numbers. Pement: gsed ':a;s/\B[0-9]\{3\}\>/,&/;ta'
+# \B is "not at a word boundary", [0-9]\{3\} three digits, \> the end of a
+# word: so the pattern is "three digits that end a number but don't start
+# it". A comma goes in front of them (& is the match) and t loops until no
+# such group is left. 999 has no digit before its three, so it is untouched.
+# Try: feed it 1234.5678 and see why the sheet has a separate decimal version.
+:a
+s/\B[0-9]\{3\}\>/,&/;ta
+
+#DATA
+1234567
+12345
+999

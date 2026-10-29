@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: measureless to man
+#> pause: 40
+#> must: # command:  sed -n -f
+#> must: Where Alph, the sacred river, ran
+#> must: In Xanadu did Kubla Khan
+#> not: pleasure dome
+#> not: sunless sea
+#> source: /an/p
+# 2. The -n flag: copy nothing unless a p says so. McMahon 1.1: sed -n
+# Here #ARGS passes -n to sed (see the command line in the output pane).
+# Now only lines that reach a p function are written. The address /an/ is a
+# context address: a pattern between slashes selects every line containing it.
+# Lines 1, 3 and 4 contain "an"; the other two are never written at all.
+# Try: remove the #ARGS line and save: those three lines now appear twice.
+#ARGS -n
+/an/p
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

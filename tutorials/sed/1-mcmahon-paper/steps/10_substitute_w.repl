@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Down by a sunless sea.
+#> pause: 45
+#> must: Through caverns measureless by man
+#> must: Down by a sunless sea.
+#> must: In Xanadu did Kubla Khan
+#> not: measureless to man
+#> not: Down to a sunless
+#> source: s/to/by/w
+# 10. s, the substitute function: s/pattern/replacement/flags. McMahon 3.2
+# s/to/by/ replaces the first "to" on each line; lines without one pass through.
+# The paper's w flag writes the lines that were actually changed to a file, so
+# the file "changes" gets two lines. /dev/stdout stands in for that file here:
+# the two changed lines appear a second time, where the file would get them.
+# Try: use another delimiter: s|to|by|w /dev/stdout works the same way.
+s/to/by/w /dev/stdout
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

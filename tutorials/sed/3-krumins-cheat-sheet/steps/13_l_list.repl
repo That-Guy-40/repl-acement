@@ -1,0 +1,21 @@
+#> tool: sedrepl
+#> wait: lemons
+#> pause: 40
+#> must: # command:  sed -n -l 14 -f
+#> must: 1\tapples\t12$
+#> must: 2\tbananas\t3\
+#> not: 1 apples 12
+#> source: s/ /\t/g
+# 13. l. Sheet: "l" prints the pattern space unambiguously, for debugging; -l N sets its
+# line-wrap length. The s///g turns the spaces into tabs (GNU sed reads \t), and l
+# shows them as \t with a $ at the end of each line, so trailing blanks and tabs
+# cannot hide. The data is cut to three lines; -l 14 wraps the long one with a \.
+# Try: change -l 14 to -l 0 (never wrap), or delete the s/// to see the spaces.
+#ARGS -n -l 14
+s/ /\t/g
+l
+
+#DATA
+1 apples 12
+2 bananas 30
+8 lemons 22

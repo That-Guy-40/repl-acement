@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: sunless sea!
+#> pause: 40
+#> must: Down to a sunless sea!
+#> must: A stately pleasure dome decree:
+#> not: In Xanadu
+#> not: sunless sea.
+#> source: $s/
+# 4. Line-number addresses, and $ for the last line. McMahon 2.1
+# A line number counts input lines (across all input files; it never resets).
+# "1d" deletes line 1. "$" is the special address for the last line: here
+# "$s/\.$/!/" swaps the final period for an exclamation mark on that line only
+# (the \. means a literal dot; a bare . would match any character).
+# Try: change 1d to 3d, or $s to 2s.
+1d
+$s/\.$/!/
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

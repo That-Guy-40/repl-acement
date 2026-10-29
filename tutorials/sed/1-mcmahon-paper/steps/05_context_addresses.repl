@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: [an] Through
+#> pause: 45
+#> must: [an] [an.*an] In Xanadu did Kubla Khan
+#> must: [an] Where Alph, the sacred river, ran
+#> must: [\.] Down to a sunless sea.
+#> not: [an] A stately
+#> not: [an] Down
+#> source: an.*an
+# 5. Context addresses: which lines does a pattern select? McMahon 2.2-2.3
+# The paper tests /an/ (lines 1, 3, 4), /an.*an/ (line 1 only: two "an"s with
+# anything between), /^an/ (no line starts with "an") and /\./ (line 5, the
+# only literal period). Each s below tags the lines its address selects.
+# The /\./ test runs first so the tags added later cannot confuse it.
+# Try: add /^an/s/^/[^an] / and see that it tags nothing; then try /^Wh/.
+/\./s/^/[\\.] /
+/an.*an/s/^/[an.*an] /
+/an/s/^/[an] /
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

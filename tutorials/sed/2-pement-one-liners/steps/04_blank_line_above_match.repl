@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Kansas
+#> must: Texas
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: x;p;x
+# 4. A blank line above every match. Pement: sed '/regex/{x;p;x;}'
+# {...} groups commands under one address. x swaps the (empty) hold space in,
+# p prints it (an empty line), and x swaps the real line back to be printed
+# at the end of the cycle. /regex/G would put the blank line below instead.
+# Try: /Kansas/{x;p;x;G;}  for a blank line above and below.
+/Kansas/{x;p;x;}
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana
+Ohio
+Texas

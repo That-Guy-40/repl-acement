@@ -99,6 +99,9 @@ Demo and tutorials
   that run inside `awkrepl`, built on Pement's one-liners, the Grymoire
   tutorial's outline and Krumins' cheat sheet. F5 advances; between steps
   the editor is yours. Each is verified the same way as the demo.
+- [`tutorials/sed/`](tutorials/sed/): the same for sed, inside `sedrepl`:
+  McMahon's original 1978 paper, Pement's sed one-liners and Krumins' sed
+  cheat sheet, each verified the same way.
 
 
 Requirements

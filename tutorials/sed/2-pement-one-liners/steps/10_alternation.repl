@@ -1,0 +1,19 @@
+#> tool: sedrepl
+#> wait: a red coat
+#> pause: 40
+#> must: the red door and the red ring
+#> must: a red coat
+#> not: scarlet door
+#> not: ruby ring
+#> source: \|
+# 10. One of several words. Pement: gsed 's/scarlet\|ruby\|puce/red/g'
+# \| is alternation: the pattern matches any one of the three colours, and g
+# recolours every one on the line. It is a GNU extension; the portable form
+# on the sheet is three substitutions,  s/scarlet/red/g;s/ruby/red/g;s/puce/red/g
+# Try: #ARGS -E  on the line above the program, then write  scarlet|ruby|puce
+s/scarlet\|ruby\|puce/red/g
+
+#DATA
+the scarlet door and the ruby ring
+a puce coat
+one more ruby door

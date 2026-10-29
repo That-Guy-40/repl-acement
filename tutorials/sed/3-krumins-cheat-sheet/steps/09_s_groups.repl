@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: lemons: 22
+#> pause: 45
+#> must: # command:  sed -E -f
+#> must: apples: 12 units (12 units) [line 1]
+#> must: lemons: 22 units (22 units) [line 8]
+#> not: 1 apples 12
+#> source: \2: \3
+# 9. Groups and -E. Sheet: -E (or -r) uses extended regular expressions in the script.
+# In the replacement \1 \2 \3 are the parenthesised groups and & is the whole match.
+# With -E the parentheses and + are plain; in basic syntax they would be \( \) and \+.
+# The first s/// reorders the fields; the second shows & by wrapping the number.
+# Try: remove -E from #ARGS: sed now wants \( \) and the first s/// matches nothing.
+#ARGS -E
+s/^([0-9]+) ([a-z]+) ([0-9]+)$/\2: \3 units [line \1]/
+s/[0-9]+ units/& (&)/
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: 4 dates 16
+#> pause: 40
+#> must: 3 cherries 7
+#> must: 4 dates 16
+#> not: 5 figs 25
+#> source: /dates/q
+# 14. q and Q. Sheet: "q" quits; extension "Q" quits at once without printing.
+# q prints the pattern space (dates), then stops reading: figs to lemons are never
+# seen. That is what makes "sed 10q" a cheap head. Q is the GNU variant that quits
+# without printing the current line, so it would stop after cherries.
+# Try: change q to Q and the dates line is gone too. Then try 2q, and 2Q.
+/dates/q
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

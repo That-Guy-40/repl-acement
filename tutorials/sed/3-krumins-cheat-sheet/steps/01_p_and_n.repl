@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22
+#> pause: 40
+#> must: # command:  sed -n -f
+#> must: 1 apples 12
+#> must: 8 lemons 22
+#> not: 2 bananas 30
+#> source: 1p
+# 1. The stream model. Sheet: "p" writes to the output stream; "-n" suppresses auto-print.
+# sed reads a line into the pattern space, runs every command, then prints it,
+# unless -n is given. With -n only what you p is printed. 1 and $ are line-number
+# addresses: the first line of input and the last. The inventory is 8 lines.
+# Try: remove the #ARGS line and watch lines 1 and 8 appear twice.
+#ARGS -n
+1p
+$p
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

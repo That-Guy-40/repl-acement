@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: KhAN
+#> pause: 45
+#> must: In XANadu did Kubla Khan
+#> must: In XANadu did Kubla KhAN
+#> must: KhAN Kubla did In XANadu
+#> not: pleasure dome
+#> source: \2 \1
+# 12. First match or all matches, and \1 \2 in the replacement. McMahon 3.2
+# On the line with an X: the first s changes one "an" and prints; the second
+# s finds the remaining "an" (replaced text is never rescanned) and prints
+# again. The third s groups words with \( \) and the replacement reorders
+# them by number, so "In XANadu did Kubla KhAN" comes out reshuffled.
+# Try: add g to the first s and see why the second then prints nothing.
+#ARGS -n
+/X/s/an/AN/p
+/X/s/an/AN/gp
+/X/s/^\(.*\) \(.*\) \(.*\) \(.*\)$/\4 \3 \2 \1/p
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

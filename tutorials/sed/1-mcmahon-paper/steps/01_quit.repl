@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: decree:
+#> pause: 40
+#> must: In Xanadu did Kubla Khan
+#> must: A stately pleasure dome decree:
+#> must: # command:  sed  -f
+#> not: Where Alph
+#> source: 2q
+# 1. sed copies its input to its output, editing on the way. McMahon 1.4: 2q
+# A sed program is a list of commands, [address][function][arguments], applied
+# to every input line in turn. "2q" has one address (line 2) and the function q:
+# quit after writing that line. Everything before it was copied unchanged.
+# The data below is the paper's own sample, five lines of Coleridge; the output
+# pane shows the sed command line, then this script, then the result.
+# Try: change 2q to 4q, then delete the line and save: five lines come through.
+2q
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

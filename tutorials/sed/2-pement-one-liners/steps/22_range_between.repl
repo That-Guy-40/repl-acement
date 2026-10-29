@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 45
+#> must: Iowa
+#> must: Kansas
+#> must: Montana
+#> must: # command:  sed -n -f
+#> not: Alaska
+#> not: Ohio
+#> source: /Iowa/,/Montana/p
+# 22. The section between two patterns. Pement: sed -n '/Iowa/,/Montana/p'
+# Two addresses with a comma are a range: from the first line that matches
+# the first address through the first line after it that matches the second.
+# Line numbers work the same way: sed -n '8,12p', or sed '8,12!d'; the sheet's
+# "beginning at line 3, every 7th line" is GNU's  sed -n '3~7p'.
+# Try: /Iowa/,/Montana/d  prints everything except that section.
+#ARGS -n
+/Iowa/,/Montana/p
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana
+Ohio
+Texas

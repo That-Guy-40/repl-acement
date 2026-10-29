@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Mont@n@
+#> pause: 40
+#> must: Al@b@m@
+#> must: Iowa
+#> must: K@ns@s
+#> not: Iow@
+#> not: ERROR parsing
+#> source: /Iowa/!s
+# 9. Substitute everywhere EXCEPT on lines that match. Pement: sed '/baz/!s/foo/bar/g'
+# An address in front of s limits it to matching lines; ! after the address
+# flips that, so the substitution runs on every line that does not match.
+# Here every "a" becomes "@" except on the Iowa line, which keeps its own.
+# Try: drop the ! and only Iowa changes.
+/Iowa/!s/a/@/g
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

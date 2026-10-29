@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: Ohio
+#> pause: 50
+#> must: Kansas
+#> must: Ohio
+#> must: # command:  sed  -f
+#> not: Alabama
+#> not: Montana
+#> source: t; D
+# 23. Only the duplicated lines, like uniq -d. Pement: sed '$!N; s/^\(.*\)\n\1$/\1/; t; D'
+# N makes a two-line pattern space. \(.*\)\n\1$ matches when the second line
+# repeats the first (\1 is "what the group matched"); s collapses the pair to
+# one copy, t jumps to the end so it prints, and otherwise D drops the first
+# line and tries again with the next. For plain uniq the sheet has
+# sed '$!N; /^\(.*\)\n\1$/!P; D'.
+# Try: the uniq form, and watch each state appear exactly once.
+$!N; s/^\(.*\)\n\1$/\1/; t; D
+
+#DATA
+Alabama
+Kansas
+Kansas
+Montana
+Ohio
+Ohio

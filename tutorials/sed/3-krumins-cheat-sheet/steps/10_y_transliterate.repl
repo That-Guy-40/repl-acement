@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: lEmOns
+#> pause: 40
+#> must: 3 chErrIEs 7
+#> must: 8 lEmOns 22
+#> not: cherries
+#> source: y/aeiou/AEIOU/
+# 10. y. Sheet: "y/source/dest/" transliterates characters in source to the corresponding
+# character in dest. No regex: every a becomes A, every e becomes E, one for one, all
+# at once, on every line. The two lists must be the same length. It is tr inside sed.
+# Try: y/0123456789/##########/ hides the numbers; y/ae/x/ is an error (unequal lengths).
+y/aeiou/AEIOU/
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: mAN
+#> pause: 50
+#> must: In Xanadu did Kubla Khan
+#> must: Where Alph, the sacred river, rAN
+#> must: Through caverns measureless to mAN
+#> not: KhAN
+#> not: XAN
+#> source: b end
+# 19. Flow of control: labels, b and t. McMahon 3.6
+# :name marks a place; b name jumps there (b alone: to the end of the script).
+# t name jumps only if an s has substituted since the last input line or the
+# last t. The loop replaces one "an" per pass until none is left, like the g
+# flag. Line 1 never enters it: /Kubla/b end jumps over, so it is unchanged.
+# Try: delete the /Kubla/ line: now line 1 is changed twice.
+/Kubla/b end
+:again
+s/an/AN/
+t again
+:end
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

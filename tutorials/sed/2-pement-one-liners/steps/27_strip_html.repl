@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Texas
+#> pause: 50
+#> must: Iowa is west of Ohio.
+#> must: Texas
+#> must: # command:  sed  -f
+#> not: <b>
+#> not: <a
+#> source: //ba
+# 27. Remove HTML tags, even ones split over lines. Pement: sed -e :a -e 's/<[^>]*>//g;/</N;//ba'
+# <[^>]*> is "< then anything but > then >": a whole tag, removed everywhere
+# on the line by g. If a < is still left, the tag continues on the next line:
+# N appends it and // (the same pattern, <) sends the loop back to a. The
+# sheet's quote-a-message entries,  s/^/> /  and  s/^> // , work the same way.
+# Try: delete the  /</N;//ba  and see the broken tag survive.
+:a
+s/<[^>]*>//g;/</N;//ba
+
+#DATA
+<b>Iowa</b> is <i>west</i> of <a
+href="ohio.html">Ohio</a>.
+<p>Texas</p>

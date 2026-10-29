@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: sunless sea.
+#> pause: 45
+#> must: In Xanadu did Kubla Khan + A stately pleasure dome decree:
+#> must: Where Alph, the sacred river, ran + Through caverns measureless to man
+#> must: Down to a sunless sea.
+#> not: man + Down
+#> not: decree: + Where
+#> source: $!N
+# 15. N: two input lines in one pattern space. McMahon 1.3, 3.4
+# Ordinarily the pattern space holds one line. N appends the next input line
+# to it, with a newline in between, so a pattern can match across lines and
+# an s can edit the newline itself: \n is that imbedded newline. $!N means
+# "unless this is the last line" (! is explained in step 18); line 5 has no
+# partner, and is written alone. Lines are consumed in pairs: 1+2, 3+4, 5.
+# Try: replace " + " with "\n" to put the two lines back.
+$!N
+s/\n/ + /
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

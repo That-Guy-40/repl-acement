@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alabama Alaska
+#> must: Iowa Kansas
+#> must: Montana
+#> not: Kansas Montana
+#> not: ERROR parsing
+#> source: $!N;s/\n/ /
+# 12. Join lines in pairs, like paste. Pement: sed '$!N;s/\n/ /'
+# N appends the next input line to the pattern space with a newline between;
+# s/\n/ / turns that newline into a space, and the pair is printed as one
+# line. $!N stops N from running on the last line, where there is nothing
+# to append (GNU sed would simply print it; other seds drop it).
+# Try: join triples with  $!N;$!N;s/\n/ /g
+$!N;s/\n/ /
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

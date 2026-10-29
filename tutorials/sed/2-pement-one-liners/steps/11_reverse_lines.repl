@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Alabama
+#> pause: 45
+#> must: Montana
+#> must: Alabama
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: 1!G;h;$!d
+# 11. Reverse the order of lines, like tac. Pement: sed '1!G;h;$!d'
+# Line 1 is held (h). Every later line first appends the hold space to itself
+# (G), so the pattern space is "this line, then everything before it in
+# reverse", then h saves that. $!d deletes all but the last line, which is
+# the whole file upside down. Watch Montana come out first.
+# Try: the sheet's second form,  #ARGS -n  with  1!G;h;$p
+1!G;h;$!d
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

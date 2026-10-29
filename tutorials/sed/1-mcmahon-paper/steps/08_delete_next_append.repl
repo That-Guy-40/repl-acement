@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: sunless sea.
+#> pause: 45
+#> must: XXXX
+#> must: Where Alph, the sacred river, ran
+#> must: Down to a sunless sea.
+#> not: pleasure dome
+#> not: measureless
+#> source: a\
+# 8. d, n and a\: the paper's own example. McMahon 3.1
+# n writes the current line (if it should be) and reads the next one in its
+# place. a\ queues text to be appended after the line. d deletes the line and
+# starts the next cycle at once: no later command runs on the corpse, but the
+# queued XXXX is still written. So lines 1, 3, 5 appear, 2 and 4 become XXXX.
+# Try: delete the n line. Now every line is replaced by XXXX. Why?
+n
+a\
+XXXX
+d
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

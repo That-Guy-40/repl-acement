@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: KHAN
+#> pause: 45
+#> must: In Xanadu did Kubla Khan
+#> must: In Xanadu did Kubla KHAN
+#> must: Down to a sunless sea.
+#> not: pleasure dome
+#> not: Where Alph
+#> source: /KHAN/p
+# 13. p and w write the line as it is at that moment. McMahon 3.3
+# With -n, nothing is written unless p or w says so. /Khan/p writes line 1
+# before the s changes it; /KHAN/p writes it again afterwards, so the same
+# input line appears twice, differently. w <file> writes selected lines to a
+# file (ten files at most; exactly one space after w); $w sends the last line.
+# Try: move /Khan/p below the s line: it no longer matches, so one copy less.
+#ARGS -n
+/Khan/p
+s/Khan/KHAN/
+/KHAN/p
+$w /dev/stdout
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

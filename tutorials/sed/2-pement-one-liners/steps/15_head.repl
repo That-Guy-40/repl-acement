@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Iowa
+#> pause: 40
+#> must: Alabama
+#> must: Iowa
+#> must: # command:  sed  -f
+#> not: Kansas
+#> not: Montana
+#> source: 3q
+# 15. The first N lines, like head. Pement: sed 10q
+# q quits after printing the current line, and 3 is a line-number address:
+# so sed prints lines 1 to 3 and stops reading. sed q (no address) is head -1.
+# On a big file this is fast, because sed never reads past line 3.
+# Try: 3q  versus  3!d  give the same lines; which one reads the whole file?
+3q
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

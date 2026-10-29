@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22 (no a)
+#> pause: 40
+#> must: 3 cherries 7 (no a)
+#> must: 8 lemons 22 (no a)
+#> must: 1 apples 12
+#> not: 1 apples 12 (
+#> source: /a/b
+# 11. b. Sheet: "b label" branches to the label; with no label, to the end of the script.
+# Lines that contain an a branch straight to the end and are printed unchanged.
+# The others fall through to the s///, which tags them. Same as /a/!s/$/ (no a)/,
+# but b scales: everything below it is skipped, however many commands there are.
+# Try: put ":tag" on a line above the s and change b to "b tag": now every line is tagged.
+/a/b
+s/$/ (no a)/
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

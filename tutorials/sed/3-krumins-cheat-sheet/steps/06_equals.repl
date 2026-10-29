@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: 7 kiwis 18
+#> pause: 40
+#> must: # command:  sed -n -f
+#> must: 3 cherries 7
+#> must: 7 kiwis 18
+#> not: 1 apples 12
+#> not: 4 dates
+#> source: {=;p}
+# 6. Line numbers. Sheet: "=" prints the current line number to standard output.
+# = prints the number on its own line, at once, before anything else happens to the
+# line. The braces apply both commands to the lines that match /i/, and -n keeps
+# everything else quiet, so each matching line is preceded by its number.
+# Try: drop the braces and the p, keep -n: just the three numbers.
+#ARGS -n
+/i/{=;p}
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

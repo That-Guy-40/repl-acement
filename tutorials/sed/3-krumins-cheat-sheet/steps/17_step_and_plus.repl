@@ -1,0 +1,27 @@
+#> tool: sedrepl
+#> wait: 6 grapes 40
+#> pause: 45
+#> must: 1 apples 12
+#> must: 4 dates 16
+#> must: 6 grapes 40
+#> not: 2 bananas 30
+#> not: 3 cherries 7
+#> source: 1~3p
+# 17. GNU address forms. Sheet: "first~step" matches every step-th line from first;
+# "addr1,+N" matches addr1 and the N lines after it; "addr1,~N" matches addr1 up to
+# the next line whose number is a multiple of N. 1~3 selects 1, 4, 7; /figs/,+1
+# selects 5 and 6 (kiwis and figs are each printed once: both commands may select them).
+# Try: change /figs/,+1 to /figs/,~4: the range ends at line 8, the next multiple of 4.
+#ARGS -n
+1~3p
+/figs/,+1p
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

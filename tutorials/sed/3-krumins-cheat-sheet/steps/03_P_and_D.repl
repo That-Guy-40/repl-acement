@@ -1,0 +1,26 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22
+#> pause: 40
+#> must: 7 kiwis 18
+#> must: 8 lemons 22
+#> not: 6 grapes 40
+#> not: 1 apples 12
+#> source: $!D
+# 3. P and D work on the first line of a multi-line pattern space. Sheet: "D" deletes
+# up to the newline and restarts the commands without reading a new line.
+# $!N appends the next line unless this is the last; $!D then drops the older of the
+# two and goes round again. The pattern space is a two-line window that slides
+# to the end of the input, where auto-print shows it: tail -2 in four characters.
+# Try: $!N;P;D prints each line once; P prints only the first line of the window.
+$!N
+$!D
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

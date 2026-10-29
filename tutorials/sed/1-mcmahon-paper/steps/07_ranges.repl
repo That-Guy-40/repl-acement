@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: sunless sea.
+#> pause: 45
+#> must: In Xanadu did Kubla Khan
+#> must: A stately pleasure dome decree:
+#> must: Down to a sunless sea.
+#> not: Where Alph
+#> not: measureless
+#> source: /Alph/,/caverns/d
+# 7. Two addresses select a range. McMahon 2.3
+# "addr1,addr2" applies the function from the first line matching addr1 up to
+# and including the next line matching addr2, then starts looking for addr1
+# again. /Alph/,/caverns/d therefore removes lines 3 and 4. A range may mix
+# kinds: 2,/caverns/ or /Alph/,$ work too. One address: just the lines it hits.
+# Try: make it /Alph/,/nowhere/d; an unmatched addr2 runs to the end of input.
+/Alph/,/caverns/d
+
+#DATA
+In Xanadu did Kubla Khan
+A stately pleasure dome decree:
+Where Alph, the sacred river, ran
+Through caverns measureless to man
+Down to a sunless sea.

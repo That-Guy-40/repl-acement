@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 45
+#> must:            Alabama
+#> must:               Iowa
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: ta
+# 7. Right-align text. Pement: sed -e :a -e 's/^.\{1,78\}$/ &/;ta'
+# A loop. :a is a label. The s adds one space in front of any line shorter
+# than 79 characters (& is the whole match); t branches back to a if that
+# substitution succeeded. The loop ends when the line is 79 wide. The width
+# here is 18 so it fits the pane: \{1,17\} is "one to seventeen characters".
+# Try: centre instead with  s/^.\{1,17\}$/ & /  (a space on both sides).
+:a
+s/^.\{1,17\}$/ &/;ta
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

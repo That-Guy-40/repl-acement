@@ -1,0 +1,22 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alabama
+#> must: 4
+#> must: # command:  sed  -f
+#> not: ERROR parsing
+#> source: =
+# 5. Number lines. Pement: sed = filename | sed 'N;s/\n/\t/'
+# = prints the current line number on its own line, before the line itself.
+# The sheet pipes that through a second sed that joins each pair with a tab;
+# here only the first half runs, so the numbers appear above the lines.
+# Count lines instead with  sed -n '$='  (the number of the last line only).
+# Try: #ARGS -n  on the line above  $=  and watch the output shrink to "5".
+=
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

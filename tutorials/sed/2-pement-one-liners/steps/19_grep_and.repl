@@ -1,0 +1,21 @@
+#> tool: sedrepl
+#> wait: Kansas
+#> pause: 40
+#> must: Kansas
+#> must: # command:  sed  -f
+#> not: Montana
+#> not: Alabama
+#> source: /an/!d; /as/!d
+# 19. Lines that match AAA and BBB, in any order. Pement: sed '/AAA/!d; /BBB/!d'
+# Each !d deletes a line that lacks one of the words, so only lines with both
+# survive: Kansas has both "an" and "as"; the others have one at most. For
+# "either" (grep -E 'AAA|BBB') the GNU form is  /AAA\|BBB/!d
+# Try: /an.*as/!d  demands the order too; Kansas still passes.
+/an/!d; /as/!d
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

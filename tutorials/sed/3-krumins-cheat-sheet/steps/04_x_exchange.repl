@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: 7 kiwis 18
+#> pause: 40
+#> must: 1 apples 12
+#> must: 7 kiwis 18
+#> not: 8 lemons 22
+#> source: x
+# 4. The hold buffer column. Sheet: "x" exchanges the hold buffer and the pattern buffer.
+# The hold buffer starts empty. On line 1, x puts "1 apples 12" into it and prints the
+# empty hold buffer: the blank first line. Every later line prints the previous one.
+# The last line goes into the hold buffer and is never printed: lemons are missing.
+# h/H copy into the hold buffer, g/G copy out of it; x is the only one that swaps.
+# Try: add a line "$G" below x to get the last line back, after an empty line.
+x
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22

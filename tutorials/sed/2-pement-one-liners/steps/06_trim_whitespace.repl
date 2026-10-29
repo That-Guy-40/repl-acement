@@ -1,0 +1,25 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Alabama|
+#> must: Kansas|
+#> must: # command:  sed  -f
+#> not: Iowa  |
+#> not: Alabama   |
+#> not: ERROR parsing
+#> source: s/^[ \t]*//
+# 6. Trim leading and trailing whitespace. Pement: sed 's/^[ \t]*//;s/[ \t]*$//'
+# Two substitutions: ^[ \t]* is any run of spaces or tabs at the start of the
+# line, [ \t]*$ the same at the end; both are replaced by nothing. GNU sed
+# understands \t; older seds need a real tab inside the brackets. The third
+# command marks the new line end with | so you can see the trailing run went.
+# Try: delete the third command and the ends are invisible again.
+s/^[ \t]*//;s/[ \t]*$//
+s/$/|/
+
+#DATA
+   Alabama   
+	Alaska
+  Iowa  
+Kansas	
+    Montana

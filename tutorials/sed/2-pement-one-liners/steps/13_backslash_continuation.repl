@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: sea
+#> pause: 45
+#> must: In Xanadu did Kubla Khan a stately pleasure dome decree
+#> must: Down to a sunless sea.
+#> not: Khan \
+#> not: ERROR parsing
+#> source: s/\\\n//
+# 13. Join lines that end in a backslash. Pement: sed -e :a -e '/\\$/N; s/\\\n//; ta'
+# When the line ends in \ (written \\ because \ is special), N pulls in the
+# next line, s removes the backslash and the newline between them, and t
+# loops back in case the joined line also ends in a backslash.
+# Try: delete the  ta  and a run of three continued lines joins only two.
+:a
+/\\$/N; s/\\\n//; ta
+
+#DATA
+In Xanadu did Kubla Khan \
+a stately pleasure dome decree
+Where Alph, \
+the sacred river, \
+ran
+Down to a sunless sea.

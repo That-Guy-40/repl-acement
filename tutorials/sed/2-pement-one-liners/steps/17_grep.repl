@@ -1,0 +1,24 @@
+#> tool: sedrepl
+#> wait: Montana
+#> pause: 40
+#> must: Kansas
+#> must: Montana
+#> must: # command:  sed -n -f
+#> not: Alabama
+#> not: Iowa
+#> source: /an/p
+# 17. Print only matching lines, like grep. Pement: sed -n '/regexp/p'
+# -n (the #ARGS line) switches off the automatic print at the end of every
+# cycle, so only lines that reach the p command appear. The equivalent
+# without -n is  sed '/regexp/!d'. For grep -v use  /regexp/d  (or -n with !p).
+# Try: change the #ARGS line to  #ARGS  (nothing) and every line prints, the
+#      matches twice.
+#ARGS -n
+/an/p
+
+#DATA
+Alabama
+Alaska
+Iowa
+Kansas
+Montana

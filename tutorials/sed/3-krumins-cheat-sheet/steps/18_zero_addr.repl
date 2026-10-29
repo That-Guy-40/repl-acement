@@ -1,0 +1,23 @@
+#> tool: sedrepl
+#> wait: 8 lemons 22
+#> pause: 45
+#> must: 2 bananas 30
+#> must: 8 lemons 22
+#> not: 1 apples 12
+#> source: 0,/a/d
+# 18. 0,addr2. Sheet: start out in the "matched first address" state, until addr2 is
+# found. A range 1,/a/ begins on line 1 and looks for /a/ only from line 2 on, so it
+# would delete apples AND bananas. 0,/a/ lets line 1 itself end the range: the first
+# line with an a, whatever its number, is the whole range. Only apples is deleted.
+# Try: change 0 to 1 and watch bananas disappear as well.
+0,/a/d
+
+#DATA
+1 apples 12
+2 bananas 30
+3 cherries 7
+4 dates 16
+5 figs 25
+6 grapes 40
+7 kiwis 18
+8 lemons 22
