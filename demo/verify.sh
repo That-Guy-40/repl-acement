@@ -13,14 +13,16 @@
 ##  capture and must fail: an all-PASS result from checks that can't fail is
 ##  worthless.
 ##
-##  Usage: demo/verify.sh [--steps 1,4,9] [--keep]
+##  Usage: demo/verify.sh [--dir DIR] [--steps 1,4,9] [--keep]
+##    --dir DIR   verify another step directory (default demo/steps)
 ##
 set -uo pipefail
 DEMO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 
-ONLY='' KEEP=0
+ONLY='' KEEP=0 STEPS_DIR="$DEMO_DIR/steps"
 while (( $# )); do
     case $1 in
+        --dir)   STEPS_DIR=$(cd "$2" && pwd -P) || exit 2; shift ;;
         --steps) ONLY=$2; shift ;;
         --keep)  KEEP=1 ;;
         *) echo "verify.sh: unknown option: $1" >&2; exit 2 ;;
@@ -50,14 +52,14 @@ if ! contains "$CAP/selfcheck" "beta"; then
 fi
 
 # --- run the demo headless ---------------------------------------------------
-args=(--fast --no-attach --capture "$CAP" --socket "demo-verify-$$")
+args=(--fast --no-attach --capture "$CAP" --socket "demo-verify-$$" --dir "$STEPS_DIR")
 [[ -n "$ONLY" ]] && args+=(--steps "$ONLY")
-echo "==> playing the demo headless"
+echo "==> playing $STEPS_DIR headless"
 bash "$DEMO_DIR/play.sh" "${args[@]}"
 echo "    play.sh exit status: $?"
 
 # --- check every step --------------------------------------------------------
-for f in "$DEMO_DIR"/steps/[0-9][0-9]_*.repl; do
+for f in "$STEPS_DIR"/[0-9][0-9]_*.repl; do
     base=$(basename "$f" .repl); num=${base%%_*}
     if [[ -n "$ONLY" ]]; then
         n=$((10#$num)); [[ ",$ONLY," == *",$n,"* ]] || continue

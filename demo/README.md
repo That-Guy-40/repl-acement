@@ -29,6 +29,8 @@ any time leaves early. Useful knobs:
 
 | Option / variable | Effect |
 |-------------------|--------|
+| `--dir DIR` | play another step directory (the AWK tutorials under `tutorials/awk/` use this) |
+| `--interactive` | step by step: F5 advances, and between steps the editor is yours to edit and save in (`DEMO_NEXT_KEY` changes the key) |
 | `--steps 1,4,9` | play only those steps |
 | `DEMO_PAUSE_SCALE=0.5` | halve every narration pause (default pauses add up to about 9 min) |
 | `DEMO_TYPE_DELAY=0` | no typing animation |
