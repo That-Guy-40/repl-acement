@@ -16,6 +16,7 @@
 ##    demo/play.sh --steps 1,4,9        only those step numbers
 ##    demo/play.sh --fast --no-attach --capture DIR
 ##                                      headless, no pauses: what verify.sh runs
+##    demo/play.sh --no-preamble        don't type the one-line pane guide above each step
 ##
 ##  Step file format (NN_*.repl):
 ##    #> tool: awkrepl          which REPL (window name == command name)
@@ -36,7 +37,7 @@ CSV="$DEMO_DIR/data/transactions.csv"
 REAL="$DEMO_DIR/data/real/creditcard.csv"
 
 STEPS_DIR="$DEMO_DIR/steps"
-FAST=0 ATTACH=1 INTERACTIVE=0 CAPTURE='' SOCK="demo-$$" ONLY='' SIZE=200x50
+FAST=0 ATTACH=1 INTERACTIVE=0 PREAMBLE=1 CAPTURE='' SOCK="demo-$$" ONLY='' SIZE=200x50
 TYPE_DELAY=${DEMO_TYPE_DELAY:-0.02}      # seconds per typed character
 PAUSE_SCALE=${DEMO_PAUSE_SCALE:-1}       # multiplier on each step's pause
 NEXT_KEY=${DEMO_NEXT_KEY:-F5}            # interactive mode: key that advances
@@ -49,6 +50,7 @@ while (( $# )); do
         --fast)        FAST=1; TYPE_DELAY=0; PAUSE_SCALE=0 ;;
         --no-attach)   ATTACH=0 ;;
         --interactive) INTERACTIVE=1 ;;
+        --no-preamble) PREAMBLE=0 ;;
         --capture)     CAPTURE=$2; shift ;;
         --socket)      SOCK=$2; shift ;;
         --steps)       ONLY=$2; shift ;;
@@ -131,8 +133,24 @@ open_tool() {
     type_text demo:shell "$tool"
     T send-keys -t demo:shell Enter
     wait_for 20 window_open "$tool" || { log "FAIL: $tool window did not open"; return 1; }
+    # label the pane borders, so the layout explains itself between steps
+    T select-pane -t "demo:$tool.0" -T "EDITOR: edit here, save (:w) to run"
+    T select-pane -t "demo:$tool.1" -T "OUTPUT: re-runs on every save"
+    T select-pane -t "demo:$tool.2" -T "SOURCE: $(source_label "$tool")"
     sleep 1.5                       # vim up, entr armed
     CUR=$tool
+}
+
+# source_label TOOL — what the bottom-right pane shows for TOOL
+source_label() { [[ $1 == awkrepl ]] && echo "the program as gawk parsed it" || echo "the program, highlighted"; }
+
+# preamble TOOL — the one-line pane guide typed above every step (a comment,
+# so every tool ignores it; awkrepl and yqrepl strip it, the others echo it)
+preamble() {
+    local right; right=$(source_label "$1")
+    local line="# Panes: edit here, save to run | below left: output | below right: $right"
+    (( INTERACTIVE )) && line+=" | $NEXT_KEY: next step"
+    printf '%s' "$line"
 }
 
 quit_tool() {
@@ -190,6 +208,7 @@ run_step() {
     # empty last line, which Miller reads as a one-field data row
     pasted=${pasted%$'\n'}
     [[ -z "$pasted" ]] && typed=${typed%$'\n'}
+    (( PREAMBLE )) && typed="$(preamble "$tool")"$'\n'"$typed"
 
     local ed="demo:$tool.0" before
     before=$(pane_text "$tool.1")
@@ -272,6 +291,8 @@ T new-session -d -s demo -n shell -x "${SIZE%x*}" -y "${SIZE#*x}" -c "$REPO" \
          EDITOR=$(printf '%q' "vim -u $DEMO_DIR/vimrc") PATH=$(printf '%q' "$PATH_D") \
          PS1='\$ ' bash --norc --noprofile" || exit 1
 T set -g status-left ' ' >/dev/null
+T set -g pane-border-status top >/dev/null
+T set -g pane-border-format ' #{pane_title} ' >/dev/null
 status_line "repl-acement: $(basename "$(dirname "$STEPS_DIR")")/$(basename "$STEPS_DIR")"
 if (( INTERACTIVE )); then
     T bind-key -n "$NEXT_KEY" run-shell "touch $(printf '%q' "$NEXT_FLAG")" >/dev/null

@@ -92,6 +92,12 @@ for f in "$STEPS_DIR"/[0-9][0-9]_*.repl; do
     else
         fail "editor pane does not show the title '${title:0:60}'" "$(head -3 "$CAP/$num.editor" | tr '\n' '|')"
     fi
+    # editor pane: the one-line pane guide the driver types above the title
+    if contains "$CAP/$num.editor" "# Panes: edit here, save to run | below left: output | below right:"; then
+        pass "editor pane shows the pane guide"
+    else
+        fail "editor pane lacks the pane guide" "$(head -2 "$CAP/$num.editor" | tr '\n' '|')"
+    fi
     # output pane
     for m in "${musts[@]+"${musts[@]}"}"; do
         if contains "$CAP/$num.output" "$m"; then pass "output has: $m"
