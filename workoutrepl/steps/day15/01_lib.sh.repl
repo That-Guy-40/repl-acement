@@ -1,0 +1,34 @@
+# day 15 · piece 1 of 1 — lib.sh: five functions, meant to be sourced
+#
+# Two rules the checker enforces: every working variable is `local` (it diffs the
+# global namespace before and after calling you), and a function returns DATA on
+# stdout or a STATUS via return — never both by accident. The #RUN sources the file
+# into a fresh bash and calls each function; the stubs below all do nothing, so every
+# line comes back empty and `contains z` wrongly reports 0. Fill them in one at a time
+# and save after each — the OUTPUT pane is your unit test, the CHECK pane the grader.
+#DAY 15
+#FILE lib.sh
+#RUN bash -c '. ./lib.sh; printf "join_by , a b c      -> [%s]\n" "$(join_by , a b c)"; printf "max 3 17 -4 9        -> [%s]\n" "$(max 3 17 -4 9)"; max; printf "max (no args)        -> rc=%s\n" "$?"; printf "trim \"  hi there  \"   -> [%s]\n" "$(trim "  hi there  ")"; contains b a b c; printf "contains b a b c     -> rc=%s\n" "$?"; contains z a b c; printf "contains z a b c     -> rc=%s\n" "$?"; echo "count_words < words.txt:"; count_words < words.txt'
+# lib.sh — source me:  . ./lib.sh
+# every working variable `local`; data on stdout, status via return
+join_by() {                       # join_by SEP ITEM...  → a,b,c  (no trailing SEP)
+    :
+}
+max() {                           # max N...  → the largest; no args → print nothing, return 1
+    :
+}
+trim() {                          # trim STR  → STR without leading/trailing blanks — parameter expansion only
+    :
+}
+contains() {                      # contains NEEDLE ITEM...  → status 0 if found, else 1; prints nothing
+    :
+}
+count_words() {                   # stdin → `word count` lines sorted by word — declare -A, then sort
+    :
+}
+#> out: contains z a b c     -> rc=0
+#> out: join_by , a b c      -> []
+#> out-not: join_by , a b c      -> [a,b,c]
+#> check: [BAD] join_by , a b c: expected
+#> check: [BAD] contains z a b c: expected
+#> check-not: PASS: day 15

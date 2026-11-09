@@ -1,0 +1,14 @@
+# day 9 · piece 3 of 4 — names.txt: a line range
+#
+# `-n` turns off automatic printing; an address range `3,5` with the `p` command prints
+# only those lines. The skeleton prints everything.
+#DAY 9
+#FILE names.sh
+#RUN bash ./names.sh; echo '--- names.txt:'; cat names.txt
+#!/usr/bin/env bash
+sed '' hosts.txt             # ← -n plus an address range and p; write names.txt
+#> out: # ip	hostname
+#> out: names.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: names.txt (lines 3-5) is missing
+#> check-not: PASS: day 09

@@ -1,0 +1,25 @@
+# day 18 · piece 2 of 3 — graceful.sh: a TERM handler that leaves things tidy
+#
+# The skeleton writes its pidfile and loops forever; on SIGTERM it just dies, so the
+# pidfile stays behind and nothing says goodbye. Add, before the loop:
+#     trap 'echo "shutting down"; rm -f run/pidfile; exit 143' TERM
+# and keep the sleep SHORT or backgrounded (`sleep 0.2 & wait $!`): a trap runs only
+# when the foreground command returns, and `wait` is interruptible where `sleep` is
+# not. The #RUN starts the script, waits for the pidfile, TERMs that PID (never a
+# name), and shows the exit status and what is left in run/.
+#DAY 18
+#FILE graceful.sh
+#RUN rm -f run/pidfile; ./graceful.sh & p=$!; for i in $(seq 1 30); do [ -s run/pidfile ] && break; sleep 0.1; done; kill -TERM "$p"; wait "$p"; echo "rc=$?"; echo '--- left in run/:'; ls -A run
+#!/usr/bin/env bash
+# graceful.sh — run until SIGTERM, then clean up and exit 143
+set -u
+mkdir -p run
+echo $$ > run/pidfile
+# ← the TERM trap goes here
+while :; do sleep 0.2; done
+#> out: rc=143
+#> out: pidfile
+#> out-not: shutting down
+#> check: graceful.sh did not print 'shutting down' on TERM
+#> check: run/pidfile still exists after TERM
+#> check-not: PASS: day 18

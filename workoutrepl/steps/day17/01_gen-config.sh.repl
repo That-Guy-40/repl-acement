@@ -1,0 +1,25 @@
+# day 17 · piece 1 of 3 — gen-config.sh: a here-document that is half template, half program
+#
+# An UNQUOTED delimiter (<<CONF) expands everything inside: $name and $port, which you
+# want — and $HOME and $(hostname), which must stay literal. Watch the OUTPUT pane: the
+# skeleton's web.conf has your home directory and host name in it. Escape the two with
+# a backslash (\$HOME, \$(hostname)), or split into two here-docs with the second one's
+# delimiter quoted (<<'CONF'), which expands nothing.
+#DAY 17
+#FILE gen-config.sh
+#RUN rm -f web.conf; ./gen-config.sh web 8080; echo "rc=$?"; echo '--- web.conf:'; cat web.conf
+#!/usr/bin/env bash
+set -euo pipefail
+name=${1:?NAME} port=${2:?PORT}
+cat > "$name.conf" <<CONF
+# generated for $name
+name = $name
+port = $port
+home = $HOME
+host = $(hostname)
+CONF
+#> out: home = /
+#> out: name = web
+#> out-not: home = $HOME
+#> check: web.conf (interpolated AND literal) differs from the expected content
+#> check-not: PASS: day 17

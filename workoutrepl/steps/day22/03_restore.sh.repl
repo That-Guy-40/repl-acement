@@ -1,0 +1,16 @@
+# day 22 · piece 3 of 5 — restore/: extract somewhere else, with modes intact
+#
+# -C restore extracts under restore/ instead of here; -p restores the recorded
+# permission bits instead of applying your umask (deploy.sh must come back 755 and
+# secret.key 600). The skeleton forgets -C, so it unpacks over ./site and restore/
+# stays empty.
+#DAY 22
+#FILE restore.sh
+#RUN bash ./restore.sh; echo '--- restore/:'; find restore | LC_ALL=C sort; stat -c '%a %n' restore/site/bin/deploy.sh restore/site/config/secret.key
+#!/usr/bin/env bash
+mkdir -p restore
+tar -xpzf site.tar.gz                    # ← -C restore
+#> out: No such file or directory
+#> out-not: 755 restore/site/bin/deploy.sh
+#> check: restore/site/bin/deploy.sh is missing
+#> check-not: PASS: day 22

@@ -1,0 +1,23 @@
+# day 6 · piece 1 of 3 — pipeline.sh: a script that knows when it failed
+#
+# This is the PROVIDED script, verbatim. Run as-is on a file that does not exist it
+# prints grep's complaint and exits 0, because a pipeline's status is its LAST command's
+# and head is content. Two lines fix it:
+#     set -o pipefail                        the pipeline fails if ANY stage fails
+#     trap '…' ERR                           runs on a failing command: print
+#                                            "ERROR: line $LINENO: $BASH_COMMAND" to stderr
+# On data.log it must still print the first 3 sorted ERROR lines and exit 0 — use
+# LC_ALL=C sort so the order is the one the checker expects. The #RUN runs both cases.
+#DAY 6
+#FILE pipeline.sh
+#RUN ./pipeline.sh data.log; echo "exit=$?"; echo '--- a missing file:'; ./pipeline.sh no-such.log; echo "exit=$?"
+#!/usr/bin/env bash
+# print the first three ERROR lines of $1, sorted
+grep ERROR "$1" | sort | head -3
+#> out: ERROR disk full on /dev/sda
+#> out: No such file or directory
+#> out: exit=0
+#> out-not: ERROR: line
+#> out-not: exit=2
+#> check: pipeline.sh on a missing file exits 0
+#> check-not: PASS: day 06

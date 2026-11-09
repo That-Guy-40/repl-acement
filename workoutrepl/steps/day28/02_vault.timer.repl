@@ -1,0 +1,20 @@
+# day 28 · boss battle, piece 2 of 3 — vault.timer: daily at midnight
+#
+# The checker normalises your OnCalendar and wants `*-*-* 00:00:00`. The skeleton
+# says hourly — the #RUN shows what systemd makes of it.
+#DAY 28
+#FILE vault.timer
+#RUN systemd-analyze calendar "$(sed -n 's/^OnCalendar=//p' vault.timer)"
+[Unit]
+Description=Daily vault snapshot
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+#> out: Normalized form: *-*-* *:00:00
+#> out-not: Normalized form: *-*-* 00:00:00
+#> check: OnCalendar 'hourly' normalises to: expected
+#> check-not: PASS: day 28

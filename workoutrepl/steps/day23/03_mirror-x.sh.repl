@@ -1,0 +1,13 @@
+# day 23 · piece 3 of 4 — mirror-x/: contents, minus the junk
+#
+# --exclude='*.tmp' and --exclude='cache/' (the slash: directories only). -a keeps
+# the executable bit on bin/run.sh. The skeleton copies the junk too.
+#DAY 23
+#FILE mirror-x.sh
+#RUN rm -rf mirror-x; bash ./mirror-x.sh; echo '--- mirror-x/:'; find mirror-x | LC_ALL=C sort
+#!/usr/bin/env bash
+rsync -a src/ mirror-x/                  # ← two --exclude= flags
+#> out: mirror-x/scratch.tmp
+#> out: mirror-x/cache
+#> check: mirror-x/ (no *.tmp, no cache/) differs from the expected tree
+#> check-not: PASS: day 23

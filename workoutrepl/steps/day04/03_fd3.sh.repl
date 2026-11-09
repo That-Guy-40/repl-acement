@@ -1,0 +1,19 @@
+# day 4 · piece 3 of 3 — fd3.sh: open a file yourself, on a descriptor you choose
+#
+# `exec 3>fd3.txt` opens fd3.txt ONCE and keeps it open on fd 3 for the rest of the
+# script; every `>&3` then appends to it with no reopen; `exec 3>&-` closes it. The
+# skeleton writes the three words to stdout instead — the #RUN shows the exit status
+# and then the file, so you can see the moment it stops being missing.
+#DAY 4
+#FILE fd3.sh
+#RUN rm -f fd3.txt; ./fd3.sh; echo "exit=$?"; echo '--- fd3.txt:'; cat fd3.txt
+#!/usr/bin/env bash
+# open fd3.txt on fd 3 here (exec), send each line through >&3, then close fd 3
+printf '%s\n' one
+printf '%s\n' two
+printf '%s\n' three
+#> out: exit=0
+#> out: fd3.txt: No such file or directory
+#> out-not: three$
+#> check: fd3.txt (written through fd 3) is missing
+#> check-not: PASS: day 04

@@ -1,0 +1,13 @@
+# day 13 · piece 5 of 6 — doubled.txt: a backreference
+#
+# ([a-z]+) captures a word; \1 demands the same text again after a space; \b on both
+# sides keeps `the theory` from matching. The skeleton has no backreference at all.
+#DAY 13
+#FILE doubled.sh
+#RUN bash ./doubled.sh; echo '--- doubled.txt:'; cat doubled.txt
+#!/usr/bin/env bash
+grep -E '[a-z]+ [a-z]+' input.txt        # ← capture the first word and demand it again with \1; write doubled.txt
+#> out: doubled.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: doubled.txt (backreference) is missing
+#> check-not: PASS: day 13

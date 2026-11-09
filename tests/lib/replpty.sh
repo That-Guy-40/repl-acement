@@ -54,7 +54,7 @@
 #   repl_scratch_count PREFIX            REPL temp files named PREFIX* in $TMPDIR
 #   repl_attach NAME SESSION             new terminal NAME attached to SESSION
 #   repl_sample TOOL N                   a small program (+ #DATA) for TOOL
-#                                        (awk sed jq yq mlr perl) printing M<N>-x
+#                                        (awk sed jq yq mlr perl workout) printing M<N>-x
 #   repl_cleanup                         stop every session; kill inner servers
 #
 #   assert_screen_contains NAME TEXT MSG       checks screen + scrollback
@@ -144,6 +144,8 @@ repl_sample() {
         yq)   printf '"M%s-" + .a\n\n#DATA\na: x\n' "$n" ;;
         mlr)  printf '$m = "M%s-" . $a;\n\n#DATA\na,b\nx,y\n' "$n" ;;
         perl) printf 'print "M%s-$_"\n\n#DATA\nx\n' "$n" ;;
+        # workoutrepl: a day-1 piece; the default command is `bash ./m.sh` in the fixture
+        workout) printf '#DAY 1\n#FILE m.sh\necho "M%s-"x\n' "$n" ;;
     esac
 }
 

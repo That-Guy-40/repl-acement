@@ -1,0 +1,21 @@
+# day 26 · piece 4 of 4 — with-lock.sh: two of you must never run at once
+#
+# `exec 9> run/lock` opens the lock file on fd 9; `flock -n 9` takes an exclusive lock
+# without waiting — it fails immediately if another process holds one. On failure:
+# `already running` on stderr, exit 75 (EX_TEMPFAIL: try again later). On success run
+# "$@" and exit with ITS status. The #RUN holds the lock from a background flock and
+# runs your script against it; the skeleton has no lock at all, so it happily runs.
+#DAY 26
+#FILE with-lock.sh
+#RUN mkdir -p run; flock run/lock sleep 2 & sleep 0.3; ./with-lock.sh echo hello; echo "rc=$?   (another instance holds the lock: this should have been refused on stderr with rc=75)"; wait
+#!/usr/bin/env bash
+# with-lock.sh CMD... — run CMD under a non-blocking lock on run/lock
+set -uo pipefail
+mkdir -p run
+# ← exec 9> run/lock; flock -n 9 || { echo 'already running' >&2; exit 75; }
+"$@"
+#> out: hello
+#> out: rc=0
+#> out-not: already running
+#> check: with-lock.sh while another holds the lock exits EX_TEMPFAIL: expected 75
+#> check-not: PASS: day 26

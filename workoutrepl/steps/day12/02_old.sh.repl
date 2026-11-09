@@ -1,0 +1,14 @@
+# day 12 · piece 2 of 6 — old.txt: a file as a timestamp
+#
+# -newer REF is true for files modified AFTER tree/REF; `! -newer` is "on or before".
+# REF itself satisfies that, so exclude it with `! -path tree/REF`. The skeleton has
+# the sense backwards.
+#DAY 12
+#FILE old.sh
+#RUN bash ./old.sh; echo '--- old.txt:'; cat old.txt
+#!/usr/bin/env bash
+find tree -type f -newer tree/REF        # ← negate it, exclude REF, sort, write old.txt
+#> out: old.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: old.txt (not newer than REF
+#> check-not: PASS: day 12

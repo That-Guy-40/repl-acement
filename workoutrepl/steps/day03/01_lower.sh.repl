@@ -1,0 +1,30 @@
+# day 3 · piece 1 of 1 — lower.sh: rename eleven hostile names without losing one
+#
+# messy/ holds names with a space, a tab, a NEWLINE, a leading `--`, a literal $HOME,
+# a `*`, a `[1]` and a dot-file. Each file's content is its own original name, so the
+# checker can tell a lost file from a renamed one. The scaffold below has the safe
+# skeleton — set -euo pipefail, the usage check — and four numbered comments where the
+# loop goes. Replace the two placeholder lines at the bottom with the loop.
+#
+# The #RUN runs it on messy/ and lists what is there; `ls -A` shows a newline-named
+# file as two lines, which is exactly why you never loop over `ls`. Already renamed?
+# Running again must change nothing — a lower-case name is skipped.
+#DAY 3
+#FILE lower.sh
+#RUN ./lower.sh messy; echo "exit=$?"; echo '--- messy/ now:'; ls -A messy
+#!/usr/bin/env bash
+# lower.sh DIR — lower-case the names of the regular files directly inside DIR
+set -euo pipefail
+dir=${1:?usage: lower.sh DIR}
+# 1. loop over "$dir"/* with `shopt -s dotglob nullglob` — never over $(ls)
+# 2. skip anything that is not a regular file:  [[ -f "$f" ]] || continue
+# 3. base=${f##*/}; new=${base,,}; skip when they are already equal
+# 4. mv -n -- "$f" "$dir/$new"     (-- protects the name that starts with --)
+echo "lower.sh: not written yet — $dir untouched" >&2
+exit 1
+#> out: not written yet
+#> out: exit=1
+#> out: Mixed Case Dir
+#> out-not: exit=0
+#> check: lower.sh exited non-zero on a fresh copy of the fixture
+#> check-not: PASS: day 03

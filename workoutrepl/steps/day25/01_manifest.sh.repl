@@ -1,0 +1,20 @@
+# day 25 · piece 1 of 2 — manifest.sh: digests with portable paths
+#
+# A manifest is only useful if it can be checked somewhere else, so the paths must be
+# RELATIVE to DIR: cd into it and find from `.`, then strip the `./` sha256sum leaves
+# in front of each name (sha256sum -c must still be able to read it: digest, two
+# spaces, path). Sort with -z over NUL-separated names so a newline in a filename can
+# never split a line. The skeleton prints paths with the tree/ prefix, in find order.
+#DAY 25
+#FILE manifest.sh
+#RUN ./manifest.sh tree
+#!/usr/bin/env bash
+# manifest.sh DIR — sha256 of every regular file, paths relative to DIR, sorted
+set -euo pipefail
+dir=${1:?usage: manifest.sh DIR}
+find "$dir" -type f -print0 | xargs -0 sha256sum       # ← cd first, find ., sort -z, strip the ./
+#> out:   tree/
+#> out-not:   a/one.txt
+#> check: verify.sh is missing
+#> check: FAIL: day 25
+#> check-not: PASS: day 25

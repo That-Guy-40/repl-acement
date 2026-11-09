@@ -17,8 +17,10 @@ REPL except awkrepl, the source as well.
 | [yq](yqrepl/)  | `yqrepl`  | YAML/JSON/TOML filtering (Mike Farah's yq) |
 | [mlr](mlrrepl/) | `mlrrepl` | Tabular/CSV data processing with Miller |
 | [Perl](perlrepl/) | `perlrepl` | The punchline awkrepl's README set up |
+| [the 30-day workout](workoutrepl/) | `workoutrepl` | Not a text tool: a save writes the piece you are editing into a graded fixture, runs it, and re-grades the day |
 
-All six share the same file conventions:
+The six tool REPLs share the same file conventions (`workoutrepl` has headers of
+its own, listed after them):
 
 - Lines after a `#DATA` line are supplied as input to the tool. `#DATA` must
   be alone on its line (optionally followed by a colon and/or whitespace). It
@@ -69,6 +71,17 @@ working directory. An unmatched quote (e.g. `#ARGS -v msg=it's`) prints a
 warning in the output pane, and the arguments are then split on whitespace with
 the quote characters kept as typed (still without globbing).
 
+**`workoutrepl`** grades a *fixture* instead of running a tool, so its file
+names a day and a file: `#DAY 7`, `#FILE tidy.sh`, an optional `#RUN cmd`
+(default `bash ./FILE` for a `.sh`), `#MODE`, `#TIMEOUT` and `#FRESH yes`; the
+body after the last header is written into `~/workout/day07/tidy.sh`, run, and
+the right-hand pane re-grades the day. Its headers are `#KEY` with no space after
+the `#`, because a lesson's narration is full of lines like `# Run it`; `#DATA`
+works as in the others. The trainer and the thirty drills it grades with are
+vendored under [`workoutrepl/workout/`](workoutrepl/workout/) (MIT, from the
+[mklab](https://github.com/That-Guy-40/mklab) repository), and
+`workoutrepl/walk.sh` types each day's lesson into the editor piece by piece.
+
 **`yq` flavor**: `yqrepl` requires [Mike Farah's Go `yq`][yq-mf]. The unrelated
 Python `yq` (a jq wrapper) uses a different grammar; `yqrepl` detects it and
 refuses to launch with a clear message rather than failing cryptically.
@@ -93,7 +106,7 @@ Demo and tutorials
 ------------------
 
 - [`demo/`](demo/): a self-running 15-minute fraud-triage demo that plays
-  one dataset through all six REPLs (`demo/play.sh`), verified pane by
+  one dataset through the six tool REPLs (`demo/play.sh`), verified pane by
   pane with `demo/verify.sh`.
 - [`tutorials/awk/`](tutorials/awk/): three step-by-step AWK tutorials
   that run inside `awkrepl`, built on Pement's one-liners, the Grymoire
@@ -102,6 +115,10 @@ Demo and tutorials
 - [`tutorials/sed/`](tutorials/sed/): the same for sed, inside `sedrepl`:
   McMahon's original 1978 paper, Pement's sed one-liners and Krumins' sed
   cheat sheet, each verified the same way.
+- [`workoutrepl/`](workoutrepl/): the 30-day workout's thirty lessons, each
+  split into graded pieces that `workoutrepl/walk.sh --day N` types into the
+  editor pane (F5 next piece, F4 previous); `workoutrepl/verify.sh` proves every
+  skeleton shows its defect and every reference passes.
 
 
 Requirements
@@ -111,6 +128,9 @@ Requirements
 - tmux
 - [entr](http://eradman.com/entrproject/)
 - the relevant tool (`gawk`, `sed`, `jq`, [Mike Farah's `yq`][yq-mf], `mlr`, `perl`)
+- for `workoutrepl`: `timeout` (coreutils), and whatever the drill you are on
+  grades with (`gawk`, `rsync`, `shellcheck`, `systemd-analyze`, `flock`, …); a
+  checker whose tool is missing reports `UNKNOWN` by name
 - `sed` (every REPL uses it to split the file at `#DATA`/`#ARGS`)
 - `perl` only for `perlrepl` itself, and for `make help` (the root and every
   subproject `Makefile` use it to list the targets)
@@ -131,6 +151,7 @@ cd jqrepl   && make test
 cd yqrepl   && make test
 cd mlrrepl  && make test
 cd perlrepl && make test
+cd workoutrepl && make test
 ```
 
 Each suite's dependency check fails if its tool, `tmux`, `entr` or `xargs` is
@@ -170,6 +191,12 @@ This collection is based on [awkrepl](https://github.com/ernstki/awkrepl) by
 **Kevin Ernst** — the original REPL concept, three-pane tmux layout,
 `#DATA`/`#ARGS` file convention, and entr-based event loop all originate
 there. Visit the original repo: <https://github.com/ernstki/awkrepl>
+
+The seventh REPL's subject, the 30-day Linux command-line workout (trainer,
+drills and lesson pieces under `workoutrepl/`), is from the
+[mklab](https://github.com/That-Guy-40/mklab) repository's
+`examples/linux-30-day-command-line-workout/` (MIT; provenance in
+[`workoutrepl/workout/README.md`](workoutrepl/workout/README.md)).
 
 
 License

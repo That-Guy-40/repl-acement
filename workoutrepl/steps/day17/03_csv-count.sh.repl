@@ -1,0 +1,19 @@
+# day 17 · piece 3 of 3 — csv-count.sh: split a string into an array, no forks
+#
+# `read -ra arr <<<"$string"` splits on IFS into an array — but IFS is whitespace unless
+# you say otherwise, so the skeleton splits `a,b b,c` into two fields at the space.
+# Prefix the read with IFS=, (a per-command assignment) and it splits on commas, keeping
+# the space inside `b b`. ${#arr[@]} is the count; printf repeats its format per argument.
+#DAY 17
+#FILE csv-count.sh
+#RUN echo "--- FIELDS='a,b b,c':"; FIELDS='a,b b,c' ./csv-count.sh; echo "--- FIELDS=solo:"; FIELDS=solo ./csv-count.sh
+#!/usr/bin/env bash
+set -euo pipefail
+read -ra fields <<<"${FIELDS:?set FIELDS=a,b,c}"     # ← IFS=, in front of read
+printf 'n=%d\n' "${#fields[@]}"
+printf 'field=%s\n' "${fields[@]}"
+#> out: n=2
+#> out: field=a,b
+#> out-not: n=3
+#> check: csv-count.sh with FIELDS='a,b b,c': expected
+#> check-not: PASS: day 17

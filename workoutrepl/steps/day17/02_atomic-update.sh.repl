@@ -1,0 +1,23 @@
+# day 17 · piece 2 of 3 — atomic-update.sh: never let a reader see half a file
+#
+# The skeleton has the classic bug: `tr < "$file" > "$file"` — the shell TRUNCATES the
+# output file before tr reads it, so the file ends up EMPTY (look at the OUTPUT pane).
+# The fix is also the lesson: write to a temp file made by mktemp IN THE SAME DIRECTORY
+# (rename only works within one filesystem), copy the mode (chmod --reference), then
+# `mv -f` over the original — rename(2) is atomic. Register `rm -f -- "$tmp"` in an
+# EXIT trap so a failure (a missing FILE must exit non-zero) leaves nothing behind.
+#DAY 17
+#FILE atomic-update.sh
+#RUN printf 'hello\nworld\n' > data/greeting.txt; ./atomic-update.sh data/greeting.txt; echo "rc=$?"; echo '--- data/greeting.txt:'; cat data/greeting.txt; echo '--- data/:'; ls -A data
+#!/usr/bin/env bash
+# atomic-update.sh FILE — replace FILE with its upper-cased self
+set -euo pipefail
+file=${1:?usage: atomic-update.sh FILE}
+[[ -f $file ]] || { printf 'no such file: %s\n' "$file" >&2; exit 1; }
+tr a-z A-Z < "$file" > "$file"        # ← truncates before reading: temp file beside it + mv -f instead
+#> out: rc=0
+#> out: --- data/greeting.txt:
+#> out-not: HELLO
+#> check: data/greeting.txt (upper-cased) differs from the expected content
+#> check: inode unchanged
+#> check-not: PASS: day 17

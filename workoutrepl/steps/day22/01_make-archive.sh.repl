@@ -1,0 +1,16 @@
+# day 22 · piece 1 of 5 — make-archive.sh: an archive that leaves the junk out
+#
+# --exclude takes a PATTERN (matched against member names, so '*.log' catches every
+# log at any depth) and 'site/cache' names the directory to skip whole. -C . site makes
+# the member names start with `site/` wherever you run from. The skeleton archives
+# everything — the OUTPUT pane lists the members, cache and logs included.
+#DAY 22
+#FILE make-archive.sh
+#RUN bash ./make-archive.sh; echo '--- members:'; tar -tzf site.tar.gz | LC_ALL=C sort
+#!/usr/bin/env bash
+tar -czf site.tar.gz -C . site           # ← two --exclude= flags before -C
+#> out: site/cache/pages/index.cache
+#> out: site/logs/access.log
+#> out-not: # exit:    1
+#> check: members of site.tar.gz (listed by the checker): expected
+#> check-not: PASS: day 22

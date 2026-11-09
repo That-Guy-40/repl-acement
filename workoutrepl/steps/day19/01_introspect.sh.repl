@@ -1,0 +1,29 @@
+# day 19 · piece 1 of 2 — introspect.sh: ask the kernel about THIS process
+#
+# /proc/self is whoever opens it. A command substitution is a forked subshell and
+# `cat`, `ls`, `tr` are further children — so the skeleton's pid= is cat's and fds=
+# counts ls's descriptors. Read /proc/self with BUILTINS and redirections, which this
+# shell opens itself: `while read -r key val _; do …; done < /proc/self/status` for
+# Pid:/PPid:, a glob `fds=(/proc/self/fd/*)` for the count, `mapfile -d '' argv <
+# /proc/self/cmdline` for argv (NUL-separated), readlink /proc/self/cwd for cwd. The
+# #RUN runs it twice, the second time with two extra fds open: fds= must grow by 2.
+#DAY 19
+#FILE introspect.sh
+#RUN bash ./introspect.sh alpha beta; echo '--- with fds 3 and 4 open:'; bash ./introspect.sh alpha beta 3</dev/null 4</dev/null | grep '^fds='
+#!/usr/bin/env bash
+# introspect.sh — five facts about THIS process, straight from /proc/self
+set -u
+pid=$(cat /proc/self/stat | cut -d' ' -f1)      # ← cat's pid, not ours: read /proc/self/status with a builtin loop
+ppid=$PPID                                      # ← true, but not from /proc: PPid: from the same loop
+fds=$(ls /proc/self/fd | wc -l)                 # ← ls's fds: a glob in THIS process instead
+printf 'pid=%s\n' "$pid"
+printf 'ppid=%s\n' "$ppid"
+printf 'fds=%s\n' "$fds"
+printf 'cmdline=%s\n' "?"                       # ← mapfile -d '' argv < /proc/self/cmdline; "${argv[*]}"
+printf 'cwd=%s\n' "$(readlink /proc/self/cwd)"  # the cwd is inherited, so this one is fine
+#> out: cmdline=?
+#> out: fds=4
+#> out-not: cmdline=bash ./introspect.sh alpha beta
+#> check: pid= equals the process that exec'd the script: expected
+#> check: cmdline=: expected
+#> check-not: PASS: day 19

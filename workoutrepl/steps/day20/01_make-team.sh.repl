@@ -1,0 +1,21 @@
+# day 20 · piece 1 of 4 — make-team.sh: a shared directory, in symbolic modes
+#
+# The tree is created; the modes are not, so the OUTPUT pane shows whatever your umask
+# left and run.sh is not executable. Add four chmods in SYMBOLIC form and read them
+# aloud:  u=rwx,g=rwxs,o= (2770: setgid, so new files inherit the group) for team/,
+# u=rw,g=r,o= (640) for README, u=rwx,g=rx,o= (750) for run.sh, u=rwx,go= (700) for
+# private/. The #RUN prints each mode and runs run.sh.
+#DAY 20
+#FILE make-team.sh
+#RUN rm -rf team; ./make-team.sh; echo "rc=$?"; stat -c '%A %a %n' team team/README team/run.sh team/private; echo '--- team/run.sh says:'; team/run.sh
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p team/private
+printf '%s\n' '#!/bin/sh' 'echo ok' > team/run.sh
+printf 'team project\n' > team/README
+# ← four chmods, symbolic: team 2770 · README 640 · run.sh 750 · private 700
+#> out: Permission denied
+#> out: rc=0
+#> out-not: drwxrws--- 2770 team
+#> check: team: expected mode 2770
+#> check-not: PASS: day 20

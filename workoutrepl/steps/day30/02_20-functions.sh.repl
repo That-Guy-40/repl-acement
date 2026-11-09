@@ -1,0 +1,25 @@
+# day 30 · piece 2 of 5 — bashrc.d/20-functions.sh: three functions, not aliases
+#
+# An alias cannot take an argument in the middle; a function can. mkcd makes and
+# enters a directory (mkdir -p && cd); up [N] climbs N levels (a loop building ../../
+# or a single cd with the string); extract FILE dispatches on the extension with a
+# case — .tar.gz/.tgz → tar xzf, .tar → tar xf, .zip → unzip, .gz → gunzip, anything
+# else → a message on stderr and return 1. The stubs do nothing; the #RUN exercises
+# all three in a scratch directory.
+#DAY 30
+#FILE bashrc.d/20-functions.sh
+#RUN bash -c '. bashrc.d/20-functions.sh; cd "$(mktemp -d)" || exit; mkcd a/b/c; echo "after mkcd a/b/c: $PWD"; up 2; echo "after up 2:       $PWD"; extract nothing.xyz; echo "extract nothing.xyz rc=$?"'
+# three functions you will use every day
+mkcd() {        # mkcd DIR — mkdir -p DIR and cd into it
+    :
+}
+up() {          # up [N] — cd up N directories (default 1)
+    :
+}
+extract() {     # extract FILE — dispatch on extension; unknown → message on stderr, return 1
+    :
+}
+#> out: extract nothing.xyz rc=0
+#> out-not: extract nothing.xyz rc=1
+#> check: mkcd creates and enters: expected
+#> check-not: PASS: day 30

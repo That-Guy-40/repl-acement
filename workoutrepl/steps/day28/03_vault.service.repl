@@ -1,0 +1,17 @@
+# day 28 · boss battle, piece 3 of 3 — vault.service: oneshot, absolute
+#
+# Type=oneshot and an absolute ExecStart= (day 26). The skeleton is a long-running
+# `simple` service with a relative command.
+#DAY 28
+#FILE vault.service
+#RUN cat vault.service
+[Unit]
+Description=Daily vault snapshot
+
+[Service]
+Type=simple
+ExecStart=vault.sh snapshot /home/learner/data /home/learner/vault daily
+#> out: Type=simple
+#> out-not: Type=oneshot
+#> check: vault.service Type=oneshot does not contain
+#> check-not: PASS: day 28

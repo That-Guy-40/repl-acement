@@ -1,8 +1,8 @@
 Manual testing guide for repl-acement
 =====================================
 
-This is a hands-on test plan for the six REPLs (`awkrepl`, `sedrepl`,
-`jqrepl`, `yqrepl`, `mlrrepl`, `perlrepl`). It covers what the automated
+This is a hands-on test plan for the seven REPLs (`awkrepl`, `sedrepl`,
+`jqrepl`, `yqrepl`, `mlrrepl`, `perlrepl`, `workoutrepl`). It covers what the automated
 suites cannot see: what a person actually experiences in a real terminal,
 with a real editor, in their own tmux session.
 
@@ -29,12 +29,12 @@ Use three verdicts, never two:
 - **UNKNOWN**: you couldn't run the step (missing tool, no Docker, wrong
   OS). An unchecked row is not a pass. Say why it was skipped.
 
-A run where every row passes should make you suspicious. Section 13 lists
+A run where every row passes should make you suspicious. Section 14 lists
 rows that are expected to FAIL or be UNKNOWN on a given setup; if none of
 them did, check that you were really running the code under test (e.g. the
 `awkrepl` on your `PATH` may be an older copy, not `./awkrepl/awkrepl`).
 
-Copy the results table from section 14 into your notes and fill it in.
+Copy the results table from section 15 into your notes and fill it in.
 
 1. Preflight
 ------------
@@ -73,7 +73,7 @@ echo "EDITOR=${EDITOR:-<unset>}  TMUX=${TMUX:-<unset>}  TMPDIR=${TMPDIR:-<unset>
 | running inside tmux already? | |
 
 `yq --version` must mention `mikefarah` for `yqrepl` to launch at all. See
-section 13 if it is a Go yq whose version string predates that marker.
+section 14 if it is a Go yq whose version string predates that marker.
 
 ### 1.3 Run the automated suites and note the baseline
 
@@ -103,7 +103,7 @@ used.
 2. Launch, layout and quit (run once per REPL)
 ----------------------------------------------
 
-Do this block six times, once per REPL, from a plain shell (not inside
+Do this block seven times, once per REPL, from a plain shell (not inside
 tmux). Where the expected text differs by tool, the table after the steps
 says how.
 
@@ -479,7 +479,7 @@ not die (the wrapper ignores INT and QUIT).
 - **`TRACE=1`**: `TRACE=1 ./awkrepl/awkrepl` prints bash `set -x` tracing
   to the launching terminal. Useful when reporting a FAIL.
 - **macOS / BSD sed** (UNKNOWN on Linux): every REPL splits the file with
-  `sed`. On macOS run the section 2 block for all six and section 5.5;
+  `sed`. On macOS run the section 2 block for all seven and section 5.5;
   the in-place edits use `sed -i ''` there.
 - **Narrow terminal**: resize to 80x24 before launching. All three panes
   must still appear and be usable; nothing is required to fit, but no pane
@@ -500,7 +500,55 @@ not die (the wrapper ignores INT and QUIT).
   present, nano as the editor. `make run EDITOR=vim` opens vim instead.
   Quitting the editor exits the container. Repeat for one other subproject.
 
-13. Known expected failures and skips
+13. workoutrepl specifics
+-------------------------
+
+`workoutrepl` saves into a *graded fixture* rather than re-running a text tool,
+so the things to look at are on disk as well as in the panes. Use a throwaway
+sandbox: `WORKOUT_HOME=/tmp/wo ./workoutrepl/workoutrepl` (default `~/workout`).
+
+1. Launch with no `~/.repl.workout`. Expected: the generated first file is a
+   comment block plus `#DAY 1`; the output pane prints
+   `# (no #FILE header: nothing written)  saved HH:MM:SS`; within about two
+   seconds the right pane grades day 1 (`FAIL: day 01 …`, with `[BAD]` lines
+   naming what is missing). Check `ls /tmp/wo/day01` exists.
+2. Replace the file with the day-7 piece below and save. Expected: the output
+   pane shows `# day 07 · tidy.sh …`, `# wrote:   day07/tidy.sh  (mode 755, …`,
+   `# command: ./tidy.sh downloads`, the echo, `# exit:    3`; the right pane
+   shows `# workout check 7 …`, then `FAIL: day 07` with `tidy.log is missing`
+   among the `[BAD]` lines. `ls -l /tmp/wo/day07/tidy.sh` is executable.
+
+   ```
+   #DAY 7
+   #FILE tidy.sh
+   #RUN ./tidy.sh downloads
+   #!/usr/bin/env bash
+   echo "placeholder for $1"
+   exit 3
+   ```
+3. Change `#DAY 7` to `#DAY 5` and `#FILE tidy.sh` to `#FILE pe.sh`, save
+   twice within two seconds. Expected: the right pane's **last** verdict is
+   `FAIL: day 05`; nothing re-grades day 7 afterwards (wait 3 s and look).
+4. Add a line `# Run it again` above `#RUN`. Save. Expected: it is a comment:
+   the `# command:` line is unchanged (a header is `#KEY` with no space).
+5. Set `#FILE ../escape.sh`. Save. Expected:
+   `# workoutrepl: #FILE must be a relative path inside the fixture: ../escape.sh`,
+   and `ls /tmp/wo/escape.sh` says no such file.
+6. Add `#FRESH yes`, create `touch /tmp/wo/day05/marker`, save. Expected: the
+   output pane says `# #FRESH: rebuilding the fixture first:` and the marker is
+   gone.
+7. Remove every header. Save. Expected: the hint
+   `# workoutrepl: add a header line  #DAY N  (1..30) and  #FILE name …`, and
+   the right pane does not re-grade (its text is unchanged).
+8. `./workoutrepl/walk.sh --day 1` in a terminal at least 200x50. Expected: a
+   session of its own, the status line `day 1 · piece 1/3 | …`, piece 1 typed
+   into vim and saved, both lower panes updated; `F5` types piece 2, `F4` goes
+   back; `C-b d` leaves and prints the driver log. Your own `~/.repl.workout`
+   and `~/workout` are untouched (the walk uses a throwaway `HOME`).
+9. Quit the editor. Expected: the window closes; `ls ${TMPDIR:-/tmp}/workoutrepl-*`
+   lists nothing.
+
+14. Known expected failures and skips
 -------------------------------------
 
 Rows that are expected to FAIL or be UNKNOWN on a given setup. If your
@@ -515,39 +563,40 @@ trusting the all-green result.
 | Section 11 BSD sed row | UNKNOWN on Linux | |
 | Section 6.3 without `bat`/`batcat` installed | the "with bat" half is UNKNOWN | |
 
-14. Results log
+15. Results log
 ---------------
 
 Date: ______  Commit: `git rev-parse --short HEAD` ______  Tester: ______
 
-| # | Test | awk | sed | jq | yq | mlr | perl | Notes |
-|---|------|-----|-----|----|----|-----|------|-------|
-| 2 | launch / layout / quit | | | | | | | |
-| 3 | live reload, nano | | | | | | | |
-| 3 | live reload, vim | | | | | | | |
-| 3 | live reload, other editor: ______ | | | | | | | |
-| 4 | syntax error shown, no crash | | | | | | | |
-| 5.1 | `#ARGS` applied | | | | | | | |
-| 5.2 | lookalike comments ignored | | – | – | – | – | – | |
-| 5.3 | unmatched-quote warning | | | | | | | |
-| 5.4 | glob not expanded | | – | – | – | – | – | |
-| 5.5 | `#DATA` on line 1 / `#ARGS` after `#DATA` | | | | | | | |
-| 6.1 | auto-wrap table | | – | – | – | – | – | |
-| 6.2 | helpers available | | – | – | – | – | – | |
-| 6.3 | bat present / absent | | | | | | | |
-| 7 | mlr format detection, hint, bare `#ARGS` | – | – | – | – | | – | |
-| 8 | perl `-n` detection | – | – | – | – | – | | |
-| 9 | jq/yq null input, yq flavor refusal | – | – | | | – | – | |
-| 10.1 | detach / reattach | | | | | | | |
-| 10.2 | nested launch, other pane exits | | | | | | | |
-| 10.3 | kill-window cleanup | | | | | | | |
-| 10.4 | entr pane exits | | | | | | | |
-| 10.5 | two REPLs at once | | | | | | | |
-| 10.6 | Ctrl-C in editor pane | | | | | | | |
-| 11 | env edge cases (list which) | | | | | | | |
-| 12 | Makefiles / Docker | | | | | | | |
+| # | Test | awk | sed | jq | yq | mlr | perl | workout | Notes |
+|---|------|-----|-----|----|----|-----|------|---------|-------|
+| 2 | launch / layout / quit | | | | | | | | |
+| 3 | live reload, nano | | | | | | | | |
+| 3 | live reload, vim | | | | | | | | |
+| 3 | live reload, other editor: ______ | | | | | | | | |
+| 4 | syntax error shown, no crash | | | | | | | | |
+| 5.1 | `#ARGS` applied | | | | | | | | |
+| 5.2 | lookalike comments ignored | | – | – | – | – | – | – | |
+| 5.3 | unmatched-quote warning | | | | | | | | |
+| 5.4 | glob not expanded | | – | – | – | – | – | – | |
+| 5.5 | `#DATA` on line 1 / `#ARGS` after `#DATA` | | | | | | | | |
+| 6.1 | auto-wrap table | | – | – | – | – | – | – | |
+| 6.2 | helpers available | | – | – | – | – | – | – | |
+| 6.3 | bat present / absent | | | | | | | | |
+| 7 | mlr format detection, hint, bare `#ARGS` | – | – | – | – | | – | – | |
+| 8 | perl `-n` detection | – | – | – | – | – | | – | |
+| 9 | jq/yq null input, yq flavor refusal | – | – | | | – | – | – | |
+| 10.1 | detach / reattach | | | | | | | | |
+| 10.2 | nested launch, other pane exits | | | | | | | | |
+| 10.3 | kill-window cleanup | | | | | | | | |
+| 10.4 | entr pane exits | | | | | | | | |
+| 10.5 | two REPLs at once | | | | | | | | |
+| 10.6 | Ctrl-C in editor pane | | | | | | | | |
+| 11 | env edge cases (list which) | | | | | | | | |
+| 12 | Makefiles / Docker | | | | | | | | |
+| 13 | workoutrepl: launch, day-7 save, day switch, `../` refused, `#FRESH`, hint, walk, quit | – | – | – | – | – | – | | |
 
 Count the FAILs and UNKNOWNs at the bottom. If there are zero of both,
-re-read section 13.
+re-read section 14.
 
 FAIL: ____  UNKNOWN: ____

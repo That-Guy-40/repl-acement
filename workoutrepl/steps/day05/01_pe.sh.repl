@@ -1,0 +1,26 @@
+# day 5 · piece 1 of 2 — pe.sh: dirname, basename and friends with no fork at all
+#
+# The #RUN runs your script with an EMPTY PATH (env -i PATH= bash ./pe.sh), exactly as
+# the checker does, so every external command dies with "command not found".
+# The skeleton forks dirname and basename — watch them fail, then replace them:
+#     ${p%/*} drops the shortest suffix matching /*   (the dir; `.` when there is no slash)
+#     ${p##*/} drops the longest prefix matching */   (the base)
+#     ${base%.*} and ${base##*.} do the same around the LAST dot (stem / ext)
+# [[ $p == */* ]] and [[ $base == *.* ]] decide the no-slash and no-dot cases.
+#DAY 5
+#FILE pe.sh
+#RUN env -i PATH= "$BASH" ./pe.sh; echo "exit=$?"
+#!/usr/bin/env bash
+# dir/base/stem/ext for every line of paths.txt — parameter expansion ONLY
+while IFS= read -r p; do
+    dir=$(dirname "$p")        # ← a fork: replace with an expansion
+    base=$(basename "$p")      # ← a fork: replace with an expansion
+    stem=                      # ← base without its last .ext
+    ext=                       # ← the text after base's last dot, or empty
+    printf 'dir=%s base=%s stem=%s ext=%s\n' "$dir" "$base" "$stem" "$ext"
+done < paths.txt
+#> out: dirname: command not found
+#> out: dir= base= stem= ext=
+#> out-not: dir=/var/log base=syslog.1 stem=syslog ext=1
+#> check: [BAD] pe.sh output: expected
+#> check-not: PASS: day 05

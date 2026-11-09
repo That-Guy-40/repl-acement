@@ -1,0 +1,13 @@
+# day 8 · piece 3 of 6 — without-timeout.txt: the files that do NOT match
+#
+# -L is -l's complement: the paths of files with NO match. (-v is per line, not per
+# file — a file with one non-matching line would be listed.) Same shape as piece 2.
+#DAY 8
+#FILE without-timeout.sh
+#RUN bash ./without-timeout.sh; echo '--- without-timeout.txt:'; cat without-timeout.txt
+#!/usr/bin/env bash
+grep -rli timeout logs       # ← the files WITH a match; flip it with -L
+#> out: without-timeout.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: without-timeout.txt is missing
+#> check-not: PASS: day 08

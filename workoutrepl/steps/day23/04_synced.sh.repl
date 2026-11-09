@@ -1,0 +1,19 @@
+# day 23 · piece 4 of 4 — synced/: a mirror that is allowed to forget
+#
+# Without --delete, rsync only adds and updates — stale.txt survives the second sync
+# and synced/ is no longer equal to src-v2/. Add --delete to the second rsync, and
+# FIRST run it with -n -i (dry run, itemized) and read what it would delete: the
+# skeleton prints that dry run for you.
+#DAY 23
+#FILE synced.sh
+#RUN rm -rf synced; bash ./synced.sh; echo '--- synced/:'; ls -A synced
+#!/usr/bin/env bash
+rsync -a src/ synced/
+echo '--- dry run of the v2 sync (what --delete WOULD remove):'
+rsync -an --delete -i src-v2/ synced/
+echo '--- the real one:'
+rsync -a src-v2/ synced/                 # ← --delete
+#> out: *deleting
+#> out: stale.txt
+#> check: synced/stale.txt (deleted by --delete) still exists
+#> check-not: PASS: day 23

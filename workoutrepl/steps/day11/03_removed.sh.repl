@@ -1,0 +1,14 @@
+# day 11 · piece 3 of 6 — removed.txt: set difference with comm
+#
+# comm takes two SORTED files and prints three columns: only-in-1, only-in-2, both.
+# -23 suppresses columns 2 and 3, leaving the names only in old-users.txt. Sort both
+# inputs with LC_ALL=C in process substitutions. The skeleton prints all three columns.
+#DAY 11
+#FILE removed.sh
+#RUN bash ./removed.sh; echo '--- removed.txt:'; cat removed.txt
+#!/usr/bin/env bash
+comm <(LC_ALL=C sort old-users.txt) <(LC_ALL=C sort new-users.txt)    # ← -23; write removed.txt
+#> out: removed.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: removed.txt is missing
+#> check-not: PASS: day 11

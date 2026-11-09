@@ -1,0 +1,15 @@
+# day 6 · piece 2 of 3 — status.sh: the status of EVERY stage, not just the last
+#
+# $? after a pipeline is the last command's status. PIPESTATUS is an array holding all
+# of them — and it is overwritten by the very next command, so capture or print it
+# immediately. The skeleton prints $? (one number); the checker wants `1 0 1`.
+#DAY 6
+#FILE status.sh
+#RUN ./status.sh
+#!/usr/bin/env bash
+false | true | false
+echo "$?"            # ← only the last stage; print all three on one line instead
+#> out: # exit:    0
+#> out-not: 1 0 1
+#> check: status.sh prints the three pipeline statuses: expected
+#> check-not: PASS: day 06

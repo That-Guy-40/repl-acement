@@ -1,0 +1,25 @@
+# day 27 · piece 1 of 1 — backup.sh: the script that runs when nobody is watching
+#
+# The skeleton copies. Everything that makes it TRUSTWORTHY is missing: a log()
+# function writing `date +%FT%T LEVEL message` lines to DEST/backup.log; --dry-run,
+# which must write nothing at all (not even the log — rsync -n prints what would
+# happen); INFO start/done lines with the file count; a missing SRC that logs ERROR,
+# complains on stderr and exits non-zero; and `set -Eeuo pipefail` with an ERR trap
+# that logs ERROR before an unexpected failure kills the script. The #RUN tries the
+# dry run first — watch the skeleton hand `--dry-run` to rsync as a source directory.
+#DAY 27
+#FILE backup.sh
+#TIMEOUT 30
+#RUN rm -rf dest src/data; ./backup.sh --dry-run src dest; echo "rc=$?"; echo "--- after a dry run, does dest/ exist? $([ -e dest ] && echo YES-wrong || echo no-good)"; rm -rf dest; ./backup.sh src dest; echo "rc=$?"; echo '--- dest/backup.log:'; cat dest/backup.log
+#!/usr/bin/env bash
+# backup.sh [--dry-run] SRC DEST — rsync SRC/ into DEST/data/, log to DEST/backup.log
+set -uo pipefail
+src=${1:?usage: backup.sh [--dry-run] SRC DEST} dest=${2:?DEST}
+mkdir -p -- "$dest/data"
+rsync -a --delete -- "$src/" "$dest/data/"
+#> out: rc=23
+#> out: backup.log: No such file or directory
+#> out-not:  INFO start 
+#> check: --dry-run exit status: expected 0, got 23
+#> check: dest/backup.log is missing
+#> check-not: PASS: day 27

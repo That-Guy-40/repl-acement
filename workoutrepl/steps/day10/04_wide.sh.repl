@@ -1,0 +1,13 @@
+# day 10 · piece 4 of 4 — wide.txt: fixed-width columns with printf
+#
+# awk's printf is C's: %-6s left-aligns in 6, %4d right-aligns an integer in 4, %8.2f
+# a float in 8 with two decimals. Skip the header with NR>1. The skeleton uses print.
+#DAY 10
+#FILE wide.sh
+#RUN bash ./wide.sh; echo '--- wide.txt:'; cat wide.txt
+#!/usr/bin/env bash
+awk -F, 'NR>1 { print $1, $2, $3, $4 }' sales.csv     # ← printf "%-6s %-8s %4d %8.2f\n"; write wide.txt
+#> out: wide.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: wide.txt (fixed-width printf) is missing
+#> check-not: PASS: day 10

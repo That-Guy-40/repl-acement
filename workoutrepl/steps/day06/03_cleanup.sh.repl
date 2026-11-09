@@ -1,0 +1,23 @@
+# day 6 · piece 3 of 3 — cleanup.sh: a trap that runs on the way out, every way out
+#
+# The skeleton makes a temp file under ./tmp/ and then fails with status 3 — and leaves
+# the file behind, which the #RUN shows with `ls -A tmp`. Register the removal with
+# `trap 'rm -f -- "$tmp"' EXIT` right after mktemp: an EXIT trap runs on success, on
+# `exit N`, and on the failure path under set -e. The checker asserts exit 3 AND an
+# empty tmp/. (Every save of the unfinished version leaves one more file; the fix
+# removes only its own — `rm -f tmp/work.*` tidies the rest.)
+#DAY 6
+#FILE cleanup.sh
+#RUN ./cleanup.sh; echo "exit=$?"; echo '--- left in tmp/:'; ls -A tmp
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p tmp
+tmp=$(mktemp ./tmp/work.XXXXXX)
+# ← register the EXIT trap here
+echo "working in $tmp"
+(exit 3)                      # the failing step; set -e exits with its status
+#> out: exit=3
+#> out: work.
+#> out-not: exit=0
+#> check: the EXIT trap did not run
+#> check-not: PASS: day 06

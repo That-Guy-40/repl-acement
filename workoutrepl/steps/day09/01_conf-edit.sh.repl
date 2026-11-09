@@ -1,0 +1,18 @@
+# day 9 · piece 1 of 4 — conf-edit.sh: four edits in place, with a backup
+#
+# One sed, several -e expressions: s/// for the two value changes, /regex/d to delete
+# the deprecated comment lines, and /^\[server\]$/a to append a line after the header.
+# -i.bak edits the file in place and keeps the original as app.conf.bak.
+# An in-place edit is not repeatable — a second run would back up the EDITED file — so
+# the #RUN puts the backup back first: every save edits the original, and the diff at
+# the bottom shows exactly what your sed changed. The skeleton only prints the file.
+#DAY 9
+#FILE conf-edit.sh
+#RUN [ -f app.conf.bak ] && mv -f app.conf.bak app.conf; bash ./conf-edit.sh; echo '--- changes (< original  > now):'; diff app.conf.bak app.conf
+#!/usr/bin/env bash
+sed -n 'p' app.conf          # ← build the four -e edits here, then switch -n p for -i.bak
+#> out: debug = false
+#> out: diff: app.conf.bak: No such file or directory
+#> out-not: > debug = true
+#> check: app.conf.bak is missing (sed -i.bak keeps the original)
+#> check-not: PASS: day 09

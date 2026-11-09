@@ -1,0 +1,14 @@
+# day 23 · piece 1 of 4 — mirror-a/: the CONTENTS of src/
+#
+# A trailing slash on the SOURCE means "what is inside": `rsync -a src/ mirror-a/`
+# puts README.md directly under mirror-a/. The skeleton has no slash, so the OUTPUT
+# pane shows mirror-a/src/… — a directory inside a directory. One character.
+#DAY 23
+#FILE mirror-a.sh
+#RUN rm -rf mirror-a; bash ./mirror-a.sh; echo '--- mirror-a/ (two levels):'; find mirror-a -maxdepth 2 | LC_ALL=C sort
+#!/usr/bin/env bash
+rsync -a src mirror-a/                   # ← the contents: src/
+#> out: mirror-a/src
+#> out-not: mirror-a/README.md
+#> check: mirror-a/ (contents of src/) differs from the expected tree
+#> check-not: PASS: day 23

@@ -1,0 +1,15 @@
+# day 12 · piece 5 of 6 — renamed/: hand find's results to cp, safely
+#
+# -print0 | xargs -0 is the only safe way to pass names with spaces or newlines on; cp
+# -t DIR takes the destination FIRST so xargs can append any number of sources. Create
+# renamed/ first. The skeleton only lists the .txt files.
+#DAY 12
+#FILE renamed.sh
+#RUN bash ./renamed.sh; echo '--- renamed/:'; ls -A renamed
+#!/usr/bin/env bash
+find tree -name '*.txt' -type f          # ← mkdir -p renamed; -print0 | xargs -0 cp -t renamed
+#> out: tree/etc/readme.txt
+#> out: No such file or directory
+#> out-not: # exit:    0
+#> check: renamed is missing (expected a directory
+#> check-not: PASS: day 12

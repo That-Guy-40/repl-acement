@@ -174,5 +174,6 @@ check_tool jq   jqrepl   .repl.jq  jq
 check_tool yq   yqrepl   .repl.yq  yq
 check_tool mlr  mlrrepl  .repl.mlr mlr
 check_tool perl perlrepl .repl.pl  perl
+check_tool workout workoutrepl .repl.workout bash
 
 summary

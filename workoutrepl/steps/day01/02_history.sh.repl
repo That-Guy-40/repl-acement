@@ -1,0 +1,21 @@
+# day 1 · piece 2 of 3 — history.sh: a history worth searching
+#
+# This is a snippet to be SOURCED from ~/.bashrc, so there is no #! line and the #RUN
+# sources it in a fresh `bash --norc`, then prints the four variables and the shopt.
+# The checker wants HISTSIZE and HISTFILESIZE at or above 10000 (or -1 = unlimited),
+# HISTCONTROL containing ignoredups, ignoreboth or erasedups, a non-empty HISTTIMEFORMAT,
+# and histappend ON — so the shell appends to the history file instead of overwriting
+# it when two terminals exit.
+#DAY 1
+#FILE history.sh
+#RUN bash --norc -c '. ./history.sh; shopt histappend; echo "HISTSIZE=$HISTSIZE HISTFILESIZE=$HISTFILESIZE HISTCONTROL=$HISTCONTROL HISTTIMEFORMAT=[$HISTTIMEFORMAT]"'
+# history.sh — source from ~/.bashrc
+# HISTSIZE=         HISTFILESIZE=        (>= 10000; -1 means unlimited)
+# HISTCONTROL=                           (ignoredups | ignoreboth | erasedups, colon-joined)
+# HISTTIMEFORMAT='%F %T  '               (anything non-empty: history then shows WHEN)
+# shopt -s histappend
+#> out: HISTCONTROL= HISTTIMEFORMAT=[]
+#> out-not: histappend     	on
+#> check: histappend is off
+#> check: HISTSIZE should be >= 10000
+#> check-not: PASS: day 01

@@ -1,0 +1,20 @@
+# day 20 · piece 2 of 4 — umask.sh: the subtraction everyone forgets
+#
+# A new file starts at 666 and the umask removes bits: 077 leaves rw-------, 022 leaves
+# rw-r--r--. umask is per process, so set it in a subshell around the creation —
+# ( umask 077; : > tmp/strict ) — and the script's own umask is untouched. The skeleton
+# creates both files under the inherited umask, so both lines come out the same.
+#DAY 20
+#FILE umask.sh
+#RUN ./umask.sh
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p tmp
+rm -f tmp/strict tmp/shared
+: > tmp/strict                 # ← ( umask 077; : > tmp/strict )
+: > tmp/shared                 # ← ( umask 022; : > tmp/shared )
+stat -c %A tmp/strict
+stat -c %A tmp/shared
+#> out: # command: ./umask.sh
+#> check: [BAD] umask.sh: expected
+#> check-not: PASS: day 20

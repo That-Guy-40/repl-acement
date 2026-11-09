@@ -1,0 +1,20 @@
+# day 4 · piece 1 of 3 — split.sh: stdout here, stderr there, and BOTH in a third file
+#
+# noisy.sh (provided) prints four `out N` lines on stdout and three `err N` on stderr.
+# The skeleton already splits the two streams into out.log and err.log. The missing
+# part is all.log, a copy of both — without running noisy.sh twice and without a temp
+# file. Process substitution hands each stream to its own tee:
+#     > >(tee out.log >> all.log)      2> >(tee err.log >> all.log)
+# then `wait`, so the tees finish before the script returns. The #RUN counts lines.
+#DAY 4
+#FILE split.sh
+#RUN rm -f out.log err.log all.log; ./split.sh; echo "exit=$?"; wc -l out.log err.log all.log
+#!/usr/bin/env bash
+# stdout → out.log, stderr → err.log, both → all.log, in ONE invocation of ./noisy.sh
+./noisy.sh > out.log 2> err.log
+#> out: 4 out.log
+#> out: 3 err.log
+#> out: all.log: No such file or directory
+#> out-not: 7 all.log
+#> check: all.log is missing
+#> check-not: PASS: day 04

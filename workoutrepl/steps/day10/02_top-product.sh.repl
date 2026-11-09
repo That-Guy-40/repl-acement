@@ -1,0 +1,14 @@
+# day 10 · piece 2 of 4 — top-product.txt: the max of an aggregate
+#
+# Sum qty per product into an array, then in END walk the array keeping the largest.
+# The skeleton sums but prints every product; the file must hold ONE line: `product qty`.
+#DAY 10
+#FILE top-product.sh
+#RUN bash ./top-product.sh; echo '--- top-product.txt:'; cat top-product.txt
+#!/usr/bin/env bash
+awk -F, 'NR>1 { q[$2]+=$3 } END { for (p in q) print p, q[p] }' sales.csv    # ← keep only the max; write top-product.txt
+#> out: widget 42
+#> out: top-product.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: top-product.txt is missing
+#> check-not: PASS: day 10

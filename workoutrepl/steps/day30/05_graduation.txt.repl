@@ -1,0 +1,13 @@
+# day 30 · piece 5 of 5 — graduation.txt: what you are taking home
+#
+# At least five lines, each naming one command, flag or idiom from the last 29 days
+# that you did not have before. No format; this one is for you. The #RUN counts the
+# non-blank lines.
+#DAY 30
+#FILE graduation.txt
+#RUN printf 'non-blank lines: %s\n' "$(grep -c '[^[:space:]]' graduation.txt)"
+# at least five lines, one command, flag or idiom per line — then delete this comment
+#> out: non-blank lines: 1
+#> out-not: non-blank lines: 5
+#> check: graduation.txt has at least five non-empty lines: expected 1, got 0
+#> check-not: PASS: day 30

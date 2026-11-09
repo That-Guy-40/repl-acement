@@ -1,0 +1,14 @@
+# day 11 · piece 6 of 6 — paired.txt: columns side by side with paste
+#
+# paste -d, joins corresponding lines of its inputs with a comma; each input is a
+# process substitution cutting one column. The skeleton pastes id,name (the wrong
+# order) with a tab.
+#DAY 11
+#FILE paired.sh
+#RUN bash ./paired.sh; echo '--- paired.txt:'; cat paired.txt
+#!/usr/bin/env bash
+paste <(cut -f1 users.tsv) <(cut -f2 users.tsv)     # ← name first, -d, ; write paired.txt
+#> out: paired.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: paired.txt is missing
+#> check-not: PASS: day 11

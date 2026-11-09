@@ -1,0 +1,21 @@
+# day 2 · piece 1 of 4 — make-project.sh: a nine-directory tree from ONE mkdir
+#
+# Brace expansion happens before the command runs, so `echo` is the safest way to see
+# what mkdir will be handed. The skeleton below echoes a first attempt; turn it into
+# ONE `mkdir -p` (the tree) and ONE `touch` (the three CHANGELOG files). The #RUN
+# runs the script and lists what exists under project/ afterwards.
+#
+# Nested braces nest; a sequence `{1..3}` counts. Nine directories, three files.
+#DAY 2
+#FILE make-project.sh
+#RUN bash ./make-project.sh && find project | LC_ALL=C sort
+#!/usr/bin/env bash
+# preview: echo shows the words the shell will hand to mkdir
+echo project/{src,test,docs}
+# now the real thing: one mkdir -p for  project/{src,test,docs}/{alpha,beta,gamma}
+# and one touch for  project/CHANGELOG-v{1..3}.md
+#> out: project/src project/test project/docs
+#> out: No such file or directory
+#> out-not: project/src/alpha
+#> check: project/src/alpha is missing
+#> check-not: PASS: day 02

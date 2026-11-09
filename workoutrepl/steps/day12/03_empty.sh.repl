@@ -1,0 +1,12 @@
+# day 12 · piece 3 of 6 — empty.txt: -empty
+#
+# -empty matches zero-length regular files (and empty directories, hence -type f).
+#DAY 12
+#FILE empty.sh
+#RUN bash ./empty.sh; echo '--- empty.txt:'; cat empty.txt
+#!/usr/bin/env bash
+find tree -type f -size 0    # ← -empty says it directly; sort, write empty.txt
+#> out: empty.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: empty.txt is missing
+#> check-not: PASS: day 12

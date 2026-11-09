@@ -1,0 +1,16 @@
+# day 2 · piece 4 of 4 — images.sh: .jpg .JPG .Jpg are one extension to the eye
+#
+# Two routes: `shopt -s nocaseglob` and a plain *.jpg, or a character-class glob
+# *.[jJ][pP][gG] that spells out the cases. Either way: top level of incoming/ only,
+# one path per line, LC_ALL=C sorted, written to images.txt. img004.jpeg is NOT a .jpg.
+#DAY 2
+#FILE images.sh
+#RUN bash ./images.sh && echo '--- images.txt:' && cat images.txt
+#!/usr/bin/env bash
+# exact-case only, and on the screen instead of in images.txt — fix both
+printf '%s\n' incoming/*.jpg
+#> out: incoming/img002.jpg
+#> out: images.txt: No such file or directory
+#> out-not: incoming/img001.JPG
+#> check: images.txt (the three .jpg/.JPG/.Jpg
+#> check-not: PASS: day 02

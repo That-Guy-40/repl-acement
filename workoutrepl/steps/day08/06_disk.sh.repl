@@ -1,0 +1,14 @@
+# day 8 · piece 6 of 6 — disk.txt: path, line number, line
+#
+# -n prefixes the line number, -i ignores case, -w whole word (so `diskette` does not
+# count). The skeleton matches `diskette` and misses `Disk` and `DISK`.
+#DAY 8
+#FILE disk.sh
+#RUN bash ./disk.sh; echo '--- disk.txt:'; cat disk.txt
+#!/usr/bin/env bash
+grep -rn disk logs           # ← add -i and -w, sort, write disk.txt
+#> out: diskette
+#> out: disk.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: disk.txt (whole word, any case, with path and line number) is missing
+#> check-not: PASS: day 08

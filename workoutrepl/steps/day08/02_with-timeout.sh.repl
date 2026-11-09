@@ -1,0 +1,13 @@
+# day 8 · piece 2 of 6 — with-timeout.txt: just the FILENAMES that match
+#
+# -l prints each matching file's path once instead of its lines; -i ignores case. The
+# skeleton prints the matching lines. Switch to names, sort, write the file.
+#DAY 8
+#FILE with-timeout.sh
+#RUN bash ./with-timeout.sh; echo '--- with-timeout.txt:'; cat with-timeout.txt
+#!/usr/bin/env bash
+grep -ri timeout logs        # ← lines; you want paths (-l), sorted, in with-timeout.txt
+#> out: with-timeout.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: with-timeout.txt is missing
+#> check-not: PASS: day 08

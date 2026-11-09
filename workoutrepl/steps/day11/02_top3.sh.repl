@@ -1,0 +1,14 @@
+# day 11 · piece 2 of 6 — top3.txt: sort by a numeric field, descending
+#
+# sort -t $'\t' -k2,2nr sorts on the second tab-field numerically, reversed; a second
+# key -k1,1 breaks ties by name. head -3, then tr the tab to a space. The skeleton sorts
+# the whole line as text, so 14 lands after 27... in the wrong direction.
+#DAY 11
+#FILE top3.sh
+#RUN bash ./top3.sh; echo '--- top3.txt:'; cat top3.txt
+#!/usr/bin/env bash
+LC_ALL=C sort joined.tsv | head -3       # ← by the count, descending; tab → space; write top3.txt
+#> out: top3.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: top3.txt is missing
+#> check-not: PASS: day 11

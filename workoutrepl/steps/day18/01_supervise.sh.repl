@@ -1,0 +1,25 @@
+# day 18 · piece 1 of 3 — supervise.sh: start them all, then wait for each by PID
+#
+# The skeleton runs the workers one after another in the foreground — correct output
+# shape, wrong program: nothing is concurrent and the exit status is 0. Start each
+# worker with & and remember $! in an array indexed by i; then a second loop does
+# `wait "${pids[i]}"` (wait on a specific PID returns THAT child's status) and prints
+# `worker i pid P rc R`. Count the non-zero rcs and exit with the count: for N=4 that
+# is 3. The #RUN shows the output and the status.
+#DAY 18
+#FILE supervise.sh
+#RUN ./supervise.sh 4; echo "rc=$?"
+#!/usr/bin/env bash
+# supervise.sh N — run N workers concurrently, report each, exit = number failed
+set -u
+n=${1:?usage: supervise.sh N}
+for (( i = 1; i <= n; i++ )); do
+    ./worker.sh "$i"; rc=$?               # ← serial; background it, keep $! in pids[i]
+    printf 'worker %d pid %s rc %d\n' "$i" "?" "$rc"
+done
+# ← second loop: wait "${pids[i]}", print the line, count failures; exit "$failed"
+#> out: worker 1 pid ? rc 1
+#> out: rc=0
+#> out-not: rc=3
+#> check: supervise.sh 4 exit status (3 failures): expected 3, got 0
+#> check-not: PASS: day 18

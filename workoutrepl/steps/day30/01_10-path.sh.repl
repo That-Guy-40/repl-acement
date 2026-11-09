@@ -1,0 +1,16 @@
+# day 30 · piece 1 of 5 — bashrc.d/10-path.sh: safe to source twice
+#
+# A plain PATH="$HOME/bin:$PATH" adds another copy every time it is sourced — and
+# .bashrc gets sourced more often than you think. Test membership first: `case
+# ":$PATH:" in *":$HOME/bin:"*) ;; *) PATH=… ;; esac` — the surrounding colons make
+# the match exact. The #RUN sources the file twice and counts.
+#DAY 30
+#FILE bashrc.d/10-path.sh
+#RUN bash -c 'HOME=$PWD; . bashrc.d/10-path.sh; . bashrc.d/10-path.sh; printf "HOME/bin appears %s time(s) in PATH after sourcing twice\n" "$(tr : "\n" <<<"$PATH" | grep -cx "$HOME/bin")"'
+# prepend ~/bin to PATH exactly once
+PATH="$HOME/bin:$PATH"                   # ← only when it is not already there
+export PATH
+#> out: appears 2 time(s)
+#> out-not: appears 1 time(s)
+#> check: FAIL: day 30
+#> check-not: PASS: day 30

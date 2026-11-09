@@ -1,0 +1,19 @@
+# day 2 · piece 3 of 4 — logs.sh: every .log at ANY depth, with ** instead of find
+#
+# `shopt -s globstar` makes ** match across directory levels. printf '%s\n' prints one
+# word per line, and LC_ALL=C sort gives the BYTE order the checker expects (a UTF-8
+# locale sorts .hidden.log elsewhere). The dot-file .hidden.log must be in the list too.
+# The skeleton only looks at the top level — and prints to the screen, not to logs.txt.
+#DAY 2
+#FILE logs.sh
+#RUN bash ./logs.sh && echo '--- logs.txt:' && cat logs.txt
+#!/usr/bin/env bash
+shopt -s globstar
+# top level only, and not yet written anywhere — fix both
+printf '%s\n' incoming/*.log
+#> out: incoming/a.log
+#> out: logs.txt: No such file or directory
+#> out-not: incoming/sub/deeper/d.log
+#> check: logs.txt (every .log at any depth
+#> check: is missing
+#> check-not: PASS: day 02

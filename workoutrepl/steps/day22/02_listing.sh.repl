@@ -1,0 +1,13 @@
+# day 22 · piece 2 of 5 — listing.txt: tar -t, sorted
+#
+# -t lists members without extracting; -z for gzip, -f for the file. Sort with
+# LC_ALL=C and write listing.txt — directories keep their trailing slash.
+#DAY 22
+#FILE listing.sh
+#RUN bash ./listing.sh; echo '--- listing.txt:'; cat listing.txt
+#!/usr/bin/env bash
+tar -tzf site.tar.gz                     # ← sort it, into listing.txt
+#> out: listing.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: listing.txt is missing
+#> check-not: PASS: day 22

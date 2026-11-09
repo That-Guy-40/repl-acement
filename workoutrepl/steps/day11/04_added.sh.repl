@@ -1,0 +1,12 @@
+# day 11 · piece 4 of 6 — added.txt: the other difference
+#
+# Same inputs, -13: suppress columns 1 and 3, leaving what is only in new-users.txt.
+#DAY 11
+#FILE added.sh
+#RUN bash ./added.sh; echo '--- added.txt:'; cat added.txt
+#!/usr/bin/env bash
+comm <(LC_ALL=C sort old-users.txt) <(LC_ALL=C sort new-users.txt)    # ← -13; write added.txt
+#> out: added.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: added.txt is missing
+#> check-not: PASS: day 11

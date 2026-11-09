@@ -1,0 +1,18 @@
+# day 26 · piece 2 of 4 — backup.service: the unit the timer fires
+#
+# Type=oneshot: the job runs to completion and the unit is "active" only while it
+# runs. ExecStart= must be an ABSOLUTE path — systemd has no $PATH to search; the
+# skeleton's bare `backup.sh` would be rejected at load time.
+#DAY 26
+#FILE backup.service
+#RUN cat backup.service; echo; echo "--- ExecStart absolute? $(grep -q '^ExecStart=/' backup.service && echo yes || echo NO)"
+[Unit]
+Description=Nightly backup
+
+[Service]
+Type=oneshot
+ExecStart=backup.sh
+#> out: ExecStart absolute? NO
+#> out-not: ExecStart absolute? yes
+#> check: backup.service ExecStart= is an absolute path does not contain
+#> check-not: PASS: day 26

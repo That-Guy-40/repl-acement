@@ -1,0 +1,15 @@
+# day 13 · piece 6 of 6 — pattern-bre.txt: the same regex in the OTHER dialect
+#
+# This piece is a one-line text file, not a script: the BASIC-regex spelling of the
+# extended pattern ^(ab|cd)+x?$. In BRE, ( ) | + ? are literal characters unless
+# backslashed: \( \) \| \+ \?. The #RUN feeds probe strings through `grep -f` with YOUR
+# pattern (no -E) — ab, cd, abcd, abx and cdcdx should match; x, abc and axb should not.
+# The skeleton is the ERE spelling, which as a BRE matches only the literal text.
+#DAY 13
+#FILE pattern-bre.txt
+#RUN printf '%s\n' ab cd abcd abcdab abx cdcdx x abxx abc ababcdcdabx axb | grep -f pattern-bre.txt; echo "matched: $(printf '%s\n' ab cd abcd abcdab abx cdcdx x abxx abc ababcdcdabx axb | grep -cf pattern-bre.txt)"
+^(ab|cd)+x?$
+#> out: matched: 0
+#> out-not: matched: 6
+#> check: pattern-bre.txt contains an unescaped ( | + or ?
+#> check-not: PASS: day 13

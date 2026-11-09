@@ -1,0 +1,14 @@
+# day 10 · piece 1 of 4 — by-region.txt: sum per key, report at END
+#
+# -F, splits on commas; NR>1 skips the header; an array indexed by $1 accumulates
+# $3*$4; END prints each key once. printf "%s\t%.2f\n" gives the tab and two decimals.
+# The skeleton prints every row's revenue instead of summing.
+#DAY 10
+#FILE by-region.sh
+#RUN bash ./by-region.sh; echo '--- by-region.txt:'; cat by-region.txt
+#!/usr/bin/env bash
+awk -F, 'NR>1 { print $1, $3*$4 }' sales.csv     # ← accumulate in an array, print in END, sort, write by-region.txt
+#> out: by-region.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: by-region.txt is missing
+#> check-not: PASS: day 10

@@ -1,0 +1,14 @@
+# day 22 · piece 4 of 5 — one-file/: extract a single member
+#
+# Member names after the archive name select what to extract — spelled exactly as
+# tar -t lists them (site/config/app.conf). The skeleton extracts everything.
+#DAY 22
+#FILE one-file.sh
+#RUN rm -rf one-file; bash ./one-file.sh; echo '--- files under one-file/:'; find one-file -type f | LC_ALL=C sort
+#!/usr/bin/env bash
+mkdir -p one-file
+tar -xzf site.tar.gz -C one-file         # ← name the one member to extract
+#> out: one-file/site/README.md
+#> out: one-file/site/config/app.conf
+#> check: files under one-file/: expected 1, got
+#> check-not: PASS: day 22
