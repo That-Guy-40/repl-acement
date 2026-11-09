@@ -1,0 +1,25 @@
+# day 25 · piece 2 of 2 — verify.sh: the three ways a backup can lie
+#
+# sha256sum -c --quiet finds two of them — a changed file (`path: FAILED`) and a
+# missing one (`path: FAILED open or read`) — in its own words; translate them into
+# MODIFIED / MISSING lines. The third, a file on disk that the manifest never saw, it
+# cannot find: comm -13 the manifest's paths against find's. Sort the problems, print
+# them, exit 1; print nothing and exit 0 when all is well. The #RUN builds a mutated
+# copy of tree/ (one byte flipped, one file removed, one added) and runs your verify.sh
+# on both; the skeleton still speaks sha256sum's dialect and misses the extra file.
+#DAY 25
+#FILE verify.sh
+#TIMEOUT 30
+#RUN rm -rf .mut; cp -a tree .mut; printf X | dd of=.mut/b/three.txt bs=1 seek=1 conv=notrunc 2>/dev/null; rm -f .mut/a/two.txt; echo extra > .mut/b/c/sneaky.txt; ./manifest.sh tree > .manifest; echo '--- untouched tree:'; ./verify.sh tree .manifest; echo "rc=$?"; echo '--- mutated copy:'; ./verify.sh .mut .manifest; echo "rc=$?"
+#!/usr/bin/env bash
+# verify.sh DIR MANIFEST — MODIFIED / MISSING / EXTRA lines, sorted; exit 1 if any
+set -uo pipefail
+dir=${1:?usage: verify.sh DIR MANIFEST} manifest=${2:?MANIFEST}
+manifest=$(readlink -f -- "$manifest")
+cd -- "$dir" || exit 1
+sha256sum -c --quiet -- "$manifest"      # ← sed its two messages into MODIFIED/MISSING; add EXTRA with comm -13; sort; exit 1 if any
+#> out: FAILED open or read
+#> out-not: MISSING a/two.txt
+#> out-not: EXTRA b/c/sneaky.txt
+#> check: verify.sh names all three problems: expected
+#> check-not: PASS: day 25

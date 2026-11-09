@@ -1,0 +1,14 @@
+# day 12 · piece 6 of 6 — one chmod for all the keys: -exec … {} +
+#
+# `-exec cmd {} \;` forks once per file; `-exec cmd {} +` appends as many names as fit
+# and runs the command once. The skeleton shows the current modes with ls; replace the
+# ls with the chmod and keep an ls after it so the OUTPUT pane shows the result.
+#DAY 12
+#FILE keys.sh
+#RUN bash ./keys.sh
+#!/usr/bin/env bash
+find tree -name '*.key' -exec ls -l {} +         # ← chmod 600 them with ONE -exec … {} +, then ls -l again
+#> out: -rw-r--r--
+#> out-not: -rw-------
+#> check: tree/etc/keys/server.key
+#> check-not: PASS: day 12

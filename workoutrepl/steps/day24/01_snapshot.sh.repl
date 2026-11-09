@@ -1,0 +1,23 @@
+# day 24 · piece 1 of 2 — snapshot.sh: a full tree every time, paid for once
+#
+# --link-dest=DIR tells rsync: when a file is unchanged relative to DIR, HARD-LINK it
+# instead of copying. Hand it an ABSOLUTE path (it is resolved relative to the
+# destination). Then repoint DEST/latest with `ln -sfn` — without -n, ln writes the new
+# link INSIDE the directory the old symlink points to. The skeleton has neither: the
+# #RUN takes two trial snapshots into vtest/ and shows big.bin's link count (1 means
+# copied, 2 means shared) and where `latest` went.
+#DAY 24
+#FILE snapshot.sh
+#RUN rm -rf vtest; ./snapshot.sh data-v1 vtest a; ./snapshot.sh data-v2 vtest b; echo '--- link count, inode, name:'; stat -c '%h %i %n' vtest/a/big.bin vtest/b/big.bin; echo '--- latest:'; ls -l vtest/latest; echo "inside a/: $(ls vtest/a | tr '\n' ' ')"
+#!/usr/bin/env bash
+# snapshot.sh SRC DEST NAME — an rsync snapshot hard-linked against DEST/latest
+set -euo pipefail
+src=${1:?SRC} dest=${2:?DEST} name=${3:?NAME}
+mkdir -p -- "$dest"
+rsync -a -- "$src/" "$dest/$name/"       # ← --link-dest="$(cd -- "$dest" && pwd)/latest" when DEST/latest exists
+ln -sf -- "$name" "$dest/latest"         # ← -n
+#> out: 1 
+#> out: inside a/: b
+#> out-not: inside a/: big.bin config.ini notes.txt
+#> check: vault/snap1 is missing
+#> check-not: PASS: day 24

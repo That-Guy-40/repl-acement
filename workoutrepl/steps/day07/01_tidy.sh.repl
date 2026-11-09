@@ -1,0 +1,38 @@
+# day 7 · boss battle — tidy.sh: sort a hostile download directory, safely, twice
+#
+# Everything from week 1 in one script. downloads/ has 14 files: mixed case, spaces, a
+# leading --, a NEWLINE in a name, a dot-file, two .part downloads to skip, and one pair
+# of identical files. `./tidy.sh downloads` must move each loose file to
+#     downloads/sorted/<ext>/<YYYY-MM>/<name>     (ext lower-cased or noext; mtime month;
+#                                                 name lower-cased, spaces → _)
+# send the SECOND of two identical files to sorted/duplicates/<name>, log every file to
+# downloads/tidy.log (MOVED / SKIPPED / DUPLICATE lines), and move NOTHING on a second
+# run. The scaffold below has the safe scaffolding and numbered steps; the two lines at
+# the bottom are the placeholder to replace.
+#
+# Save once, read the log, save again — the second save IS the idempotency test. To
+# start over with a loose downloads/:  workout setup 7
+#DAY 7
+#FILE tidy.sh
+#TIMEOUT 30
+#RUN ./tidy.sh downloads; echo "exit=$?"; echo '--- tidy.log:'; cat downloads/tidy.log 2>/dev/null; echo '--- under sorted/:'; find downloads/sorted -type f 2>/dev/null | LC_ALL=C sort
+#!/usr/bin/env bash
+# tidy.sh DIR — sort DIR's loose files into DIR/sorted/<ext>/<YYYY-MM>/, safely
+set -euo pipefail
+dir=${1:?usage: tidy.sh DIR}
+log="$dir/tidy.log"
+declare -A seen                 # content hash → already placed (for the duplicate rule)
+shopt -s dotglob nullglob
+# 1. collect the loose files in a STABLE order (so "first duplicate" is well defined):
+#      mapfile -d '' files < <(printf '%s\0' "$dir"/* | LC_ALL=C sort -z)
+# 2. for each: skip non-files (sorted/ itself), skip tidy.log, log *.part as SKIPPED
+# 3. lower=${name,,}; lower=${lower// /_}; ext from the last dot (mind the dot-file) or noext
+# 4. sum=$(sha256sum -- "$f" | cut -d' ' -f1); seen before → sorted/duplicates/, log DUPLICATE
+# 5. month=$(date -r "$f" +%Y-%m); mkdir -p; mv -n -- "$f" "$dir/sorted/$ext/$month/$lower"; log MOVED
+echo "tidy.sh: not written yet — $dir untouched" >&2
+exit 1
+#> out: not written yet
+#> out: exit=1
+#> out-not: MOVED
+#> check: downloads/tidy.log is missing
+#> check-not: PASS: day 07

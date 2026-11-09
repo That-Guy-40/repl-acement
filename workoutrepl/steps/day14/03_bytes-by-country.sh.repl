@@ -1,0 +1,15 @@
+# day 14 · boss battle, piece 3 of 6 — bytes-by-country.tsv: join, then aggregate
+#
+# Project `ip<TAB>bytes` from the log, sort on the ip; sort geo.tsv on its ip; join
+# the two (-t $'\t'). join drops ips geo.tsv does not know — which is what you want
+# here. Then awk -F'\t' sums bytes ($2) per country ($3), END prints, sort. The skeleton
+# prints the projection only.
+#DAY 14
+#FILE bytes-by-country.sh
+#RUN bash ./bytes-by-country.sh; echo '--- bytes-by-country.tsv:'; cat bytes-by-country.tsv
+#!/usr/bin/env bash
+awk '{print $1"\t"$NF}' access.log | LC_ALL=C sort -k1,1 | head -5     # ← join with sorted geo.tsv, sum per country; write bytes-by-country.tsv
+#> out: bytes-by-country.tsv: No such file or directory
+#> out-not: # exit:    0
+#> check: bytes-by-country.tsv is missing
+#> check-not: PASS: day 14

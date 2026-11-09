@@ -1,0 +1,23 @@
+# day 2 · piece 2 of 4 — clean-tmp.sh: delete every .tmp EXCEPT keep.tmp, in one rm
+#
+# incoming/ holds scratch.tmp, draft2.tmp, a dot-file .cache.tmp — and keep.tmp, which
+# must survive. No find, no loop: `shopt -s extglob` gives you !(pattern) ("anything but"),
+# and `dotglob` lets * see the dot-file. Preview the glob with echo FIRST; the skeleton
+# echoes a glob that is wrong in two ways (it names keep.tmp, it misses .cache.tmp).
+# When the echo lists exactly the three doomed files, change echo into `rm --`.
+#
+# Deleted the wrong thing? `workout setup 2` rebuilds the day's fixture (it also wipes
+# project/ — just save piece 1 again).
+#DAY 2
+#FILE clean-tmp.sh
+#RUN bash ./clean-tmp.sh && echo '--- incoming/ now:' && ls -A incoming
+#!/usr/bin/env bash
+shopt -s extglob dotglob
+# preview only — nothing is deleted until this echo becomes `rm --`
+echo incoming/*.tmp
+#> out: incoming/keep.tmp
+#> out: scratch.tmp
+#> out-not: rm:
+#> check: incoming/scratch.tmp still exists
+#> check: incoming/.cache.tmp (the dot-file — dotglob) still exists
+#> check-not: PASS: day 02

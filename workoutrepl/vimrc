@@ -1,0 +1,16 @@
+" repl/vimrc — a minimal, predictable vim for walk.sh (loaded with `vim -u repl/vimrc`,
+" so the learner's own config never interferes). After demo/vimrc in repl-acement.
+set nocompatible
+filetype on
+syntax on
+set paste            " typed/pasted text goes in verbatim: no autoindent, no mappings
+set nowrap
+set number
+set laststatus=2
+set ruler
+set noswapfile
+set nobackup
+set nowritebackup
+set backupcopy=yes   " write in place, so entr sees every save
+set shortmess+=I
+set t_Co=256

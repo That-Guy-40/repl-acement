@@ -1,0 +1,15 @@
+# day 9 · piece 2 of 4 — hosts-swapped.txt: swap two columns with a backreference
+#
+# With -E, ( ) groups and \1 \2 refer back. Match `ip<TAB>hostname` as two groups and
+# print them the other way round, still tab-separated; the `# ip` header line must not
+# match (exclude # from the first group's class) so it passes through unchanged.
+#DAY 9
+#FILE hosts-swapped.sh
+#RUN bash ./hosts-swapped.sh; echo '--- hosts-swapped.txt:'; cat hosts-swapped.txt
+#!/usr/bin/env bash
+sed -E 's/^(.*)$/\1/' hosts.txt      # ← one group, no swap: make it two, swapped, into hosts-swapped.txt
+#> out: 10.0.0.1	gateway
+#> out: hosts-swapped.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: hosts-swapped.txt (columns swapped, header kept) is missing
+#> check-not: PASS: day 09

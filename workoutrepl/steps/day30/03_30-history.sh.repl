@@ -1,0 +1,12 @@
+# day 30 · piece 3 of 5 — bashrc.d/30-history.sh: day 1, carried forward
+#
+# Copy your day-1 history.sh here: HISTSIZE/HISTFILESIZE, HISTCONTROL, HISTTIMEFORMAT,
+# shopt -s histappend. The skeleton is empty apart from the reminder.
+#DAY 30
+#FILE bashrc.d/30-history.sh
+#RUN bash --norc -c '. bashrc.d/30-history.sh; echo "HISTCONTROL=[$HISTCONTROL]"; shopt histappend'
+# history settings — the same ones as day 1's history.sh
+#> out: HISTCONTROL=[]
+#> out-not: ignoreboth
+#> check: 30-history.sh sets HISTCONTROL and histappend: expected to match
+#> check-not: PASS: day 30

@@ -1,0 +1,23 @@
+# day 5 · piece 2 of 2 — defaults.sh: six lines driven entirely by the environment
+#
+# One expansion per line:  ${NAME:-anon} (default when unset OR empty), ${x^^} (upper),
+# ${#x} (length), ${TITLE// /-} (replace all), ${x,,} (lower), ${TITLE:2:3} (offset,
+# length), and the odd one out — ${VERBOSE+yes} is `yes` when VERBOSE is SET to
+# anything, even the empty string. The #RUN runs it the two ways the checker does,
+# both with an empty PATH. The skeleton prints the six labels with nothing after them.
+#DAY 5
+#FILE defaults.sh
+#RUN echo "--- NAME=Ada TITLE='Hello World Again' VERBOSE=1"; env -i PATH= NAME=Ada TITLE='Hello World Again' VERBOSE=1 "$BASH" ./defaults.sh; echo "--- NAME and VERBOSE unset, TITLE='x y'"; env -i PATH= TITLE='x y' "$BASH" ./defaults.sh
+#!/usr/bin/env bash
+printf 'name=%s\n'  ""      # $NAME, or anon when unset or empty
+printf 'shout=%s\n' ""      # the name upper-cased
+printf 'len=%s\n'   ""      # length of shout
+printf 'slug=%s\n'  ""      # $TITLE, spaces → -, lower-cased
+printf 'mid=%s\n'   ""      # characters 2..4 of $TITLE (offset 2, length 3)
+printf 'set=%s\n'   ""      # yes if VERBOSE is set to anything, else no
+#> out: --- NAME=Ada
+#> out: name=
+#> out-not: name=Ada
+#> out-not: slug=hello-world-again
+#> check: defaults.sh (NAME=Ada, VERBOSE set): expected
+#> check-not: PASS: day 05

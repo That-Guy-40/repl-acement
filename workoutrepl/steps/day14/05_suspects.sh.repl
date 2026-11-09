@@ -1,0 +1,14 @@
+# day 14 · boss battle, piece 5 of 6 — suspects.txt: a threshold on an aggregate
+#
+# Count 401s per ip in an array; in END print only the ips at or above 5. The skeleton
+# prints every ip's 401 count.
+#DAY 14
+#FILE suspects.sh
+#RUN bash ./suspects.sh; echo '--- suspects.txt:'; cat suspects.txt
+#!/usr/bin/env bash
+awk '$(NF-1)==401 { c[$1]++ } END { for (ip in c) print ip, c[ip] }' access.log     # ← only c[ip] >= 5, sorted; write suspects.txt
+#> out: 10.0.0.3 3
+#> out: suspects.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: suspects.txt (>= 5 401s; 10.0.0.3 has only 3) is missing
+#> check-not: PASS: day 14

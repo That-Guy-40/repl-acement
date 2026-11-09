@@ -1,0 +1,25 @@
+# day 26 · piece 1 of 4 — backup.timer: say WHEN, then ask systemd what you said
+#
+# OnCalendar= is a small language; `systemd-analyze calendar EXPR` prints its
+# normalised form and the next elapse, which is how you find out what you meant
+# BEFORE 02:30 does. The checker wants the normalised form `Mon..Fri *-*-* 02:30:00`
+# — several spellings get there. Persistent=true runs a missed timer at the next boot;
+# [Install] WantedBy=timers.target makes `systemctl --user enable` work. The skeleton
+# says `daily` (midnight, every day) and forgets Persistent.
+#DAY 26
+#FILE backup.timer
+#RUN systemd-analyze calendar "$(sed -n 's/^OnCalendar=//p' backup.timer)"; echo "--- Persistent: $(grep -c '^Persistent=true$' backup.timer)"
+[Unit]
+Description=Nightly backup
+
+[Timer]
+OnCalendar=daily
+
+[Install]
+WantedBy=timers.target
+#> out: Normalized form: *-*-* 00:00:00
+#> out: --- Persistent: 0
+#> out-not: Mon..Fri *-*-* 02:30:00
+#> check: OnCalendar 'daily' normalises to: expected
+#> check: backup.timer Persistent=true does not contain
+#> check-not: PASS: day 26

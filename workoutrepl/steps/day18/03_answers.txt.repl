@@ -1,0 +1,13 @@
+# day 18 · piece 3 of 3 — answers.txt: two numbers worth knowing by heart
+#
+# Try them:  timeout 1 sleep 5; echo $?      and      kill -l TERM
+# Replace the two comment lines with the two numbers, in order.
+#DAY 18
+#FILE answers.txt
+#RUN cat -A answers.txt
+# Q1: the exit status of `timeout 1 sleep 5`
+# Q2: SIGTERM's signal number (the N in 128+N)
+#> out: # Q1:
+#> out-not: ^124$
+#> check: Q1: timeout's exit status when the command is killed: expected 124
+#> check-not: PASS: day 18

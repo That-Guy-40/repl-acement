@@ -1,0 +1,14 @@
+# day 14 · boss battle, piece 1 of 6 — top-ips.txt: count, sort, head
+#
+# The classic histogram: project the ip with awk, sort, uniq -c, sort by the count
+# numerically and descending with ties broken by ip ascending (-k1,1nr -k2,2), head -5,
+# and squeeze uniq's padding into `count ip`. The skeleton stops at uniq -c.
+#DAY 14
+#FILE top-ips.sh
+#RUN bash ./top-ips.sh; echo '--- top-ips.txt:'; cat top-ips.txt
+#!/usr/bin/env bash
+awk '{print $1}' access.log | LC_ALL=C sort | uniq -c       # ← sort by count desc, tie by ip, head -5, `count ip`; write top-ips.txt
+#> out: top-ips.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: top-ips.txt (13 ties: 10.0.0.3 before 172.16.0.4) is missing
+#> check-not: PASS: day 14

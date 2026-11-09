@@ -1,0 +1,11 @@
+# day 20 · piece 4 of 4 — answers.txt: one sentence about a common mistake
+#
+# Why is `chmod -R 644 project/` a mistake? Think about what a directory needs in order
+# to be entered or listed. Replace the comment line with your one-line answer.
+#DAY 20
+#FILE answers.txt
+#RUN cat answers.txt
+# Q: why is chmod -R 644 project/ a mistake? (one line, replace this)
+#> out: # Q: why is chmod
+#> check: answer mentions the directory execute/search bit: expected to match
+#> check-not: PASS: day 20

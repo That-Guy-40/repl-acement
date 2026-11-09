@@ -1,0 +1,21 @@
+# day 14 · boss battle, piece 6 of 6 — report.md: four numbers, one printf
+#
+# Each number is one pipeline: wc -l for the total, sort -u | wc -l for unique ips, an
+# awk filter on $(NF-1) >= 400 for errors, awk -v for the percentage to one decimal,
+# and the 401 histogram sorted by count for the top suspect (read -r ip count < <(…)).
+# The skeleton writes the template with every value blank — fill the five variables.
+#DAY 14
+#FILE report.sh
+#RUN bash ./report.sh; echo '--- report.md:'; cat report.md
+#!/usr/bin/env bash
+total=                   # ← wc -l < access.log
+uniq=                    # ← distinct ips
+errors=                  # ← lines with status >= 400
+pct=                     # ← errors*100/total, one decimal (awk -v e= -v t= 'BEGIN { printf "%.1f", … }')
+sip= scount=             # ← the ip with the most 401s, and that count
+printf '## Requests\ntotal: %s\n\n## Unique IPs\nunique: %s\n\n## Error rate\nerrors: %s (%s%%)\n\n## Top suspect\n%s with %s failed logins\n' \
+    "$total" "$uniq" "$errors" "$pct" "$sip" "$scount" > report.md
+#> out: total: 
+#> out-not: total: 120
+#> check: [BAD] report.md: expected
+#> check-not: PASS: day 14

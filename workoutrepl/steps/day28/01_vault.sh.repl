@@ -1,0 +1,48 @@
+# day 28 · boss battle, piece 1 of 3 — vault.sh: the week, assembled
+#
+# The command-line surface is written: usage, --help, exit 64 on bad usage, and a
+# dispatch to three functions. The functions are stubs. Build them from the week:
+#   cmd_snapshot  flock -n on VAULT/.lock (day 26, exit 75 `already running`), rsync -a
+#                 with --link-dest=VAULT/latest (day 24), write VAULT/NAME.sha256 with
+#                 the manifest recipe (day 25), VERIFY the snapshot against it, and only
+#                 then ln -sfn latest → NAME; exit 1 and leave latest alone if it fails
+#   cmd_verify    day 25's verify over VAULT/NAME and VAULT/NAME.sha256
+#   cmd_prune     keep the KEEP newest (last in sort order), never the one latest
+#                 points to, delete the others WITH their manifests — ${vault:?}/${s:?}
+# The #RUN takes two snapshots and verifies one; the stubs fail everything.
+#DAY 28
+#FILE vault.sh
+#TIMEOUT 30
+#RUN rm -rf vault; ./vault.sh snapshot data-v1 vault s1; echo "rc=$?"; ./vault.sh snapshot data-v2 vault s2; echo "rc=$?"; echo '--- vault/:'; ls -l vault 2>/dev/null; echo '--- verify s1:'; ./vault.sh verify vault s1; echo "rc=$?"
+#!/usr/bin/env bash
+# vault.sh — snapshot | verify | prune : an rsync --link-dest vault with sha256 manifests and a lock
+set -uo pipefail
+usage() {
+    cat <<'USAGE'
+usage: vault.sh snapshot SRC VAULT NAME | verify VAULT NAME | prune VAULT KEEP | --help
+USAGE
+}
+die_usage() { printf 'vault.sh: %s\n' "$*" >&2; usage >&2; exit 64; }
+
+cmd_snapshot() {                     # cmd_snapshot SRC VAULT NAME
+    echo "snapshot: not implemented" >&2; exit 1
+}
+cmd_verify() {                       # cmd_verify VAULT NAME
+    echo "verify: not implemented" >&2; exit 1
+}
+cmd_prune() {                        # cmd_prune VAULT KEEP
+    echo "prune: not implemented" >&2; exit 1
+}
+
+case ${1-} in
+    --help|-h) usage; exit 0 ;;
+    snapshot) (( $# == 4 )) || die_usage "snapshot needs SRC VAULT NAME"; cmd_snapshot "$2" "$3" "$4" ;;
+    verify)   (( $# == 3 )) || die_usage "verify needs VAULT NAME";       cmd_verify "$2" "$3" ;;
+    prune)    (( $# == 3 )) || die_usage "prune needs VAULT KEEP";        cmd_prune "$2" "$3" ;;
+    *)        die_usage "unknown subcommand '${1-}'" ;;
+esac
+#> out: snapshot: not implemented
+#> out: rc=1
+#> out-not: rc=0
+#> check: vault.sh snapshot data-v1 vault s1 exit status: expected 0, got 1
+#> check-not: PASS: day 28

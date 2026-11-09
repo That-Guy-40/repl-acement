@@ -1,0 +1,15 @@
+# day 12 · piece 4 of 6 — count.txt: count files, not lines
+#
+# `find | wc -l` counts NEWLINES, and one file here has a newline in its name — the
+# skeleton says 14 where there are 13. -print0 ends each name with NUL; `tr -cd '\0' |
+# wc -c` counts the NULs (or `-printf '.' | wc -c`).
+#DAY 12
+#FILE count.sh
+#RUN bash ./count.sh; echo '--- count.txt:'; cat count.txt
+#!/usr/bin/env bash
+find tree -type f | wc -l    # ← counts lines (14); count NUL-terminated names; write count.txt
+#> out: 14
+#> out: count.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: count.txt (13 regular files
+#> check-not: PASS: day 12

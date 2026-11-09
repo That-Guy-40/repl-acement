@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+##
+##  workoutrepl — a REPL for the 30-day workout: edit one PIECE of a day's lesson,
+##  save, and watch it run (bottom-left) and the whole day re-graded (bottom-right).
+##
+##  The edited file (~/.repl.workout) follows the repl-acement family conventions
+##  (awkrepl, sedrepl, …) with three headers of its own:
+##
+##      # narration — any comment lines ABOVE the first header are not written anywhere
+##      #DAY 7                  which day's fixture ($WORKOUT_HOME/day07; built if missing)
+##                              (a header is #KEY with no space after the #; "# Day 7" is a comment)
+##      #FILE tidy.sh           the file under that fixture the BODY is written to (atomic rename)
+##      #RUN ./tidy.sh downloads   run in the fixture after the write; default `bash FILE`
+##      #MODE 755               optional; default 755 when the body starts with #!, else 644
+##      #TIMEOUT 20             optional; seconds before the run is killed (default 20)
+##      #FRESH yes              optional; rebuild the fixture (workout setup N) before every write —
+##                              for a piece whose run consumes its inputs (a rename, a move)
+##      <body: everything after the last header, up to #DATA>
+##      #DATA                   optional; the lines after it are the run's stdin
+##
+##  Panes:  0 editor on ~/.repl.workout
+##          1 `entr` on that file → write the piece, run #RUN, show `# command:` and `# exit:`
+##          2 `entr` on a stamp the runner touches → `workout check N`, every assertion + verdict
+##
+##  Structure, cleanup wrapper and tmux layout follow Kevin Ernst's awkrepl
+##  (https://github.com/ernstki/awkrepl, MIT): one generated runner per pane, no tmux
+##  hooks, the editor pane's wrapper removes the temp files and closes only its own window.
+##
+##  Requirements: bash, tmux, entr, sed, timeout (coreutils), and the workout's own
+##  bin/workout (found from this script's location, or $WORKOUT_LIB).
+##
+set -uo pipefail
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && trap 'echo "workoutrepl: error at line $LINENO" >&2; exit 1' ERR
+
+# the trainer this REPL grades with: $WORKOUT_LIB if set; else the workout/ vendored beside this
+# file (repl-acement: workoutrepl/workout/), else the lab this file lives in (mklab: <lab>/repl/)
+_WR_HERE="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd -P)"
+if [[ -z "${WORKOUT_LIB:-}" ]]; then
+    if [[ -x "$_WR_HERE/workout/bin/workout" ]]; then WORKOUT_LIB="$_WR_HERE/workout"
+    else WORKOUT_LIB="$(cd -- "$_WR_HERE/.." && pwd -P)"; fi
+fi
+export WORKOUT_LIB
+WORKOUT_HOME="${WORKOUT_HOME:-$HOME/workout}"
+export WORKOUT_HOME
+
+_sed_in_place() {
+    if [[ $(uname -s) == Linux ]]; then sed -i "$@"; else sed -i '' "$@"; fi
+}
+
+# _wr_divide IN BODY DATA HDRS — split the repl file:
+#   HDRS: one "KEY VALUE" line per #DAY/#FILE/#RUN/#MODE/#TIMEOUT header found before #DATA
+#   BODY: the lines after the LAST header (before #DATA); narration above the first header
+#         and the headers themselves are dropped
+#   DATA: the lines after the first #DATA (that header dropped), as in the other REPLs
+_wr_divide() {
+    local in=${1:?} body=${2:?} data=${3:?} hdrs=${4:?}
+    local datahdr='^#[[:space:]]*[Dd][Aa][Tt][Aa][:[:space:]]*$'
+    local keyre='[Dd][Aa][Yy]\|[Ff][Ii][Ll][Ee]\|[Rr][Uu][Nn]\|[Mm][Oo][Dd][Ee]\|[Tt][Ii][Mm][Ee][Oo][Uu][Tt]\|[Ff][Rr][Ee][Ss][Hh]'
+    # a header is #KEY with NO space after the #, so `# Run it twice` in a comment stays a comment
+    local hdrre="^#\\($keyre\\)[:[:space:]]\\{1,\\}\\(.*\\)\$"
+    local prog="$body.prog"
+    sed -e "/$datahdr/,\$d" "$in" > "$prog"
+    sed -n -e "/$datahdr/{" -e ':a' -e 'n' -e 'p' -e 'ba' -e '}' "$in" > "$data"
+    _sed_in_place -e "/$datahdr/d" "$data"
+    # headers, upper-cased key, trailing whitespace trimmed from the value
+    sed -n -e "s/$hdrre/\\1 \\2/p" "$prog" \
+        | awk '{ k = toupper($1); sub(/^[^ ]+ /, ""); sub(/[[:space:]]+$/, ""); print k " " $0 }' > "$hdrs"
+    # the body: after the last header line
+    local last
+    last=$(grep -n "$hdrre" "$prog" | tail -1 | cut -d: -f1)
+    if [[ -n "$last" ]]; then tail -n +"$((last + 1))" "$prog" > "$body"; else : > "$body"; fi
+    rm -f "$prog"
+}
+
+# _wr_header HDRS KEY — print the value of KEY (last one wins), or nothing
+_wr_header() { awk -v k="$2" '$1 == k { sub(/^[^ ]+ ?/, ""); v = $0 } END { if (v != "") print v }' "$1"; }
+
+# _wr_run REPLFILE BODY DATA HDRS STAMP WORKOUT — what the output pane runs on every save
+_wr_run() {
+    local replfile=$1 body=$2 data=$3 hdrs=$4 stamp=$5 workout=$6
+    local dim='' off=''
+    dim=$(tput dim 2>/dev/null || true); off=$(tput sgr0 2>/dev/null || true)
+    _wr_divide "$replfile" "$body" "$data" "$hdrs"
+    local day file run mode tmo fresh n D
+    day=$(_wr_header "$hdrs" DAY); file=$(_wr_header "$hdrs" FILE); run=$(_wr_header "$hdrs" RUN)
+    mode=$(_wr_header "$hdrs" MODE); tmo=$(_wr_header "$hdrs" TIMEOUT); fresh=$(_wr_header "$hdrs" FRESH)
+    if [[ -z "$day" ]]; then
+        printf '%s# workoutrepl: add a header line  #DAY N  (1..30) and  #FILE name  above the piece you are writing;%s\n' "$dim" "$off"
+        printf '%s#             save, and this pane writes the body into $WORKOUT_HOME/dayNN/name, runs it, and%s\n' "$dim" "$off"
+        printf '%s#             the pane on the right re-grades the day. `workout day N` prints the whole task.%s\n' "$dim" "$off"
+        return 0
+    fi
+    if ! n=$("$workout" --day-number "$day" 2>/dev/null); then
+        printf '# workoutrepl: #DAY %s is not a day (1..30, day07, boss2)\n' "$day"; return 0
+    fi
+    D=$(printf '%s/day%02d' "$WORKOUT_HOME" "$n")
+    if [[ ! -d "$D" ]]; then
+        printf '%s# fixture missing — building it:%s ' "$dim" "$off"
+        "$workout" setup "$n" || { printf '# workoutrepl: setup failed\n'; return 0; }
+    elif [[ ${fresh,,} == yes ]]; then
+        # the piece's run consumes its inputs (renames, moves): start from a clean fixture
+        # every save. Your work is safe — it is this editor buffer, not the fixture.
+        printf '%s# #FRESH: rebuilding the fixture first:%s ' "$dim" "$off"
+        "$workout" setup "$n" || { printf '# workoutrepl: setup failed\n'; return 0; }
+    fi
+    printf '%s# day %02d · %s%s\n' "$dim" "$n" "$("$workout" --title "$n" 2>/dev/null)" "$off"
+    if [[ -n "$file" ]]; then
+        case "$file" in
+            /*|*/../*|../*|*/..|..) printf '# workoutrepl: #FILE must be a relative path inside the fixture: %s\n' "$file"; return 0 ;;
+        esac
+        [[ -z "$mode" ]] && { if head -c2 "$body" | grep -q '^#!'; then mode=755; else mode=644; fi; }
+        local tmp
+        mkdir -p -- "$D/$(dirname -- "$file")"
+        tmp=$(mktemp "$D/.workoutrepl-XXXXXX") || { printf '# workoutrepl: mktemp failed in %s\n' "$D"; return 0; }
+        cat "$body" > "$tmp" && chmod "$mode" "$tmp" && mv -f -- "$tmp" "$D/$file"
+        printf '%s# wrote:   day%02d/%s  (mode %s, %s lines)  saved %s%s\n' "$dim" "$n" "$file" "$mode" "$(wc -l < "$body")" "$(date +%H:%M:%S)" "$off"
+        [[ -z "$run" && "$file" == *.sh ]] && run="bash ./$file"
+    else
+        printf '%s# (no #FILE header: nothing written)  saved %s%s\n' "$dim" "$(date +%H:%M:%S)" "$off"
+    fi
+    local rc=0
+    if [[ -n "$run" ]]; then
+        printf '%s# command: %s   (in %s)%s\n' "$dim" "$run" "$D" "$off"
+        local in=/dev/null; [[ -s "$data" ]] && in=$data
+        ( cd -- "$D" && timeout -k 2 "${tmo:-20}" bash -c "$run" < "$in" 2>&1 ); rc=$?
+        if (( rc == 124 )); then printf '%s# exit:    124 (killed after %s s — a #TIMEOUT header raises it)%s\n' "$dim" "${tmo:-20}" "$off"
+        else printf '%s# exit:    %d%s\n' "$dim" "$rc" "$off"; fi
+    fi
+    # hand the day number to the check pane; a new mtime is what wakes its entr
+    printf '%s\n%s\n' "$n" "$(date +%s%N)" > "$stamp"
+    # The very first run races the check pane: entr arms its watch only after its own
+    # first invocation, so a stamp written in that window is missed and the right pane
+    # would sit on its idle text until the next save. Once, re-stamp after it is armed.
+    # The re-stamp must carry whatever day the stamp holds THEN, not this run's: a save
+    # for another day may land inside the 2 s, and re-stamping the old day would make the
+    # right pane grade the wrong day last.
+    if [[ ! -e "$stamp.armed" ]]; then
+        : > "$stamp.armed"
+        ( sleep 2; cur=; read -r cur < "$stamp" 2>/dev/null; [[ -n "$cur" ]] && printf '%s\n%s\n' "$cur" "$(date +%s%N)" > "$stamp" ) >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+    fi
+}
+
+# _wr_check STAMP WORKOUT — what the right-hand pane runs whenever the stamp changes
+_wr_check() {
+    local stamp=$1 workout=$2 n
+    read -r n < "$stamp" 2>/dev/null || n=
+    if [[ ! "$n" =~ ^[0-9]+$ ]]; then
+        printf '# the day is re-graded here on every save (workout check N)\n'; return 0
+    fi
+    printf '%s# workout check %d — graded %s (re-graded on every save)%s\n' "$(tput dim 2>/dev/null || true)" "$n" "$(date +%H:%M:%S)" "$(tput sgr0 2>/dev/null || true)"
+    "$workout" check "$n"
+}
+
+_wr_setup() {
+    local replfile=${1:?}
+    local body data hdrs stamp runner checker cleanup editpane workout
+    workout="$WORKOUT_LIB/bin/workout"
+    [[ -x "$workout" ]] || { echo "workoutrepl: trainer not found at $workout (set WORKOUT_LIB)" >&2; return 1; }
+    body=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-body-XXXXXX")       || return 1
+    data=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-data-XXXXXX")       || return 1
+    hdrs=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-hdrs-XXXXXX")       || return 1
+    stamp=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-stamp-XXXXXX")     || return 1
+    runner=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-run-XXXXXX")      || return 1
+    checker=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-check-XXXXXX")   || return 1
+    cleanup=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-cleanup-XXXXXX") || return 1
+    editpane=$(mktemp "${TMPDIR:-/tmp}/workoutrepl-edit-XXXXXX")   || return 1
+
+    local q_replfile q_body q_data q_hdrs q_stamp q_runner q_checker q_cleanup q_editpane q_workout q_lib q_home
+    q_replfile=$(printf '%q' "$replfile"); q_body=$(printf '%q' "$body"); q_data=$(printf '%q' "$data")
+    q_hdrs=$(printf '%q' "$hdrs"); q_stamp=$(printf '%q' "$stamp"); q_runner=$(printf '%q' "$runner")
+    q_checker=$(printf '%q' "$checker"); q_cleanup=$(printf '%q' "$cleanup"); q_editpane=$(printf '%q' "$editpane")
+    q_workout=$(printf '%q' "$workout"); q_lib=$(printf '%q' "$WORKOUT_LIB"); q_home=$(printf '%q' "$WORKOUT_HOME")
+
+    cat > "$runner" <<RUNNER
+#!/usr/bin/env bash
+set -uo pipefail
+export WORKOUT_LIB=$q_lib WORKOUT_HOME=$q_home
+$(declare -f _sed_in_place _wr_divide _wr_header _wr_run)
+_wr_run $q_replfile $q_body $q_data $q_hdrs $q_stamp $q_workout
+RUNNER
+    cat > "$checker" <<CHECKER
+#!/usr/bin/env bash
+set -uo pipefail
+export WORKOUT_LIB=$q_lib WORKOUT_HOME=$q_home
+$(declare -f _wr_check)
+_wr_check $q_stamp $q_workout
+CHECKER
+    cat > "$cleanup" <<CLEANUP
+#!/usr/bin/env bash
+rm -f $q_body $q_data $q_hdrs $q_stamp $q_stamp.armed $q_runner $q_checker $q_editpane $q_cleanup
+CLEANUP
+    # the editor pane's wrapper (see awkrepl): on editor exit or window kill, clean up and
+    # close only this REPL's window
+    cat > "$editpane" <<EDITPANE
+#!/usr/bin/env bash
+_editor=
+_done() {
+    trap - HUP TERM
+    [[ -n "\$_editor" ]] && kill "\$_editor" 2>/dev/null
+    $q_cleanup
+    [[ -n "\${TMUX_PANE:-}" ]] && tmux kill-window -t "\$TMUX_PANE" 2>/dev/null
+    exit 0
+}
+trap _done HUP TERM
+trap '' INT QUIT
+${EDITOR:-nano} $q_replfile <&0 &
+_editor=\$!
+wait "\$_editor"
+_editor=
+_done
+EDITPANE
+    chmod a+x "$runner" "$checker" "$cleanup" "$editpane"
+    # shellcheck disable=SC2034
+    REPL_REPLFILE=$replfile REPL_BODY=$body REPL_DATA=$data REPL_HDRS=$hdrs REPL_STAMP=$stamp
+    # shellcheck disable=SC2034
+    REPL_RUNNER=$runner REPL_CHECKER=$checker REPL_CLEANUP=$cleanup REPL_EDITPANE=$editpane
+    # shellcheck disable=SC2034
+    REPL_Q_REPLFILE=$q_replfile REPL_Q_STAMP=$q_stamp REPL_Q_RUNNER=$q_runner REPL_Q_CHECKER=$q_checker REPL_Q_EDITPANE=$q_editpane
+}
+
+workoutrepl() {
+    local replfile="$HOME/.repl.workout"
+    if [[ ! -f "$replfile" ]]; then
+        # a first file that explains itself; the headers are what the runner reads
+        cat > "$replfile" <<'FIRST'
+# workoutrepl — edit one piece of a day's lesson here and save (:w). The piece is
+# written into the day's fixture and run below left; the day is re-graded below right.
+# Add a `#FILE name` header under #DAY to say which file the body below becomes
+# (and `#RUN command` to run something other than `bash ./name`). `workout day 1`
+# prints the task; this comment block is narration and is never written anywhere.
+#DAY 1
+FIRST
+    fi
+    (( ${TRACE:-} )) && set -x
+    _wr_setup "$replfile" || return 1
+    # shellcheck disable=SC2016
+    local close='; tmux kill-window -t "$TMUX_PANE"'
+    local session="workoutrepl-$$"
+    local -a launch=(new-session -s "$session")
+    [[ -n "${TMUX:-}" ]] && launch=(new-window)
+    tmux "${launch[@]}" -n 'workoutrepl'                             \
+      "$REPL_Q_EDITPANE" \;                                          \
+      split-window    -c "$PWD"                                      \
+        "echo $REPL_Q_REPLFILE | entr -c $REPL_Q_RUNNER$close" \;    \
+      split-window -h -c "$PWD"                                      \
+        "echo $REPL_Q_STAMP | entr -c $REPL_Q_CHECKER$close" \;      \
+      select-pane -t 1 \; select-pane -t 2 \; select-pane -t 0
+    if [[ -z "${TMUX:-}" ]] && ! tmux has-session -t "=$session" 2>/dev/null; then
+        rm -f "$REPL_BODY" "$REPL_DATA" "$REPL_HDRS" "$REPL_STAMP" "$REPL_STAMP.armed" "$REPL_RUNNER" \
+              "$REPL_CHECKER" "$REPL_CLEANUP" "$REPL_EDITPANE"
+    fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then workoutrepl "$@"; fi

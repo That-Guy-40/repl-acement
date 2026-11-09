@@ -1,0 +1,17 @@
+# day 24 · piece 2 of 2 — take-snapshots.sh: three states, three snapshots
+#
+# Run snapshot.sh three times — data-v1 → snap1, data-v2 → snap2, data-v3 → snap3 —
+# into vault/. The #RUN then shows what the checker looks at: big.bin should be ONE
+# inode with link count 3; notes.txt should differ between snap1 and snap2 (it changed)
+# and be shared by snap2 and snap3; vault/latest → snap3. The skeleton takes only the
+# first snapshot.
+#DAY 24
+#FILE take-snapshots.sh
+#RUN rm -rf vault; bash ./take-snapshots.sh; echo '--- big.bin (links inode):'; stat -c '%h %i %n' vault/snap*/big.bin; echo '--- notes.txt:'; stat -c '%i %n' vault/snap*/notes.txt; echo '--- latest:'; readlink vault/latest
+#!/usr/bin/env bash
+./snapshot.sh data-v1 vault snap1
+# ← data-v2 → snap2, data-v3 → snap3
+#> out: vault/snap1/big.bin
+#> out-not: vault/snap3/big.bin
+#> check: vault/snap2 is missing
+#> check-not: PASS: day 24

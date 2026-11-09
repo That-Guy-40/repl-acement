@@ -1,0 +1,26 @@
+# day 1 · piece 1 of 3 — inputrc: make the arrow keys search history by prefix
+#
+# Readline reads an init file named by INPUTRC. The #RUN line below points a throwaway
+# bash at THIS file and prints what `bind -p` and `bind -v` report, so the OUTPUT pane
+# (below left) is your test bench and the CHECK pane (below right) is the day's grader.
+# Everything above the #DAY line is narration: it is never written anywhere.
+#
+# Fill the body in, save (:w), look down. You want:
+#   "\e[A" → history-search-backward      "\e[B" → history-search-forward
+#   set show-all-if-ambiguous on · set colored-stats on · set completion-ignore-case on
+# Out of the box bind -p shows history-search bound to PgUp/PgDn ("\e[5~" / "\e[6~");
+# you are adding the arrows beside them.
+#DAY 1
+#FILE inputrc
+#RUN INPUTRC=$PWD/inputrc bash -c 'bind -p | grep history-search; bind -v | grep -E "show-all-if-ambiguous|colored-stats|completion-ignore-case"' 2>/dev/null
+# inputrc — readline key bindings and variables (this comment is fine; readline ignores it)
+# "\e[A": …
+# "\e[B": …
+# set … on
+#> out: set show-all-if-ambiguous off
+#> out: set colored-stats off
+#> out-not: set show-all-if-ambiguous on
+#> out-not: "\e[A": history-search-backward
+#> check: Up arrow
+#> check: is not bound to history-search-backward
+#> check-not: PASS: day 01

@@ -1,0 +1,15 @@
+# day 11 · piece 5 of 6 — initials.txt: cut, tr, and uniq WITHOUT sort
+#
+# cut -f2 takes the name column, cut -c1 its first character, tr a-z A-Z upper-cases,
+# and uniq collapses ADJACENT duplicates only — so A appears twice, which is the point:
+# sort -u would lose the file order. The skeleton stops at the names.
+#DAY 11
+#FILE initials.sh
+#RUN bash ./initials.sh; echo '--- initials.txt:'; cat initials.txt
+#!/usr/bin/env bash
+cut -f2 users.tsv            # ← first character, upper-cased, uniq; write initials.txt
+#> out: grace
+#> out: initials.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: initials.txt (file order; only ADJACENT duplicates collapse
+#> check-not: PASS: day 11

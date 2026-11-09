@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# workout — the trainer for the 30-day Linux command-line workout.
+#
+# One drill per day, each a fixture under ~/workout/dayNN plus a checker that grades the
+# OUTCOME you leave in it. The article this lab operationalizes (How-To Geek, 2026-11-03)
+# said the plan Claude produced "doesn't walk you through anything" — so this one does
+# three things that plan did not: every day states its whole task (`day`), every day can
+# be GRADED without a teacher in the room (`check`), and the reference solution is there
+# when you want it but gated behind your own passing check (`solution`), because the
+# author's worry was cognitive offloading and a solution you can read first is exactly that.
+#
+# Nothing here leaves ~/workout (or $WORKOUT_HOME). Install your dotfile drafts into ~ by
+# hand when you are happy with them; the trainer never does it for you.
+set -uo pipefail
+
+VERSION="1.0.0"
+HERE="$(cd -- "$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+WORKOUT_LIB="${WORKOUT_LIB:-$(cd -- "$HERE/.." && pwd)}"
+# shellcheck source=../lib/drill-lib.sh
+. "$WORKOUT_LIB/lib/drill-lib.sh"
+
+# Help text is DATA: the delimiter is quoted, so nothing in it can ever run. (Phase 2 of
+# this repo shipped a help text with a backtick in it for months; see
+# tools/check-usage-is-data.sh — this lab's tests run that checker over this file.)
+usage() {
+    cat <<'EOF'
+workout — a 30-day Linux command-line workout, one checkable drill per day
+
+USAGE
+  workout list                 the roster: 30 days, 4 weeks, 4 boss battles
+  workout day   <N>            print day N's task (whole task — nothing is hidden)
+  workout setup <N>            (re)build day N's fixture in $WORKOUT_HOME/dayNN — destroys your work there
+  workout check <N>            grade day N: every assertion printed, then one PASS/FAIL/UNKNOWN line
+  workout hint  <N>            a nudge, not a solution
+  workout solution <N> [--spoil]
+                               the reference solution — shown once day N passes, or with --spoil
+  workout progress             re-grade every started day (derived each time; nothing is cached)
+  workout help | version
+
+  <N> is 1..30, or day07, or boss1..boss4 (= days 7, 14, 21, 28).
+
+WHERE
+  WORKOUT_HOME   the sandbox, default ~/workout. Every drill lives in $WORKOUT_HOME/dayNN.
+  WORKOUT_LIB    where drills/ and lib/ are (set automatically from this script's location).
+
+A DAY, START TO FINISH
+  workout day 3        # read the task
+  workout setup 3      # build the fixture (safe to repeat: it resets the day)
+  cd ~/workout/day03   # do the work, with man pages and your own hands
+  workout check 3      # grade it; fix; grade again
+  workout solution 3   # compare notes, once it passes
+
+EXIT STATUS
+  0 on a pass, 1 on a fail or a refused request, 2 on a usage error,
+  3 when a check could not be fully verified on this machine (UNKNOWN).
+EOF
+}
+
+die_usage() { printf 'workout: %s\n\n' "$*" >&2; usage >&2; exit 2; }
+
+# load <N> — source the drill file in THIS shell (callers run it in a subshell).
+load() {
+    local n="$1" f fn; f="$(drill_file "$n")"
+    [[ -r "$f" ]] || { printf 'workout: no drill file for day %02d (%s)\n' "$n" "$f" >&2; exit 1; }
+    D="$(drill_dir "$n")"
+    # shellcheck source=/dev/null
+    . "$f"
+    for fn in brief setup check solve; do
+        declare -F "$fn" >/dev/null || { printf 'workout: drill day%02d defines no %s()\n' "$n" "$fn" >&2; exit 1; }
+    done
+}
+
+need_n() { day_num "${1:-}" 2>/dev/null || die_usage "expected a day (1..30, day07, boss2); got '${1:-}'"; }
+
+header() {
+    local n="$1"
+    printf '━━━ Day %02d · week %d · %s' "$n" "$DRILL_WEEK" "$DRILL_TITLE"
+    is_boss "$n" && printf '  ⚔ BOSS BATTLE: %s' "$(boss_name "$n")"
+    printf '\n'
+}
+
+cmd_list() {
+    local n w=0 dw dt mark
+    printf 'The 30-day workout — %s\n\n' "$WORKOUT_HOME"
+    for n in $(seq 1 30); do
+        IFS='|' read -r dw dt < <( load "$n" >/dev/null 2>&1; printf '%s|%s\n' "$DRILL_WEEK" "$DRILL_TITLE" )
+        if (( dw != w )); then w=$dw; printf 'Week %d — %s\n' "$w" "$(week_name "$w")"; fi
+        mark='  '; [[ -d "$(drill_dir "$n")" ]] && mark='· '
+        if is_boss "$n"; then printf '  %sday %02d  ⚔ %s — %s\n' "$mark" "$n" "$(boss_name "$n")" "$dt"
+        else printf '  %sday %02d  %s\n' "$mark" "$n" "$dt"; fi
+    done
+    printf '\n(· = fixture built. `workout progress` grades them; `workout day N` starts one.)\n'
+}
+
+cmd_day() {
+    local n; n="$(need_n "${1:-}")"
+    ( load "$n"; header "$n"
+      printf 'Fixture: %s   (build it with: workout setup %d)\n' "$D" "$n"
+      if ((${#DRILL_TOOLS[@]})); then printf 'Tools:   %s\n' "${DRILL_TOOLS[*]}"; fi
+      printf '\n'; brief
+      printf '\nWhen you think you are done:  workout check %d\n' "$n" )
+}
+
+cmd_hint() {
+    local n; n="$(need_n "${1:-}")"
+    ( load "$n"; header "$n"
+      if declare -F hint >/dev/null; then hint; else printf 'No hint for this day — the task text is the hint.\n'; fi )
+}
+
+cmd_setup() {
+    local n; n="$(need_n "${1:-}")"
+    ( load "$n"
+      mkdir -p -- "$WORKOUT_HOME"
+      safe_reset "$D" || exit 1
+      ( cd -- "$D" && setup ) || { printf 'workout: setup for day %02d failed\n' "$n" >&2; exit 1; }
+      printf 'day %02d fixture built in %s\n' "$n" "$D" )
+}
+
+# cmd_check <N> — exits 0 pass / 1 fail / 3 unknown. Runs in a subshell so a drill's
+# stray `exit` cannot kill the trainer, and so the counters start at zero every time.
+cmd_check() {
+    local n; n="$(need_n "${1:-}")"
+    ( load "$n"
+      [[ -d "$D" ]] || { printf 'FAIL: day %02d — fixture %s does not exist (run: workout setup %d)\n' "$n" "$D" "$n"; exit 1; }
+      header "$n"
+      # Missing tools are an UNKNOWN, named — never a silent pass and never a crash.
+      local t rc
+      for t in "${DRILL_TOOLS[@]}"; do
+          have "$t" || unknown "tool '$t' is not installed here, so assertions that need it cannot run"
+      done
+      cd -- "$D" || exit 1
+      check
+      rc=0; verdict "$n" "$DRILL_TITLE" || rc=$?
+      if (( rc != 0 )); then (( _UNKNOWN > 0 && _BAD == 0 )) && exit 3; exit 1; fi
+      exit 0 )
+}
+
+cmd_solution() {
+    local n spoil=0 a
+    for a in "$@"; do [[ "$a" == --spoil ]] && spoil=1; done
+    n="$(need_n "${1:-}")"
+    if (( ! spoil )) && ! cmd_check "$n" >/dev/null 2>&1; then
+        printf 'day %02d has not passed yet, so the reference solution stays closed.\n' "$n"
+        printf 'Reading a solution first is the offloading the article worried about. Try `workout hint %d`,\n' "$n"
+        printf 'or — if you really want it — `workout solution %d --spoil`.\n' "$n"
+        exit 1
+    fi
+    ( load "$n"; header "$n"
+      printf '# reference solution — run from %s\n' "$D"
+      # The body of solve(), as source: `declare -f` reprints the function bash parsed,
+      # so what you read is exactly what demo.sh executed to prove the day is passable.
+      declare -f solve | sed '1,2d;$d' | sed 's/^    //' )
+}
+
+cmd_progress() {
+    local n rc passed=0 failed=0 unknown=0 started=0
+    printf 'progress — graded now, against what is on disk (nothing is remembered between runs)\n\n'
+    for n in $(seq 1 30); do
+        if [[ ! -d "$(drill_dir "$n")" ]]; then printf '  day %02d  ·  not started\n' "$n"; continue; fi
+        started=$((started+1))
+        rc=0; cmd_check "$n" >/dev/null 2>&1 || rc=$?
+        case $rc in
+            0) passed=$((passed+1));   printf '  day %02d  ✔  passed\n' "$n" ;;
+            3) unknown=$((unknown+1)); printf '  day %02d  ?  UNKNOWN — a tool this day needs is missing here\n' "$n" ;;
+            *) failed=$((failed+1));   printf '  day %02d  ✘  not yet\n' "$n" ;;
+        esac
+    done
+    printf '\n%d/30 started · %d passed · %d not yet · %d unknown\n' "$started" "$passed" "$failed" "$unknown"
+}
+
+case "${1:-help}" in
+    list)      cmd_list ;;
+    day)       cmd_day "${2:-}" ;;
+    hint)      cmd_hint "${2:-}" ;;
+    setup)     cmd_setup "${2:-}" ;;
+    check)     cmd_check "${2:-}" ;;
+    solution)  shift; cmd_solution "$@" ;;
+    progress)  cmd_progress ;;
+    version|--version) printf 'workout %s\n' "$VERSION" ;;
+    # plumbing for repl/workoutrepl: normalise a day spelling, print a day's title
+    --day-number) day_num "${2:-}" ;;
+    --title)   ( load "$(need_n "${2:-}")"; printf '%s\n' "$DRILL_TITLE" ) ;;
+    help|--help|-h) usage ;;
+    *) die_usage "unknown verb '${1}'" ;;
+esac

@@ -1,0 +1,14 @@
+# day 8 · piece 5 of 6 — context.txt: a window around the match
+#
+# -B1 / -A1 print one line of context before and after (-C1 does both); -h hides the
+# filename prefix that -r adds. The skeleton shows the FATAL line alone, with its path.
+#DAY 8
+#FILE context.sh
+#RUN bash ./context.sh; echo '--- context.txt:'; cat context.txt
+#!/usr/bin/env bash
+grep -r FATAL logs           # ← add the context window and drop the filename; write context.txt
+#> out: FATAL cannot continue
+#> out: context.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: context.txt (-B1 -A1 around FATAL, no filename) is missing
+#> check-not: PASS: day 08

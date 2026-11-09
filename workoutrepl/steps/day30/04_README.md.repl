@@ -1,0 +1,19 @@
+# day 30 · piece 4 of 5 — bashrc.d/README.md: the one line that loads the rest
+#
+# In a code block, the loader you would add to ~/.bashrc:
+#     for f in ~/.bashrc.d/*.sh; do . "$f"; done
+# The skeleton has the heading and no loop.
+#DAY 30
+#FILE bashrc.d/README.md
+#RUN cat bashrc.d/README.md
+# bashrc.d
+
+Small, sourceable files, one job each. Load them from ~/.bashrc with:
+
+```bash
+# ← the for loop goes here
+```
+#> out: # bashrc.d
+#> out-not: for f in
+#> check: README.md has the loader loop does not contain
+#> check-not: PASS: day 30

@@ -1,0 +1,13 @@
+# day 26 · piece 3 of 4 — cron.txt: five fields and a command
+#
+# minute hour day-of-month month day-of-week — */15 is every quarter hour, 9-17 is a
+# range of hours, 1-5 (or Mon-Fri) the weekdays. The skeleton runs every 15 minutes
+# around the clock, every day.
+#DAY 26
+#FILE cron.txt
+#RUN cat cron.txt
+*/15 * * * * /home/learner/bin/backup.sh
+#> out: */15 * * * *
+#> out-not: 9-17
+#> check: cron hour field: expected 9-17, got
+#> check-not: PASS: day 26

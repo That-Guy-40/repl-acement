@@ -1,0 +1,13 @@
+# day 19 · piece 2 of 2 — answers.txt: two /proc facts
+#
+# Look for yourself:  ls -l /proc/$$/exe      and      cat /proc/loadavg
+# Replace the two comment lines with your two answers, in order.
+#DAY 19
+#FILE answers.txt
+#RUN cat answers.txt
+# Q1: what does /proc/<pid>/exe point to?
+# Q2: which /proc file holds the 1/5/15-minute load averages?
+#> out: # Q1:
+#> out-not: loadavg
+#> check: Q2 (load averages): expected to match
+#> check-not: PASS: day 19

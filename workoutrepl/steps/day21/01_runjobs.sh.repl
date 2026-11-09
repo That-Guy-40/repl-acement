@@ -1,0 +1,49 @@
+# day 21 · boss battle — runjobs.sh: xargs -P in forty lines
+#
+# The option parsing (day 16) is done. The skeleton then runs the jobs one at a time,
+# in the foreground, writing each output file in place and never writing summary.tsv —
+# the OUTPUT pane shows `job i rc=…` lines and a missing summary. Build the rest from
+# pieces you have already written: start each job in the background writing to a TEMP
+# file in OUTDIR (day 17) and rename it when the job ends; keep a pid→index table and
+# hold at `wait -n` while $jobs_max are running (day 18); write summary.tsv `i<TAB>rc`
+# in job order when all are done; exit with the number of failures; and trap TERM to
+# kill the children BY PID, remove the temp files and exit 143. The checker also times
+# -j 3 against -j 1: three-way parallelism must be measurably faster.
+#DAY 21
+#FILE runjobs.sh
+#TIMEOUT 40
+#RUN rm -rf out; ./runjobs.sh -j 3 -o out jobs.txt; echo "rc=$?"; echo '--- out/:'; ls out; echo '--- summary.tsv:'; cat out/summary.tsv
+#!/usr/bin/env bash
+# runjobs.sh [-j N] -o OUTDIR JOBSFILE — run shell commands N at a time, capture each atomically
+set -uo pipefail
+usage() { printf 'usage: runjobs.sh [-j N] -o OUTDIR JOBSFILE\n  -j N   run at most N jobs at once (default 2)\n  -o DIR write job-<i>.out and summary.tsv into DIR\n'; }
+[[ ${1-} == --help ]] && { usage; exit 0; }
+jobs_max=2 out=
+while getopts ':j:o:h' opt; do
+    case $opt in
+        j) jobs_max=$OPTARG ;; o) out=$OPTARG ;; h) usage; exit 0 ;;
+        :)  printf 'runjobs.sh: -%s needs an argument\n' "$OPTARG" >&2; exit 64 ;;
+        \?) printf 'runjobs.sh: unknown option -%s\n' "$OPTARG" >&2; exit 64 ;;
+    esac
+done
+shift $((OPTIND - 1))
+jobsfile=${1-}
+[[ -n $out ]]                      || { printf 'runjobs.sh: -o OUTDIR is required\n' >&2; exit 64; }
+[[ -n $jobsfile && -r $jobsfile ]] || { printf 'runjobs.sh: JOBSFILE missing or unreadable\n' >&2; exit 64; }
+[[ $jobs_max =~ ^[1-9][0-9]*$ ]]   || { printf 'runjobs.sh: -j needs a positive integer\n' >&2; exit 64; }
+mkdir -p -- "$out"
+# ← declare -A pids (pid → job index); a TERM trap that kills "${!pids[@]}", removes temp files, exits 143
+i=0
+while IFS= read -r cmd; do
+    [[ -z $cmd || $cmd == \#* ]] && continue
+    i=$((i + 1))
+    bash -c "$cmd" > "$out/job-$i.out" 2>&1        # ← serial and in place: background it, cap at $jobs_max (wait -n), temp file + mv
+    echo "job $i rc=$?"
+done < "$jobsfile"
+# ← wait for the rest; summary.tsv (i<TAB>rc, job order); exit "$failed"
+#> out: job 4 rc=2
+#> out: summary.tsv: No such file or directory
+#> out-not: # exit:    0
+#> check: runjobs.sh -j 3 exit status (one failing job): expected 1, got 0
+#> check: out/summary.tsv is missing
+#> check-not: PASS: day 21

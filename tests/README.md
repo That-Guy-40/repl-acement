@@ -18,9 +18,10 @@ Layout
 | `lib/ttydrive` | the terminal driver, vendored from [socwrap][] (`tools/ttydrive`) |
 | `lib/replpty.sh` | helpers that launch a REPL under ttydrive, edit its file, read the panes |
 | `lib/helpers.sh` | the shared `assert_*` / `pass` / `fail` counters |
-| `e2e/1[0-5]_*.sh` | one live-UI suite per REPL |
-| `e2e/16_detach_reattach.sh` | detach, reattach and quit each REPL; checks the session and its temp files survive a detach, and that quitting the editor (whose pane wrapper then cleans up) removes them and ends the session |
-| `e2e/17_nested_tmux.sh` | launches each REPL from a pane inside a host tmux session (its own server, not ttydrive), so it opens as a new window; checks it survives other panes exiting, leaves no `pane-exited` hooks on the session, still reloads on save, and on quitting closes only its own window and removes its temp files; the same cleanup is checked when the REPL window is killed from tmux and when one of its `entr` panes exits |
+| `e2e/1[0-5]_*.sh` | one live-UI suite per tool REPL |
+| `e2e/16_detach_reattach.sh` | detach, reattach and quit each REPL (all seven); checks the session and its temp files survive a detach, and that quitting the editor (whose pane wrapper then cleans up) removes them and ends the session |
+| `e2e/17_nested_tmux.sh` | launches each REPL (all seven) from a pane inside a host tmux session (its own server, not ttydrive), so it opens as a new window; checks it survives other panes exiting, leaves no `pane-exited` hooks on the session, still reloads on save, and on quitting closes only its own window and removes its temp files; the same cleanup is checked when the REPL window is killed from tmux and when one of its `entr` panes exits |
+| `e2e/18_workoutrepl_live.sh` | the seventh REPL, `workoutrepl`, whose save writes into a graded fixture: panes up, a save builds the fixture and writes/runs the piece (`exit:    3`), the check pane re-grades the day and names the defect, switching `#DAY` grades the new day last, no `#DAY` prints the hint, quitting leaves no scratch files |
 | `e2e/run.sh` | runs them all |
 
 How it works
@@ -54,7 +55,7 @@ bash tests/e2e/run.sh
 ```
 
 Requirements: bash 4+, `tmux` (3.0+) and `entr`, plus the tool a given suite
-drives (`gawk`, `sed`, `jq`, `yq`, `mlr`, `perl`). A suite that finds `tmux`,
+drives (`gawk`, `sed`, `jq`, `yq`, `mlr`, `perl`; `workoutrepl` needs only bash and coreutils for its suite). A suite that finds `tmux`,
 `entr` or its tool missing prints `SKIP` and passes. The `yq` suite additionally skips unless the `yq`
 on `PATH` is [Mike Farah's Go yq][mf] (yqrepl targets that one, not the
 unrelated Python `yq`).

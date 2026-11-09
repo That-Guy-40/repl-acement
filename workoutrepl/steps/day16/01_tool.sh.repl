@@ -1,0 +1,39 @@
+# day 16 · piece 1 of 1 — tool.sh: getopts and good manners
+#
+# The usage text and the long-option special case are written; the getopts loop is a
+# comment. getopts ':n:uo:h' means: n and o take an argument, u and h do not, and the
+# leading colon puts error handling in YOUR hands — opt becomes `:` for a missing
+# argument and `?` for an unknown option, with the letter in $OPTARG. Usage errors go
+# to stderr with exit 64 (EX_USAGE); help goes to stdout with exit 0. After the loop,
+# shift $((OPTIND-1)) leaves only the words. The #RUN tries a bundle, a bad option
+# and a `--`: today the skeleton prints the options as if they were words.
+#DAY 16
+#FILE tool.sh
+#RUN ./tool.sh -n 2 -u hi; echo "rc=$?"; echo '--- -z hi (unknown option):'; ./tool.sh -z hi; echo "rc=$?"; echo '--- -- -u:'; ./tool.sh -- -u; echo "rc=$?"
+#!/usr/bin/env bash
+# tool.sh [-n COUNT] [-u] [-o FILE] [--] WORD...
+set -uo pipefail
+usage() {
+    cat <<'USAGE'
+usage: tool.sh [-n COUNT] [-u] [-o FILE] [--] WORD...
+  -n COUNT   print each word COUNT times (default 1)
+  -u         upper-case the words
+  -o FILE    write to FILE instead of stdout
+  -h, --help this text
+USAGE
+}
+[[ ${1-} == --help ]] && { usage; exit 0; }      # getopts knows nothing about long options
+count=1 upper=0 outfile=
+# while getopts ':n:uo:h' opt; do case $opt in … esac; done; shift $((OPTIND - 1))
+#   n) a positive integer, or exit 64      u) upper=1      o) outfile=$OPTARG      h) usage; exit 0
+#   :) "-$OPTARG needs an argument" + usage → stderr, exit 64      \?) "unknown option -$OPTARG", same
+(( $# )) || { usage >&2; exit 64; }
+for w in "$@"; do                                # ← honour $count, $upper (${w^^}) and $outfile
+    printf '%s\n' "$w"
+done
+#> out: -n
+#> out: rc=0
+#> out-not: rc=64
+#> check: [BAD] tool.sh -n 2 -u hi: expected
+#> check: unknown option -z exits EX_USAGE: expected 64
+#> check-not: PASS: day 16

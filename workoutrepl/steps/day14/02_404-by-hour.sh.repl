@@ -1,0 +1,14 @@
+# day 14 · boss battle, piece 2 of 6 — 404-by-hour.txt: filter, extract, count
+#
+# Select rows where $(NF-1) is 404, split the [timestamp] field on ":" to get the hour
+# (split($4, t, ":") → t[2]), count per hour, print in END, sort. The skeleton prints
+# the whole timestamp of every 404.
+#DAY 14
+#FILE 404-by-hour.sh
+#RUN bash ./404-by-hour.sh; echo '--- 404-by-hour.txt:'; cat 404-by-hour.txt
+#!/usr/bin/env bash
+awk '$(NF-1)==404 { print $4 }' access.log       # ← split out the hour, count, END, sort; write 404-by-hour.txt
+#> out: 404-by-hour.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: 404-by-hour.txt is missing
+#> check-not: PASS: day 14

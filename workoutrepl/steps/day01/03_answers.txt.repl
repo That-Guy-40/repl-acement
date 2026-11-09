@@ -1,0 +1,21 @@
+# day 1 · piece 3 of 3 — answers.txt: three keys you will use every day from now on
+#
+# Three lines, one answer each, in this order. Write keys the way `bind -p` does
+# (M-. or \e. or Alt-. are all accepted; C-x C-e or Ctrl-x Ctrl-e likewise).
+#   Q1  the readline KEY that inserts the LAST ARGUMENT of the previous command
+#   Q2  the HISTORY designator (the `!` form) that means the same thing
+#   Q3  the readline KEY that opens the current line in $EDITOR
+# Try them in a real shell first: `ls /etc`, then `cat ` and press the Q1 key.
+# The #RUN shows the file with `cat -A`, so you can see every line end ($) and stray tab.
+#DAY 1
+#FILE answers.txt
+#RUN cat -A answers.txt
+# replace these three lines with your three answers, in order
+# Q1:
+# Q2:
+# Q3:
+#> out: # replace these three lines
+#> out-not: M-.$
+#> check: Q1: expected the readline key Alt-.
+#> check: Q3: expected the readline key Ctrl-x Ctrl-e
+#> check-not: PASS: day 01

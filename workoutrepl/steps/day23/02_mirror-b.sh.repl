@@ -1,0 +1,13 @@
+# day 23 · piece 2 of 4 — mirror-b/: src/ itself, placed inside
+#
+# No trailing slash: `rsync -a src mirror-b/` copies the DIRECTORY, so
+# mirror-b/src/README.md exists. The skeleton makes the opposite mistake to piece 1.
+#DAY 23
+#FILE mirror-b.sh
+#RUN rm -rf mirror-b; bash ./mirror-b.sh; echo '--- mirror-b/ (two levels):'; find mirror-b -maxdepth 2 | LC_ALL=C sort
+#!/usr/bin/env bash
+rsync -a src/ mirror-b/                  # ← the directory itself: src
+#> out: mirror-b/README.md
+#> out-not: mirror-b/src/README.md
+#> check: mirror-b/src does not exist
+#> check-not: PASS: day 23

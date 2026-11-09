@@ -6,7 +6,7 @@
 ##
 
 ME = $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST))
-REPLS = awkrepl sedrepl jqrepl yqrepl mlrrepl perlrepl
+REPLS = awkrepl sedrepl jqrepl yqrepl mlrrepl perlrepl workoutrepl
 
 define _PERL_SCRIPT
 	BEGIN {

@@ -1,0 +1,14 @@
+# day 10 · piece 3 of 4 — status-hist.txt: count from the END of the line
+#
+# The request is quoted and may contain spaces, so the status is not a fixed field
+# from the left — but it is always the second-to-last: $(NF-1). Count occurrences in
+# an array, print in END, sort. The skeleton prints the wrong field.
+#DAY 10
+#FILE status-hist.sh
+#RUN bash ./status-hist.sh; echo '--- status-hist.txt:'; cat status-hist.txt
+#!/usr/bin/env bash
+awk '{ print $9 }' access.log        # ← $(NF-1), counted in an array; write status-hist.txt
+#> out: status-hist.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: status-hist.txt is missing
+#> check-not: PASS: day 10

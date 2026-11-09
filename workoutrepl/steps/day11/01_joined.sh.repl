@@ -1,0 +1,17 @@
+# day 11 · piece 1 of 6 — joined.tsv: join two files on a key
+#
+# join merges two SORTED inputs on their first field, so each side is sorted first —
+# with process substitution, and in the same collation (LC_ALL=C). -t $'\t' makes the
+# separator a tab. The output is id, name, count; cut -f2,3 drops the id, then sort by
+# name. The skeleton joins unsorted inputs — read join's complaint in the OUTPUT pane.
+#DAY 11
+#FILE joined.sh
+#RUN bash ./joined.sh; echo '--- joined.tsv:'; cat joined.tsv
+#!/usr/bin/env bash
+join -t $'\t' users.tsv logins.tsv        # ← sort both sides, drop the id, sort by name, write joined.tsv
+#> out: join: 
+#> out: is not sorted
+#> out: joined.tsv: No such file or directory
+#> out-not: # exit:    0
+#> check: joined.tsv (ids 2,3,1,8,5,10 are in both
+#> check-not: PASS: day 11

@@ -1,0 +1,14 @@
+# day 9 · piece 4 of 4 — versions.txt: extract a token with s///p
+#
+# The idiom: -n, then s/.*(TOKEN).*/\1/p — the substitution replaces the WHOLE line with
+# the captured group, and p prints only lines where the substitution happened. \b keeps
+# `v1.2.3` from matching inside a longer word. The skeleton prints every line whole.
+#DAY 9
+#FILE versions.sh
+#RUN bash ./versions.sh; echo '--- versions.txt:'; cat versions.txt
+#!/usr/bin/env bash
+sed -nE 'p' releases.txt     # ← s/.*\b(v[0-9]+\.[0-9]+\.[0-9]+)\b.*/\1/p, into versions.txt
+#> out: versions.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: versions.txt (version tokens only) is missing
+#> check-not: PASS: day 09

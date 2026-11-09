@@ -1,0 +1,13 @@
+# day 14 · boss battle, piece 4 of 6 — unknown-ips.txt: the ips join dropped
+#
+# comm -23 of the distinct log ips against geo.tsv's ips (both LC_ALL=C sorted) is the
+# set difference. The skeleton lists the distinct log ips.
+#DAY 14
+#FILE unknown-ips.sh
+#RUN bash ./unknown-ips.sh; echo '--- unknown-ips.txt:'; cat unknown-ips.txt
+#!/usr/bin/env bash
+awk '{print $1}' access.log | LC_ALL=C sort -u     # ← comm -23 against cut -f1 geo.tsv, sorted; write unknown-ips.txt
+#> out: unknown-ips.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: unknown-ips.txt is missing
+#> check-not: PASS: day 14

@@ -1,0 +1,15 @@
+# day 22 · piece 5 of 5 — flat/: drop the packager's top directory
+#
+# --strip-components=1 removes the first path element from every member, so
+# site/bin/deploy.sh lands at flat/bin/deploy.sh — how a release tarball is unpacked
+# into a directory of YOUR choosing. The skeleton keeps the site/ prefix.
+#DAY 22
+#FILE flat.sh
+#RUN rm -rf flat; bash ./flat.sh; echo '--- flat/ (two levels):'; find flat -maxdepth 2 | LC_ALL=C sort
+#!/usr/bin/env bash
+mkdir -p flat
+tar -xzf site.tar.gz -C flat             # ← --strip-components=1
+#> out: flat/site
+#> out-not: flat/bin
+#> check: flat/bin/deploy.sh (no site/ prefix) is missing
+#> check-not: PASS: day 22

@@ -1,0 +1,18 @@
+# day 4 · piece 2 of 3 — swap.sh: trade stdout and stderr with a third descriptor
+#
+# Redirections are dup2() calls, applied left to right. To swap 1 and 2 you need a
+# scratch slot: save stdout in fd 3, point 1 at 2, point 2 at the saved 3, close 3.
+# The #RUN runs the script twice: once with stderr discarded (you should see only the
+# `err` lines, because they now travel on stdout) and once with stdout discarded.
+# The skeleton swaps nothing yet.
+#DAY 4
+#FILE swap.sh
+#RUN echo '--- 2>/dev/null — only the err lines should show:'; ./swap.sh 2>/dev/null; echo '--- >/dev/null — only the out lines should show:'; ./swap.sh >/dev/null
+#!/usr/bin/env bash
+# add the fd dance after ./noisy.sh:  3>&1  1>&2  2>&3  3>&-   (read it left to right)
+./noisy.sh
+#> out: --- 2>/dev/null
+#> out: err 1
+#> out: out 1
+#> check: swap.sh: stdout now carries the err lines: expected
+#> check-not: PASS: day 04

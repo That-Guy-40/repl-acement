@@ -1,0 +1,22 @@
+# day 20 · piece 3 of 4 — links.sh: two names for one inode, and a pointer to a name
+#
+# `ln TARGET NAME` makes a HARD link: a second directory entry for the same inode, so
+# the link count becomes 2 and an append through either name is seen through both.
+# `ln -s data.txt NAME` makes a SYMBOLIC link: a file whose content is a path. The
+# skeleton uses cp where ln belongs — the OUTPUT pane shows two different inodes and a
+# data.txt that never saw the append.
+#DAY 20
+#FILE links.sh
+#RUN bash ./links.sh; echo '--- links/ (links inode name):'; stat -c '%h %i %n' links/data.txt links/data.hard; ls -l links/data.sym; echo '--- data.txt:'; cat links/data.txt
+#!/usr/bin/env bash
+set -euo pipefail
+rm -rf links; mkdir -p links
+printf 'original\n' > links/data.txt
+cp links/data.txt links/data.hard          # ← a copy is a new inode; make it a hard link (ln)
+ln -sf data.txt links/data.sym
+printf 'appended\n' >> links/data.hard
+#> out: 1 
+#> out: --- data.txt:
+#> out-not: appended
+#> check: links/data.txt link count: expected 2, got 1
+#> check-not: PASS: day 20

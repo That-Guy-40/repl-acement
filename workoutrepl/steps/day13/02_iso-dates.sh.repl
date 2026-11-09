@@ -1,0 +1,13 @@
+# day 13 · piece 2 of 6 — iso-dates.txt: TOKENS, not lines
+#
+# -o prints each match on its own line; {4} {2} {2} count digits; \b word boundaries
+# keep 12024-01-01 from matching. Format, not validity: 2024-13-45 is a token.
+#DAY 13
+#FILE iso-dates.sh
+#RUN bash ./iso-dates.sh; echo '--- iso-dates.txt:'; cat iso-dates.txt
+#!/usr/bin/env bash
+grep -E '[0-9]+-[0-9]+-[0-9]+' input.txt     # ← exact widths, \b, and -o; write iso-dates.txt
+#> out: iso-dates.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: iso-dates.txt (tokens, in order) is missing
+#> check-not: PASS: day 13

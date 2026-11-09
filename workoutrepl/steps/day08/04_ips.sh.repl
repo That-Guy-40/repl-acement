@@ -1,0 +1,14 @@
+# day 8 · piece 4 of 6 — ips.txt: the MATCH only, not the line
+#
+# -o prints only the matching part, -h drops the filename prefix, -E turns on extended
+# regex so {1,3} and the group work. Then sort -u for distinct addresses. The skeleton
+# prints the whole lines with their filenames.
+#DAY 8
+#FILE ips.sh
+#RUN bash ./ips.sh; echo '--- ips.txt:'; cat ips.txt
+#!/usr/bin/env bash
+grep -rE '([0-9]{1,3}\.){3}[0-9]{1,3}' logs     # ← whole lines; -o -h, then sort -u into ips.txt
+#> out: ips.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: ips.txt (addresses only, deduplicated) is missing
+#> check-not: PASS: day 08

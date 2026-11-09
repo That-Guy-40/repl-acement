@@ -1,0 +1,14 @@
+# day 13 · piece 3 of 6 — hex.txt: exactly six, as a whole word
+#
+# [0-9a-fA-F]{6} is six hex digits; -w requires the match to be a whole word, so #12345
+# (five) and #1234567 (seven) are rejected. -o for tokens. The skeleton takes any run.
+#DAY 13
+#FILE hex.sh
+#RUN bash ./hex.sh; echo '--- hex.txt:'; cat hex.txt
+#!/usr/bin/env bash
+grep -oE '#[0-9a-fA-F]+' input.txt       # ← exactly 6, whole word (-w); write hex.txt
+#> out: #12345
+#> out: hex.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: hex.txt (#FFF, #12345 and #1234567 excluded) is missing
+#> check-not: PASS: day 13

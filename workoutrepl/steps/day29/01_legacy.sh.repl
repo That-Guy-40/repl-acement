@@ -1,0 +1,34 @@
+# day 29 · piece 1 of 1 — legacy.sh: the cheapest code review you will ever get
+#
+# This is the PROVIDED script, byte for byte. The #RUN runs shellcheck on it and then
+# runs it on sample/ next to the expected output: the count is wrong, because `for f
+# in $(ls)` splits a filename with a space into two. Fix every finding — read the wiki
+# page for each SC code you do not know — until `shellcheck -S warning` is silent,
+# WITHOUT a `# shellcheck disable`, and the output matches expected-output.txt.
+#DAY 29
+#FILE legacy.sh
+#RUN shellcheck -S warning legacy.sh; echo "shellcheck rc=$?"; echo '--- ./legacy.sh sample 100:'; ./legacy.sh sample 100 2>&1 | LC_ALL=C sort; echo '--- expected-output.txt:'; LC_ALL=C sort expected-output.txt
+#!/bin/bash
+# legacy.sh DIR THRESHOLD — count files, list the big ones, summarise
+dir=$1
+threshold=$2
+count=0
+big=0
+cd $dir
+for f in $(ls); do
+    count=`expr $count + 1`
+    size=`stat -c %s $f`
+    if [ $size -gt $threshold ]; then
+        echo "big: $f ($size bytes)"
+        big=`expr $big + 1`
+    fi
+done
+cat ../expected-output.txt > /dev/null
+echo "files: $count"
+echo "big: $big"
+#> out: SC2045
+#> out: SC2164
+#> out: files: 5
+#> out-not: shellcheck rc=0
+#> check: shellcheck still reports: SC
+#> check-not: PASS: day 29

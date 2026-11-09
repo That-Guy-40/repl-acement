@@ -1,0 +1,13 @@
+# day 12 · piece 1 of 6 — big.txt: a size predicate
+#
+# -type f keeps regular files, -size +100k means more than 100 KiB (k = 1024-byte
+# units; +n is "more than n"). The skeleton lists every regular file.
+#DAY 12
+#FILE big.sh
+#RUN bash ./big.sh; echo '--- big.txt:'; cat big.txt
+#!/usr/bin/env bash
+find tree -type f            # ← add -size +100k, sort, write big.txt
+#> out: big.txt: No such file or directory
+#> out-not: # exit:    0
+#> check: big.txt (> 100 KiB; medium.log at 50 KiB is not) is missing
+#> check-not: PASS: day 12
